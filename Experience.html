@@ -515,7 +515,15 @@
       const btn = dd.querySelector('.dropbtn');
       const menu = dd.querySelector('.dropdown-content');
       btn.addEventListener('mouseover', () => menu.style.display = 'block');
-      dd.addEventListener('mouseleave', () => menu.style.display = 'none');
+      let hideTimeout;
+      dd.addEventListener('mouseleave', () => {
+        hideTimeout = setTimeout(() => {
+          menu.style.display = 'none';
+        }, 1000);
+      });
+      dd.addEventListener('mouseenter', () => {
+        clearTimeout(hideTimeout);
+      });
     });
   </script>
 </body>
