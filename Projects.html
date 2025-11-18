@@ -1,401 +1,318 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>Juan R. Reynoso | Projects</title>
+<head> <meta charset="UTF-8" />
+  <title>Fleet Maintenance Analytics System | Juan R. Reynoso</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
     :root {
       --bg: #f5f5f5;
       --bg-soft: #ffffff;
-      --bg-alt: #eef1f5;
       --accent: #1f4f7b;
       --accent-soft: #e0ecf7;
       --accent-strong: #153554;
       --text-main: #111827;
       --text-muted: #6b7280;
       --border-subtle: #d1d5db;
-      --chip-bg: #e5e7eb;
-      --shadow-soft: 0 10px 30px rgba(15, 23, 42, 0.06);
     }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
-    body {
-      font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-      background: var(--bg);
-      color: var(--text-main);
-      line-height: 1.5;
-    }
-
-    a {
-      text-decoration: none;
-      color: inherit;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Inter, sans-serif; background: var(--bg); color: var(--text-main); line-height: 1.6; }
 
     /* HEADER */
     header {
-      background: #ffffff;
-      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
-      position: sticky;
-      top: 0;
-      z-index: 20;
+      background:#ffffff;
+      box-shadow:0 1px 4px rgba(0,0,0,.06);
+      position:sticky;
+      top:0;
+      z-index:20;
     }
-
-    .nav {
-      max-width: 1150px;
-      margin: 0 auto;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 40px;
-      padding: 12px 24px;
+    .container {
+      max-width:1100px;
+      margin:0 auto;
+      padding:0 20px;
     }
-
-    .profile-block {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      flex: 0 0 auto;
+    .header-row {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:32px;
+      padding:12px 0;
     }
-
-    .avatar-circle {
-      width: 44px;
-      height: 44px;
-      border-radius: 999px;
-      border: 1px solid var(--border-subtle);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 600;
-      font-size: 16px;
-      color: var(--accent-strong);
-      background: #f9fafb;
+    .header-left {
+      display:flex;
+      align-items:center;
+      gap:16px;
     }
-
-    .profile-main {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
+    .header-avatar {
+      width:44px;
+      height:44px;
+      border-radius:50%;
+      border:2px solid #d1d5db;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight:600;
+      font-size:15px;
+      color:var(--accent-strong);
     }
-
-    .profile-name {
-      font-size: 20px;
-      font-weight: 600;
-      color: var(--accent-strong);
+    .header-title {
+      font-size:20px;
+      font-weight:700;
+      color:var(--accent-strong);
     }
-
-    .profile-subtitle {
-      font-size: 14px;
-      color: var(--text-muted);
+    .header-subtitle {
+      font-size:14px;
+      color:var(--text-muted);
+      margin-top:1px;
     }
-
-    .nav-tabs {
-      display: flex;
-      align-items: center;
-      gap: 28px;
-      flex: 1 1 auto;
-      justify-content: center;
+    .header-nav {
+      display:flex;
+      align-items:center;
+      gap:32px;
+      font-size:15px;
+      font-weight:500;
     }
-
-    .nav-tabs a {
-      font-size: 15px;
-      font-weight: 500;
-      color: var(--text-muted);
-      padding-bottom: 6px;
-      border-bottom: 2px solid transparent;
-      transition: color 0.2s ease, border-color 0.2s ease;
+    .header-nav a {
+      color:var(--text-muted);
+      text-decoration:none;
+      position:relative;
+      padding-bottom:4px;
     }
-
-    .nav-tabs a:hover {
-      color: var(--accent-strong);
-      border-bottom-color: var(--accent);
+    .header-nav a:hover {
+      color:var(--accent-strong);
     }
-
-    .nav-tabs a.active {
-      color: var(--accent-strong);
-      border-bottom-color: var(--accent);
+    .header-nav a.active {
+      color:var(--accent-strong);
     }
-
+    .header-nav a.active::after {
+      content:"";
+      position:absolute;
+      left:0;
+      right:0;
+      bottom:0;
+      height:2px;
+      background:var(--accent-strong);
+      border-radius:999px;
+    }
     .header-cta {
-      flex: 0 0 auto;
+      background:#1f4f7b;
+      color:#ffffff;
+      padding:10px 26px;
+      border-radius:28px;
+      font-size:15px;
+      font-weight:600;
+      text-decoration:none;
+      display:flex;
+      align-items:center;
+      gap:8px;
+      white-space:nowrap;
     }
 
-    .email-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 10px 22px;
-      border-radius: 999px;
-      background: var(--accent-strong);
-      color: #ffffff;
-      font-size: 14px;
-      font-weight: 600;
-      border: none;
-      cursor: pointer;
-      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.18);
-      transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    /* LAYOUT */
+    .page-shell {
+      max-width:1100px;
+      margin:0 auto;
+      padding:20px 20px 40px;
+      display:flex;
+      gap:28px;
+      align-items:flex-start;
+    }
+    .projects-sidebar {
+      width:200px;
+      background:#ffffff;
+      border:1px solid #e5e7eb;
+      border-radius:8px;
+      padding:14px 12px;
+      flex-shrink:0;
+      position:sticky;
+      top:90px;
+    }
+    .projects-sidebar h3 {
+      font-size:14px;
+      font-weight:700;
+      color:#153554;
+      margin-bottom:6px;
+    }
+    .projects-sidebar a {
+      display:block;
+      font-size:13px;
+      color:#374151;
+      text-decoration:none;
+      padding:4px 6px;
+      border-radius:4px;
+      margin-bottom:2px;
+    }
+    .projects-sidebar a.active {
+      background:#e0ecf7;
+      color:#153554;
+      font-weight:600;
+    }
+    .page-main {
+      flex:1;
+      min-width:0;
     }
 
-    .email-btn:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.25);
-    }
+    /* HERO */
+    .hero { padding: 8px 0 32px; }
+    .hero h1 { font-size: 42px; font-weight: 700; margin-bottom: 16px; color: var(--accent-strong); }
+    .hero p { max-width: 600px; color: var(--text-muted); font-size: 18px; }
 
-    .nav-item {
-      position: relative;
-      display: flex;
-      align-items: center;
-    }
+    /* SECTIONS */
+    section { padding: 16px 0; }
+    h2 { font-size: 28px; font-weight: 700; margin-bottom: 20px; color: var(--accent-strong); }
+    .text-muted { color: var(--text-muted); }
 
-    .projects-dropdown {
-      position: absolute;
-      top: 115%;
-      left: 0;
-      min-width: 260px;
-      background: #ffffff;
-      border-radius: 10px;
-      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.15);
-      padding: 8px 0;
-      opacity: 0;
-      visibility: hidden;
-      transform: translateY(6px);
-      transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s ease;
-      z-index: 40;
-    }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 26px; }
 
-    .projects-dropdown a {
-      display: block;
-      padding: 8px 16px;
-      font-size: 14px;
-      color: var(--text-muted);
-      white-space: nowrap;
-    }
-
-    .projects-dropdown a:hover {
-      background: var(--accent-soft);
-      color: var(--accent-strong);
-    }
-
-    .projects-menu:hover .projects-dropdown {
-      opacity: 1;
-      visibility: visible;
-      transform: translateY(0);
-    }
-
-    /* PAGE BODY */
-    .section {
-      max-width: 1150px;
-      margin: 60px auto;
-      padding: 0 20px;
-    }
-
-    .title {
-      font-size: 32px;
-      font-weight: 700;
-      color: var(--text-main);
-      margin-bottom: 10px;
-    }
-
-    .subtitle {
-      font-size: 16px;
-      color: var(--text-muted);
-      margin-bottom: 35px;
-    }
-
-    .project-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 25px;
-    }
-
-    .project-card {
-      position: relative;
-      background: var(--bg-soft);
-      padding: 32px 40px 72px;
-      border-radius: 16px;
-      box-shadow: var(--shadow-soft);
-      border: 1px solid var(--border-subtle);
-      transition: 0.25s;
-      min-height: 320px;
-    }
-
-    .project-card:hover {
-      transform: translateY(-4px);
-    }
-
-    .project-title {
-      font-size: 18px;
-      font-weight: 600;
-      margin-bottom: 10px;
-      color: var(--accent-strong);
-    }
-
-    .project-desc {
-      font-size: 14px;
-      color: var(--text-muted);
-      margin-bottom: 16px;
-      line-height: 1.6;
-    }
-
-    .tags {
-      margin-top: 8px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-
-    .tag {
-      background: var(--chip-bg);
-      padding: 6px 10px;
-      border-radius: 6px;
-      font-size: 12px;
-      color: var(--text-muted);
-      font-weight: 500;
-    }
-
-    .see-btn {
-      position: absolute;
-      bottom: 20px;
-      right: 24px;
-      padding: 10px 18px;
-      background: var(--accent);
-      color: #fff;
-      font-size: 14px;
-      font-weight: 600;
+    .img-placeholder {
+      width: 100%;
+      height: 260px;
       border-radius: 8px;
-      text-decoration: none;
+      background: #d9d9d9;
+      background-size: cover;
+      background-position: center;
     }
 
-    .see-btn:hover {
-      background: var(--accent-strong);
+    .card {
+      background: #fff;
+      padding: 18px;
+      border-radius: 10px;
+      border: 1px solid var(--border-subtle);
+    }
+    .card h3 {
+      margin-top: 12px;
+      margin-bottom: 6px;
+      font-size:16px;
+      font-weight:600;
+    }
+
+    ul { margin-left: 20px; }
+    @media (max-width: 900px) {
+      .page-shell {
+        flex-direction: column;
+        gap: 24px;
+      }
+      .projects-sidebar {
+        position: static;
+        width: 100%;
+        max-width: 100%;
+      }
+      .page-main {
+        width: 100%;
+      }
+      .grid-2 {
+        grid-template-columns: 1fr;
+      }
+      .grid-3 {
+        grid-template-columns: 1fr;
+      }
+      .hero h1 {
+        font-size: 32px;
+      }
     }
   </style>
 </head>
-
 <body>
-  <header>
-    <div class="nav">
-      <div class="profile-block">
-        <div class="avatar-circle">JR</div>
-        <div class="profile-main">
-          <div class="profile-name">Juan R. Reynoso</div>
-          <div class="profile-subtitle">Data, Operations &amp; Fleet Analytics</div>
-        </div>
-      </div>
-      <nav class="nav-tabs">
-        <a href="index.html">Overview</a>
-        <a href="Experience.html">Experience</a>
-        <div class="nav-item projects-menu">
-          <a href="Projects.html" class="active">Projects</a>
-          <div class="projects-dropdown">
-            <a href="Project1%20fleetanalytics.html">Fleet Maintenance Analytics System</a>
-            <a href="Project2%20GPS%20Analytics">Inventory &amp; GPS Tracking Dashboard</a>
-            <!-- Add more project links here when pages exist -->
-          </div>
-        </div>
-      </nav>
-      <div class="header-cta">
-        <a href="mailto:jreynoso111@gmail.com" class="email-btn">Send email →</a>
+
+<header>
+  <div class="container header-row">
+    <div class="header-left">
+      <div class="header-avatar">JR</div>
+      <div>
+        <div class="header-title">Juan R. Reynoso</div>
+        <div class="header-subtitle">Data, Operations & Fleet Analytics</div>
       </div>
     </div>
-  </header>
 
-  <section class="section">
-    <h1 class="title">Projects</h1>
-    <p class="subtitle">Operational dashboards, fleet analytics systems, and data automation solutions designed for real-world business impact.</p>
+    <nav class="header-nav">
+      <a href="index.html">Overview</a>
+      <a href="experience.html">Experience</a>
+      
+      <a href="projects.html" class="active">Projects</a>
+      
+    </nav>
 
-    <div class="project-grid">
+    <a href="mailto:joe@example.com" class="header-cta">Send email →</a>
+  </div>
+</header>
 
-      <div class="project-card">
-        <div class="project-title">Fleet Maintenance Analytics System</div>
-        <div class="project-desc">Comprehensive Power BI platform designed to monitor maintenance performance across an entire fleet. Includes trend analysis, repair cycle breakdowns, vendor performance comparison, part cost evolution, and predictive indicators for upcoming service needs. The system centralizes multi-year maintenance history to deliver clear insights for operational and financial decision-making.</div>
-        <div class="tags">
-          <span class="tag">Power BI</span>
-          <span class="tag">DAX</span>
-          <span class="tag">Maintenance</span>
-        </div>
-        <a href="Project1%20fleetanalytics.html" class="see-btn">See details</a>
+<div class="page-shell">
+  <aside class="projects-sidebar">
+    <h3>Projects</h3>
+    
+    <a href="fleet_maintenance_analytics.html" class="active">Fleet Maintenance Analytics System</a>
+    <a href="#">Inventory Control Dashboard</a>
+    <a href="#">GPS Tracking & Movement Analysis</a>
+    <a href="#">Repo & Risk Monitoring System</a>
+  </aside>
+
+  <main class="page-main">
+    <section class="hero">
+      <h1>Fleet Maintenance Analytics System</h1>
+      <p>A full analytics ecosystem built to monitor, predict, and optimize maintenance operations for a commercial fleet. Includes automated data ingestion, cleaning pipelines, KPI dashboards, and anomaly tracking.</p>
+    </section>
+
+    <section style="margin-top:-20px;">
+      <h2>Project Overview</h2>
+      <div class="grid-2">
+        <p class="text-muted">This system integrates multiple daily data sources — NetSuite exports, GPS activity logs, maintenance invoices, parts inventory, and internal tracking sheets — into a single analytical model that exposes operational patterns and financial impact. <br>
+It centralizes the full fleet lifecycle and highlights cost drivers, repeat repair patterns, and GPS inconsistencies, reducing manual work and giving leadership a clear, reliable base for decision‑making.</p>
+
+        <div class="img-placeholder" style="background-image:url('https://source.unsplash.com/800x600/?data,analytics');"></div>
       </div>
+    </section>
 
-      <div class="project-card">
-        <div class="project-title">Inventory &amp; GPS Tracking Dashboard</div>
-        <div class="project-desc">End-to-end operational dashboard integrating real-time GPS signals, ignition events, repossession alerts, lot movements, inventory aging, and cross-location unit tracking. Built with automated Power Query pipelines to unify inconsistent data sources and create a single version of truth across the entire organization.</div>
-        <div class="tags">
-          <span class="tag">Power Query</span>
-          <span class="tag">Data Modeling</span>
-          <span class="tag">Fleet Ops</span>
+    <section>
+      <h2>Key Components</h2>
+      <div class="grid-3">
+        <div class="card">
+          <div class="img-placeholder" style="background-image:url('https://source.unsplash.com/800x600/?dashboard,charts');"></div>
+          <h3>Dashboard Suite</h3>
+          <p class="text-muted">Power BI dashboards for maintenance cost analysis, part usage, downtime, GPS activity, and reliability KPIs.</p>
         </div>
-        <a href="Project2%20GPS%20Analytics" class="see-btn">See details</a>
-      </div>
 
-      <div class="project-card">
-        <div class="project-title">Deal Performance &amp; Forecast Model</div>
-        <div class="project-desc">Statistical and behavioral model evaluating customer payment patterns, vehicle activity, historical delinquency, and contract structure to anticipate future deal performance. Provides scenario simulations, early-risk detection, customer segmentation, and projected revenue impact for management.</div>
-        <div class="tags">
-          <span class="tag">Analytics</span>
-          <span class="tag">Forecasting</span>
-          <span class="tag">Business Intelligence</span>
+        <div class="card">
+          <div class="img-placeholder" style="background-image:url('https://source.unsplash.com/800x600/?coding,pipeline');"></div>
+          <h3>Data Pipeline</h3>
+          <p class="text-muted">Power Query transformations unify historical and current data sources, detect changes, and consolidate VIN‑level history.</p>
         </div>
-        <a href="#" class="see-btn">See details</a>
-      </div>
 
-      <div class="project-card">
-        <div class="project-title">Metro Maintenance Quality Control</div>
-        <div class="project-desc">Operational oversight system for the Metro de Santo Domingo, evaluating contractor performance, maintenance SLAs, response times, downtime impact, and cost deviations. Includes automated KPI scoring, penalty calculation logic, and multi-line dashboards covering electrical, signaling, telecom, and rolling stock systems.</div>
-        <div class="tags">
-          <span class="tag">KPI Design</span>
-          <span class="tag">Reporting</span>
-          <span class="tag">Operations</span>
+        <div class="card">
+          <div class="img-placeholder" style="background-image:url('https://source.unsplash.com/800x600/?fleet,trucks');"></div>
+          <h3>Operational Tracking</h3>
+          <p class="text-muted">Tracks inventory status, repairs, locations, GPS events, customer payments, and repo activity.</p>
         </div>
-        <a href="#" class="see-btn">See details</a>
       </div>
+    </section>
 
-      <div class="project-card">
-        <div class="project-title">Historic Inventory Change Log</div>
-        <div class="project-desc">Daily-snapshot architecture that records every change to fleet data—status, location, mileage, ownership, GPS activity, and operational flags—to create a fully auditable historical trail. Enables detection of anomalies, duplicate records, unauthorized edits, and movement patterns across states and yards.</div>
-        <div class="tags">
-          <span class="tag">Power BI</span>
-          <span class="tag">Automation</span>
-          <span class="tag">Data Engineering</span>
-        </div>
-        <a href="#" class="see-btn">See details</a>
+    <section>
+      <h2>Main Features</h2>
+      <ul class="text-muted">
+        <li>Automated merging of 7+ daily NetSuite data extracts</li>
+        <li>Historical tracking for each VIN (location, repairs, balances)</li>
+        <li>Real‑time GPS status monitoring and movement analysis</li>
+        <li>Cost vs. downtime correlation</li>
+        <li>KPI engine for Pay KPI, Remaining Balance, Oldest Open Invoice</li>
+        <li>Inventory preparation pipeline tracking</li>
+        <li>Exception detection (stripped vehicles, repeated repairs, missing titles)</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Sample Screenshots</h2>
+      <div class="grid-2">
+        <div class="img-placeholder" style="height:320px;background-image:url('https://source.unsplash.com/900x700/?powerbi,analytics');"></div>
+        <div class="img-placeholder" style="height:320px;background-image:url('https://source.unsplash.com/900x700/?maintenance,mechanic');"></div>
       </div>
+    </section>
 
-    </div>
-  </section>
-<script>
-const menu = document.querySelector('.projects-menu');
-const dropdown = document.querySelector('.projects-dropdown');
-let hideTimer;
-menu.addEventListener('mouseenter', () => {
-  clearTimeout(hideTimer);
-  dropdown.style.opacity = '1';
-  dropdown.style.visibility = 'visible';
-  dropdown.style.transform = 'translateY(0)';
-});
-menu.addEventListener('mouseleave', () => {
-  hideTimer = setTimeout(() => {
-    dropdown.style.opacity = '0';
-    dropdown.style.visibility = 'hidden';
-    dropdown.style.transform = 'translateY(6px)';
-  }, 1000);
-});
-dropdown.addEventListener('mouseenter', () => {
-  clearTimeout(hideTimer);
-});
-dropdown.addEventListener('mouseleave', () => {
-  hideTimer = setTimeout(() => {
-    dropdown.style.opacity = '0';
-    dropdown.style.visibility = 'hidden';
-    dropdown.style.transform = 'translateY(6px)';
-  }, 1000);
-});
-</script>
+    <section>
+      <h2>Impact</h2>
+      <p class="text-muted">This system reduced manual report preparation by over 90%, standardized daily fleet oversight, and enabled rapid detection of operational anomalies and financial risk. It also established a reliable backbone for future predictive maintenance modeling.</p>
+    </section>
+  </main>
+</div>
+
 </body>
 </html>
