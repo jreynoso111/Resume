@@ -38,6 +38,7 @@
       color: inherit;
     }
 
+    /* HEADER */
     header {
       background: #ffffff;
       box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
@@ -146,6 +147,48 @@
       box-shadow: 0 12px 30px rgba(15, 23, 42, 0.25);
     }
 
+    .nav-item {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .projects-dropdown {
+      position: absolute;
+      top: 115%;
+      left: 0;
+      min-width: 260px;
+      background: #ffffff;
+      border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.15);
+      padding: 8px 0;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(6px);
+      transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s ease;
+      z-index: 40;
+    }
+
+    .projects-dropdown a {
+      display: block;
+      padding: 8px 16px;
+      font-size: 14px;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    .projects-dropdown a:hover {
+      background: var(--accent-soft);
+      color: var(--accent-strong);
+    }
+
+    .projects-menu:hover .projects-dropdown {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+
+    /* PAGE BODY */
     .section {
       max-width: 1150px;
       margin: 60px auto;
@@ -167,19 +210,19 @@
 
     .project-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 25px;
     }
 
     .project-card {
       position: relative;
       background: var(--bg-soft);
-      padding: 32px;
+      padding: 32px 40px 72px;
       border-radius: 16px;
       box-shadow: var(--shadow-soft);
       border: 1px solid var(--border-subtle);
       transition: 0.25s;
-      min-height: 360px; padding: 40px;
+      min-height: 320px;
     }
 
     .project-card:hover {
@@ -196,12 +239,12 @@
     .project-desc {
       font-size: 14px;
       color: var(--text-muted);
-      margin-bottom: 12px;
-      line-height: 1.55;
+      margin-bottom: 16px;
+      line-height: 1.6;
     }
 
     .tags {
-      margin-top: 10px;
+      margin-top: 8px;
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
@@ -215,46 +258,22 @@
       color: var(--text-muted);
       font-weight: 500;
     }
-  .nav-item {
-      position: relative;
-      display: flex;
-      align-items: center;
-    }
 
-    .projects-dropdown {
+    .see-btn {
       position: absolute;
-      top: 115%;
-      left: 0;
-      min-width: 210px;
-      background: #ffffff;
-      border-radius: 10px;
-      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.15);
-      padding: 8px 0;
-      opacity: 0;
-      visibility: hidden;
-      transform: translateY(6px);
-      transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s ease;
-      z-index: 40;
-    
-    }
-
-    .projects-dropdown a {
-      display: block;
-      padding: 8px 16px;
+      bottom: 20px;
+      right: 24px;
+      padding: 10px 18px;
+      background: var(--accent);
+      color: #fff;
       font-size: 14px;
-      color: var(--text-muted);
-      white-space: nowrap;
+      font-weight: 600;
+      border-radius: 8px;
+      text-decoration: none;
     }
 
-    .projects-dropdown a:hover {
-      background: var(--accent-soft);
-      color: var(--accent-strong);
-    }
-
-    .projects-menu:hover .projects-dropdown {
-      opacity: 1;
-      visibility: visible;
-      transform: translateY(0);
+    .see-btn:hover {
+      background: var(--accent-strong);
     }
   </style>
 </head>
@@ -272,18 +291,17 @@
       <nav class="nav-tabs">
         <a href="index.html">Overview</a>
         <a href="Experience.html">Experience</a>
-        <a href="Skills.html">Skills</a>
         <div class="nav-item projects-menu">
           <a href="Projects.html" class="active">Projects</a>
           <div class="projects-dropdown">
-            <a href="Project1%20fleetanalytics.html">Project 1 – Fleet Analytics</a>
-            <a href="Project2%20GPS%20Analytics">Project 2 – GPS Analytics</a>
+            <a href="Project1%20fleetanalytics.html">Fleet Maintenance Analytics System</a>
+            <a href="Project2%20GPS%20Analytics">Inventory &amp; GPS Tracking Dashboard</a>
+            <!-- Add more project links here when pages exist -->
           </div>
         </div>
-        
       </nav>
       <div class="header-cta">
-        <a href="mailto:your@email.com" class="email-btn">Send email →</a>
+        <a href="mailto:jreynoso111@gmail.com" class="email-btn">Send email →</a>
       </div>
     </div>
   </header>
@@ -296,57 +314,57 @@
 
       <div class="project-card">
         <div class="project-title">Fleet Maintenance Analytics System</div>
-        <a href="Project1%20fleetanalytics.html" class="see-btn" style="position:absolute; bottom:18px; right:18px; padding:8px 14px; background:var(--accent); color:#fff; font-size:13px; font-weight:600; border-radius:6px;" >See Details</a>
-        <div class="project-desc">Power BI system tracking maintenance cycles, repair costs, part pricing over time, and economic impact per unit.</div>
+        <div class="project-desc">Comprehensive Power BI platform designed to monitor maintenance performance across an entire fleet. Includes trend analysis, repair cycle breakdowns, vendor performance comparison, part cost evolution, and predictive indicators for upcoming service needs. The system centralizes multi-year maintenance history to deliver clear insights for operational and financial decision-making.</div>
         <div class="tags">
           <span class="tag">Power BI</span>
           <span class="tag">DAX</span>
           <span class="tag">Maintenance</span>
         </div>
+        <a href="Project1%20fleetanalytics.html" class="see-btn">See details</a>
       </div>
 
       <div class="project-card">
-        <div class="project-title">Inventory & GPS Tracking Dashboard</div>
-        <a href="Project2%20GPS%20Analytics" class="see-btn" style="position:absolute; bottom:18px; right:18px; padding:8px 14px; background:var(--accent); color:#fff; font-size:13px; font-weight:600; border-radius:6px;" >See Details</a>
-        <div class="project-desc">Automated multi-source data model consolidating inventory status, GPS signals, repossession events, and daily changes.</div>
+        <div class="project-title">Inventory &amp; GPS Tracking Dashboard</div>
+        <div class="project-desc">End-to-end operational dashboard integrating real-time GPS signals, ignition events, repossession alerts, lot movements, inventory aging, and cross-location unit tracking. Built with automated Power Query pipelines to unify inconsistent data sources and create a single version of truth across the entire organization.</div>
         <div class="tags">
           <span class="tag">Power Query</span>
           <span class="tag">Data Modeling</span>
           <span class="tag">Fleet Ops</span>
         </div>
+        <a href="Project2%20GPS%20Analytics" class="see-btn">See details</a>
       </div>
 
       <div class="project-card">
-        <div class="project-title">Deal Performance & Forecast Model</div>
-        <a href="deal_forecast.html" class="see-btn" style="position:absolute; bottom:18px; right:18px; padding:8px 14px; background:var(--accent); color:#fff; font-size:13px; font-weight:600; border-radius:6px;" >See Details</a>
-        <div class="project-desc">Predictive KPI model estimating future deal performance based on payments, GPS activity, historic behaviors, and customer risk.</div>
+        <div class="project-title">Deal Performance &amp; Forecast Model</div>
+        <div class="project-desc">Statistical and behavioral model evaluating customer payment patterns, vehicle activity, historical delinquency, and contract structure to anticipate future deal performance. Provides scenario simulations, early-risk detection, customer segmentation, and projected revenue impact for management.</div>
         <div class="tags">
           <span class="tag">Analytics</span>
           <span class="tag">Forecasting</span>
           <span class="tag">Business Intelligence</span>
         </div>
+        <a href="#" class="see-btn">See details</a>
       </div>
 
       <div class="project-card">
         <div class="project-title">Metro Maintenance Quality Control</div>
-        <a href="metro_quality.html" class="see-btn" style="position:absolute; bottom:18px; right:18px; padding:8px 14px; background:var(--accent); color:#fff; font-size:13px; font-weight:600; border-radius:6px;" >See Details</a>
-        <div class="project-desc">Quality control reporting for the Metro de Santo Domingo: KPI calculations, contract impact modeling, and downtime analysis.</div>
+        <div class="project-desc">Operational oversight system for the Metro de Santo Domingo, evaluating contractor performance, maintenance SLAs, response times, downtime impact, and cost deviations. Includes automated KPI scoring, penalty calculation logic, and multi-line dashboards covering electrical, signaling, telecom, and rolling stock systems.</div>
         <div class="tags">
           <span class="tag">KPI Design</span>
           <span class="tag">Reporting</span>
           <span class="tag">Operations</span>
         </div>
+        <a href="#" class="see-btn">See details</a>
       </div>
 
       <div class="project-card">
         <div class="project-title">Historic Inventory Change Log</div>
-        <a href="inventory_log.html" class="see-btn" style="position:absolute; bottom:18px; right:18px; padding:8px 14px; background:var(--accent); color:#fff; font-size:13px; font-weight:600; border-radius:6px;" >See Details</a>
-        <div class="project-desc">Daily snapshot system detecting row changes, duplicates, and unit movements to maintain a fully auditable fleet history.</div>
+        <div class="project-desc">Daily-snapshot architecture that records every change to fleet data—status, location, mileage, ownership, GPS activity, and operational flags—to create a fully auditable historical trail. Enables detection of anomalies, duplicate records, unauthorized edits, and movement patterns across states and yards.</div>
         <div class="tags">
           <span class="tag">Power BI</span>
           <span class="tag">Automation</span>
           <span class="tag">Data Engineering</span>
         </div>
+        <a href="#" class="see-btn">See details</a>
       </div>
 
     </div>
