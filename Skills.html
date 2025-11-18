@@ -47,7 +47,18 @@
 
     .primary-nav{display:flex;align-items:center;gap:22px;font-size:14px;}
     .primary-nav a{color:var(--text-muted);font-weight:500;position:relative;padding-bottom:2px;font-size:14px;}
-    .primary-nav a:hover{color:var(--accent-strong);}
+    .primary-nav a:hover{color:var(--accent-strong);} 
+    .primary-nav a.active{color:var(--accent-strong);} 
+    .primary-nav a.active::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;background:var(--accent);border-radius:999px;}
+
+    .projects-wrapper{position:relative;}
+    .projects-link{display:inline-flex;align-items:center;gap:4px;}
+    .projects-dropdown{position:absolute;top:100%;left:0;margin-top:6px;background:#ffffff;border:1px solid var(--border-subtle);border-radius:10px;box-shadow:var(--card-shadow);padding:8px 0;min-width:260px;display:none;z-index:30;}
+    .projects-dropdown a{display:block;padding:8px 14px;font-size:13px;color:var(--text-muted);white-space:nowrap;padding-bottom:0;}
+    .projects-dropdown a:hover{background:var(--accent-soft);color:var(--accent-strong);} 
+    .projects-wrapper:hover .projects-dropdown{display:block;}
+
+    {color:var(--accent-strong);}
     .primary-nav a.active{color:var(--accent-strong);}
     .primary-nav a.active::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;background:var(--accent);border-radius:999px;}
 
@@ -95,7 +106,15 @@
         <a href="index.html">Overview</a>
         <a href="Experience.html">Experience</a>
         <a href="Skills.html" class="active">Skills</a>
-        <a href="Projects.html">Projects</a>
+
+        <div class="projects-wrapper">
+          <a href="Projects.html" class="projects-link">Projects ▾</a>
+          <div class="projects-dropdown">
+            <a href="Project1 fleetanalytics.html">Fleet Maintenance Analytics System</a>
+            <a href="Project2 GPS Analytics.html">Inventory &amp; GPS Tracking Dashboard</a>
+          </div>
+        </div>
+
         <a href="Contact.html">Contact</a>
       </nav>
 
