@@ -10,7 +10,7 @@
       --bg: #f5f5f5;
       --bg-soft: #ffffff;
       --bg-alt: #eef1f5;
-      --accent: #1f4f7
+      --accent: #1f4f7b;
       --accent-soft: #e0ecf7;
       --accent-strong: #153554;
       --text-main: #111827;
@@ -214,6 +214,47 @@
       color: var(--text-muted);
       font-weight: 500;
     }
+  .nav-item {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .projects-dropdown {
+      position: absolute;
+      top: 115%;
+      left: 0;
+      min-width: 210px;
+      background: #ffffff;
+      border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.15);
+      padding: 8px 0;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(6px);
+      transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s ease;
+      z-index: 40;
+    
+    }
+
+    .projects-dropdown a {
+      display: block;
+      padding: 8px 16px;
+      font-size: 14px;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    .projects-dropdown a:hover {
+      background: var(--accent-soft);
+      color: var(--accent-strong);
+    }
+
+    .projects-menu:hover .projects-dropdown {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
   </style>
 </head>
 
@@ -229,9 +270,15 @@
       </div>
       <nav class="nav-tabs">
         <a href="index.html">Overview</a>
-        <a href="experience.html">Experience</a>
-        <a href="skills.html">Skills</a>
-        <a href="projects.html" class="active">Projects</a>
+        <a href="Experience.html">Experience</a>
+        <a href="Skills.html">Skills</a>
+        <div class="nav-item projects-menu">
+          <a href="Projects.html" class="active">Projects</a>
+          <div class="projects-dropdown">
+            <a href="Project1%20fleetanalytics.html">Project 1 – Fleet Analytics</a>
+            <a href="Project2%20GPS%20Analytics">Project 2 – GPS Analytics</a>
+          </div>
+        </div>
         <a href="contact.html">Contact</a>
       </nav>
       <div class="header-cta">
@@ -248,7 +295,7 @@
 
       <div class="project-card">
         <div class="project-title">Fleet Maintenance Analytics System</div>
-        <a href="fleet_maintenance.html" class="see-btn" style="position:absolute; bottom:18px; right:18px; padding:8px 14px; background:var(--accent); color:#fff; font-size:13px; font-weight:600; border-radius:6px;" >See Details</a>
+        <a href="Project1%20fleetanalytics.html" class="see-btn" style="position:absolute; bottom:18px; right:18px; padding:8px 14px; background:var(--accent); color:#fff; font-size:13px; font-weight:600; border-radius:6px;" >See Details</a>
         <div class="project-desc">Power BI system tracking maintenance cycles, repair costs, part pricing over time, and economic impact per unit.</div>
         <div class="tags">
           <span class="tag">Power BI</span>
@@ -259,7 +306,7 @@
 
       <div class="project-card">
         <div class="project-title">Inventory & GPS Tracking Dashboard</div>
-        <a href="inventory_gps.html" class="see-btn" style="position:absolute; bottom:18px; right:18px; padding:8px 14px; background:var(--accent); color:#fff; font-size:13px; font-weight:600; border-radius:6px;" >See Details</a>
+        <a href="Project2%20GPS%20Analytics" class="see-btn" style="position:absolute; bottom:18px; right:18px; padding:8px 14px; background:var(--accent); color:#fff; font-size:13px; font-weight:600; border-radius:6px;" >See Details</a>
         <div class="project-desc">Automated multi-source data model consolidating inventory status, GPS signals, repossession events, and daily changes.</div>
         <div class="tags">
           <span class="tag">Power Query</span>
