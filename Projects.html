@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Juan R. Reynoso | Projects</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #f5f5f5;
+      --bg-soft: #ffffff;
+      --bg-alt: #eef1f5;
+      --accent: #1f4f7
+      --accent-soft: #e0ecf7;
+      --accent-strong: #153554;
+      --text-main: #111827;
+      --text-muted: #6b7280;
+      --border-subtle: #d1d5db;
+      --chip-bg: #e5e7eb;
+      --shadow-soft: 0 10px 30px rgba(15, 23, 42, 0.06);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text-main);
+      line-height: 1.5;
+    }
+
+    a {
+      text-decoration: none;
+      color: inherit;
+    }
+
+    header {
+      background: #ffffff;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+
+    .nav {
+      max-width: 1150px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 40px;
+      padding: 12px 24px;
+    }
+
+    .profile-block {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: 0 0 auto;
+    }
+
+    .avatar-circle {
+      width: 44px;
+      height: 44px;
+      border-radius: 999px;
+      border: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 16px;
+      color: var(--accent-strong);
+      background: #f9fafb;
+    }
+
+    .profile-main {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .profile-name {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--accent-strong);
+    }
+
+    .profile-subtitle {
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+
+    .nav-tabs {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      flex: 1 1 auto;
+      justify-content: center;
+    }
+
+    .nav-tabs a {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text-muted);
+      padding-bottom: 6px;
+      border-bottom: 2px solid transparent;
+      transition: color 0.2s ease, border-color 0.2s ease;
+    }
+
+    .nav-tabs a:hover {
+      color: var(--accent-strong);
+      border-bottom-color: var(--accent);
+    }
+
+    .nav-tabs a.active {
+      color: var(--accent-strong);
+      border-bottom-color: var(--accent);
+    }
+
+    .header-cta {
+      flex: 0 0 auto;
+    }
+
+    .email-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 22px;
+      border-radius: 999px;
+      background: var(--accent-strong);
+      color: #ffffff;
+      font-size: 14px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.18);
+      transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    }
+
+    .email-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.25);
+    }
+
+    .section {
+      max-width: 1150px;
+      margin: 60px auto;
+      padding: 0 20px;
+    }
+
+    .title {
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 10px;
+    }
+
+    .subtitle {
+      font-size: 16px;
+      color: var(--text-muted);
+      margin-bottom: 35px;
+    }
+
+    .project-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
+      gap: 25px;
+    }
+
+    .project-card {
+      position: relative;
+      background: var(--bg-soft);
+      padding: 22px;
+      border-radius: 12px;
+      box-shadow: var(--shadow-soft);
+      border: 1px solid var(--border-subtle);
+      transition: 0.25s;
+    }
+
+    .project-card:hover {
+      transform: translateY(-4px);
+    }
+
+    .project-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 10px;
+      color: var(--accent-strong);
+    }
+
+    .project-desc {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      line-height: 1.55;
+    }
+
+    .tags {
+      margin-top: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .tag {
+      background: var(--chip-bg);
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="nav">
+      <div class="profile-block">
+        <div class="avatar-circle">JR</div>
+        <div class="profile-main">
+          <div class="profile-name">Juan R. Reynoso</div>
+          <div class="profile-subtitle">Data, Operations &amp; Fleet Analytics</div>
+        </div>
+      </div>
+      <nav class="nav-tabs">
+        <a href="index.html">Overview</a>
+        <a href="experience.html">Experience</a>
+        <a href="skills.html">Skills</a>
+        <a href="projects.html" class="active">Projects</a>
+        <a href="contact.html">Contact</a>
+      </nav>
+      <div class="header-cta">
+        <a href="mailto:your@email.com" class="email-btn">Send email →</a>
+      </div>
+    </div>
+  </header>
+
+  <section class="section">
+    <h1 class="title">Projects</h1>
+    <p class="subtitle">Operational dashboards, fleet analytics systems, and data automation solutions designed for real-world business impact.</p>
+
+    <div class="project-grid">
+
+      <div class="project-card">
+        <div class="project-title">Fleet Maintenance Analytics System</div>
+        <a href="fleet_maintenance.html" class="see-btn" style="position:absolute; bottom:18px; right:18px; padding:8px 14px; background:var(--accent); color:#fff; font-size:13px; font-weight:600; border-radius:6px;" >See Details</a>
+        <div class="project-desc">Power BI system tracking maintenance cycles, repair costs, part pricing over time, and economic impact per unit.</div>
+        <div class="tags">
+          <span class="tag">Power BI</span>
+          <span class="tag">DAX</span>
+          <span class="tag">Maintenance</span>
+        </div>
+      </div>
+
+      <div class="project-card">
+        <div class="project-title">Inventory & GPS Tracking Dashboard</div>
+        <a href="inventory_gps.html" class="see-btn" style="position:absolute; bottom:18px; right:18px; padding:8px 14px; background:var(--accent); color:#fff; font-size:13px; font-weight:600; border-radius:6px;" >See Details</a>
+        <div class="project-desc">Automated multi-source data model consolidating inventory status, GPS signals, repossession events, and daily changes.</div>
+        <div class="tags">
+          <span class="tag">Power Query</span>
+          <span class="tag">Data Modeling</span>
+          <span class="tag">Fleet Ops</span>
+        </div>
+      </div>
+
+      <div class="project-card">
+        <div class="project-title">Deal Performance & Forecast Model</div>
+        <a href="deal_forecast.html" class="see-btn" style="position:absolute; bottom:18px; right:18px; padding:8px 14px; background:var(--accent); color:#fff; font-size:13px; font-weight:600; border-radius:6px;" >See Details</a>
+        <div class="project-desc">Predictive KPI model estimating future deal performance based on payments, GPS activity, historic behaviors, and customer risk.</div>
+        <div class="tags">
+          <span class="tag">Analytics</span>
+          <span class="tag">Forecasting</span>
+          <span class="tag">Business Intelligence</span>
+        </div>
+      </div>
+
+      <div class="project-card">
+        <div class="project-title">Metro Maintenance Quality Control</div>
+        <a href="metro_quality.html" class="see-btn" style="position:absolute; bottom:18px; right:18px; padding:8px 14px; background:var(--accent); color:#fff; font-size:13px; font-weight:600; border-radius:6px;" >See Details</a>
+        <div class="project-desc">Quality control reporting for the Metro de Santo Domingo: KPI calculations, contract impact modeling, and downtime analysis.</div>
+        <div class="tags">
+          <span class="tag">KPI Design</span>
+          <span class="tag">Reporting</span>
+          <span class="tag">Operations</span>
+        </div>
+      </div>
+
+      <div class="project-card">
+        <div class="project-title">Historic Inventory Change Log</div>
+        <a href="inventory_log.html" class="see-btn" style="position:absolute; bottom:18px; right:18px; padding:8px 14px; background:var(--accent); color:#fff; font-size:13px; font-weight:600; border-radius:6px;" >See Details</a>
+        <div class="project-desc">Daily snapshot system detecting row changes, duplicates, and unit movements to maintain a fully auditable fleet history.</div>
+        <div class="tags">
+          <span class="tag">Power BI</span>
+          <span class="tag">Automation</span>
+          <span class="tag">Data Engineering</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+</body>
+</html>
