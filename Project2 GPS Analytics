@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Inventory & GPS Tracking Dashboard | Juan R. Reynoso</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #f5f5f5;
+      --bg-soft: #ffffff;
+      --bg-alt: #f0f2f5;
+      --accent: #1f4f7b;
+      --accent-soft: #e0ecf7;
+      --accent-strong: #153554;
+      --text-main: #111827;
+      --text-muted: #6b7280;
+      --border-subtle: #d1d5db;
+      --chip-bg: #e5e7eb;
+      --card-shadow: 0 18px 45px rgba(15, 23, 42, 0.12);
+      --radius-lg: 18px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at 0 0, #e0ecf7 0, transparent 55%),
+                  radial-gradient(circle at 100% 100%, #e5e7eb 0, transparent 55%),
+                  var(--bg);
+      color: var(--text-main);
+      line-height: 1.5;
+    }
+
+    a {
+      text-decoration: none;
+      color: inherit;
+    }
+
+    /* Header (same layout & sizes as Overview) */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(10px);
+      background: rgba(245, 245, 245, 0.92);
+      border-bottom: 1px solid rgba(209, 213, 219, 0.7);
+    }
+
+    .nav-shell {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .brand {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .brand-main {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      color: var(--accent-strong);
+    }
+
+    .brand-sub {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      font-size: 14px;
+    }
+
+    .nav-links a {
+      padding: 6px 10px;
+      border-radius: 999px;
+      color: var(--text-muted);
+      transition: background 0.18s ease, color 0.18s ease;
+    }
+
+    .nav-links a:hover {
+      background: var(--accent-soft);
+      color: var(--accent-strong);
+    }
+
+    .nav-links a.active {
+      background: var(--accent-strong);
+      color: #ffffff;
+      box-shadow: 0 8px 20px rgba(21, 53, 84, 0.35);
+    }
+
+    .nav-cta {
+      font-size: 13px;
+      padding: 7px 13px;
+      border-radius: 999px;
+      border: 1px solid rgba(31, 79, 123, 0.22);
+      background: linear-gradient(135deg, #ffffff 0%, #e5edf7 100%);
+      color: var(--accent-strong);
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+    }
+
+    .nav-cta span.dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: #10b981;
+    }
+
+    .page-shell {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 28px 20px 40px;
+    }
+
+    /* Hero / Header section (match overview typography) */
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 3fr) minmax(0, 2.5fr);
+      gap: 28px;
+      align-items: center;
+      margin-bottom: 32px;
+    }
+
+    .hero-copy {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .hero-label-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      font-size: 12px;
+    }
+
+    .pill-major {
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(21, 53, 84, 0.06);
+      color: var(--accent-strong);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .pill-minor {
+      padding: 4px 9px;
+      border-radius: 999px;
+      background: var(--chip-bg);
+      color: var(--text-muted);
+    }
+
+    .hero-title {
+      font-size: 28px;
+      line-height: 1.15;
+      letter-spacing: -0.03em;
+      color: var(--accent-strong);
+      font-weight: 700;
+    }
+
+    .hero-subtitle {
+      font-size: 15px;
+      color: var(--text-muted);
+      max-width: 540px;
+    }
+
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .hero-meta span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .hero-meta span::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: var(--border-subtle);
+    }
+
+    .hero-cta-row {
+      margin-top: 8px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .btn-primary {
+      border-radius: 999px;
+      border: none;
+      padding: 9px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      background: linear-gradient(135deg, #1f4f7b 0%, #153554 100%);
+      color: #ffffff;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 16px 40px rgba(15, 23, 42, 0.35);
+      cursor: pointer;
+    }
+
+    .btn-ghost {
+      border-radius: 999px;
+      border: 1px solid rgba(31, 79, 123, 0.18);
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 500;
+      background: rgba(255, 255, 255, 0.8);
+      color: var(--accent-strong);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+
+    .hero-visual {
+      border-radius: 22px;
+      background: radial-gradient(circle at 0 0, #ffffff 0, #e0ecf7 55%, #cbd5e1 100%);
+      padding: 16px;
+      box-shadow: var(--card-shadow);
+      position: relative;
+      overflow: hidden;
+      min-height: 230px;
+    }
+
+    .hero-visual img {
+      width: 100%;
+      height: auto;
+      border-radius: 16px;
+      display: block;
+      object-fit: cover;
+    }
+
+    .hero-visual-tag {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.6);
+      color: #f9fafb;
+      font-size: 11px;
+    }
+
+    /* Content layout */
+    .layout-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 2.5fr) minmax(0, 2fr);
+      gap: 24px;
+      align-items: flex-start;
+      margin-bottom: 26px;
+    }
+
+    .panel {
+      background: rgba(255, 255, 255, 0.96);
+      border-radius: var(--radius-lg);
+      padding: 18px 18px 16px;
+      box-shadow: 0 12px 35px rgba(15, 23, 42, 0.12);
+      border: 1px solid rgba(209, 213, 219, 0.9);
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+
+    .panel-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--accent-strong);
+    }
+
+    .panel-tag {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent-strong);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .panel-body {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .panel-body p + p {
+      margin-top: 6px;
+    }
+
+    .list-clean {
+      margin-top: 8px;
+      padding-left: 16px;
+    }
+
+    .list-clean li {
+      margin-bottom: 4px;
+    }
+
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+      font-size: 12px;
+    }
+
+    .meta-item {
+      padding: 8px 9px;
+      border-radius: 999px;
+      border: 1px dashed rgba(148, 163, 184, 0.9);
+      background: #f9fafb;
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .meta-label {
+      color: var(--text-muted);
+    }
+
+    .meta-value {
+      font-weight: 500;
+      color: var(--accent-strong);
+    }
+
+    /* Feature sections */
+    .section-title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .section-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--accent-strong);
+    }
+
+    .section-kicker {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: var(--text-muted);
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 6px;
+    }
+
+    .feature-card {
+      background: #ffffff;
+      border-radius: 14px;
+      border: 1px solid rgba(209, 213, 219, 0.9);
+      padding: 12px 11px;
+      font-size: 12px;
+    }
+
+    .feature-label {
+      font-weight: 600;
+      color: var(--accent-strong);
+      margin-bottom: 4px;
+    }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 8px;
+    }
+
+    .metric {
+      border-radius: 14px;
+      background: radial-gradient(circle at 0 0, #ffffff 0, #e5edf7 100%);
+      padding: 10px 11px;
+      border: 1px solid rgba(209, 213, 219, 0.95);
+      font-size: 12px;
+    }
+
+    .metric-label {
+      color: var(--text-muted);
+      font-size: 11px;
+      margin-bottom: 2px;
+    }
+
+    .metric-value {
+      font-weight: 700;
+      color: var(--accent-strong);
+      font-size: 14px;
+    }
+
+    .metric-note {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .stack-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .chip {
+      font-size: 11px;
+      padding: 5px 9px;
+      border-radius: 999px;
+      background: #eef2ff;
+      color: #1e293b;
+      border: 1px solid #c7d2fe;
+    }
+
+    /* Screenshots row */
+    .screens-row {
+      display: grid;
+      grid-template-columns: minmax(0, 2.2fr) minmax(0, 2fr);
+      gap: 18px;
+      margin-top: 6px;
+      align-items: stretch;
+    }
+
+    .screen-card {
+      background: #ffffff;
+      border-radius: 16px;
+      border: 1px solid rgba(209, 213, 219, 0.9);
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .screen-card img {
+      width: 100%;
+      border-radius: 10px;
+      object-fit: cover;
+      display: block;
+      min-height: 140px;
+    }
+
+    .screen-caption {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* Footer note */
+    .foot-note {
+      margin-top: 18px;
+      font-size: 11px;
+      color: var(--text-muted);
+      text-align: right;
+    }
+
+    @media (max-width: 900px) {
+      .hero {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .hero-visual {
+        order: -1;
+      }
+
+      .layout-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .features-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .metric-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .screens-row {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    @media (max-width: 640px) {
+      .nav-shell {
+        padding-inline: 14px;
+      }
+
+      .page-shell {
+        padding-inline: 14px;
+      }
+
+      .nav-links {
+        display: none;
+      }
+
+      .features-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .metric-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="nav-shell">
+      <div class="brand">
+        <div class="brand-main">Juan R. Reynoso</div>
+        <div class="brand-sub">Data, Operations & Fleet Analytics</div>
+      </div>
+      <nav class="nav-links">
+        <a href="index.html">Overview</a>
+        <a href="experience.html">Experience</a>
+        <a href="skills.html">Skills</a>
+        <a href="projects.html" class="active">Projects</a>
+      </nav>
+      <a href="mailto:juanradhamesrp@gmail.com" class="nav-cta">
+        <span class="dot"></span>
+        <span>Available for remote roles · NYC based</span>
+      </a>
+    </div>
+  </header>
+
+  <main class="page-shell">
+    <section class="hero">
+      <div class="hero-copy">
+        <div class="hero-label-row">
+          <span class="pill-major">Inventory & GPS Tracking Dashboard</span>
+          <span class="pill-minor">Power BI · Fleet Operations</span>
+        </div>
+        <h1 class="hero-title">Single source of truth for inventory & GPS across a nationwide commercial fleet.</h1>
+        <p class="hero-subtitle">
+          I designed and built a dashboard that reconciles NetSuite inventory data with PassTime GPS history, exposing
+          gaps in repossession workflows, stale GPS devices and inconsistencies between accounting, titles and physical units.
+        </p>
+        <div class="hero-meta">
+          <span>Role: Design, data modeling, DAX & visuals</span>
+          <span>Scope: ~1,500+ active units across the U.S.</span>
+          <span>Company: M&amp;T Equipment Funding LLC</span>
+        </div>
+        <div class="hero-cta-row">
+          <button class="btn-primary" type="button">View project highlights</button>
+          <button class="btn-ghost" type="button" onclick="location.href='projects.html'">Back to projects</button>
+        </div>
+      </div>
+
+      <aside class="hero-visual">
+        <div class="hero-visual-tag">Generic preview · Replace with real dashboard later</div>
+        <img src="https://images.pexels.com/photos/669610/pexels-photo-669610.jpeg?auto=compress&cs=tinysrgb&w=1200" alt="Generic analytics dashboard preview" />
+      </aside>
+    </section>
+
+    <section class="layout-grid">
+      <article class="panel">
+        <div class="panel-header">
+          <h2 class="panel-title">Project overview</h2>
+          <span class="panel-tag">Context</span>
+        </div>
+        <div class="panel-body">
+          <p>
+            The company operates a large commercial fleet financed through long-term deals. Inventory moved between
+            customers, lots, and repo yards faster than the systems could track it. NetSuite held the financial truth,
+            PassTime stored GPS history, and multiple spreadsheets tracked titles, storage, and legal cases.
+          </p>
+          <p>
+            My goal was to create a single, daily-refreshed dashboard that reconciled those sources and answered a
+            basic question with precision: “Where is each unit, what is its real status, and are we safe from operational
+            and financial risk?”
+          </p>
+          <ul class="list-clean">
+            <li>Reconcile inventory snapshots (NetSuite) with GPS history and repo tickets.</li>
+            <li>Expose units with inconsistent status between systems ("with customer" but GPS at repo yard, etc.).</li>
+            <li>Provide operations, credit & legal with one place to review every VIN.</li>
+          </ul>
+        </div>
+      </article>
+
+      <aside class="panel">
+        <div class="panel-header">
+          <h2 class="panel-title">Engagement details</h2>
+        </div>
+        <div class="panel-body">
+          <div class="meta-grid">
+            <div class="meta-item">
+              <span class="meta-label">Timeline</span>
+              <span class="meta-value">4–6 weeks</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">Users</span>
+              <span class="meta-value">Ops · Credit · Legal</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">Tools</span>
+              <span class="meta-value">Power BI + Excel</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">Data sources</span>
+              <span class="meta-value">NetSuite · PassTime</span>
+            </div>
+          </div>
+          <p style="margin-top:10px;">
+            I handled data modeling, DAX, and the design of each view. The dashboard is robust enough to be refreshed
+            daily from exported files without manual manipulation.
+          </p>
+        </div>
+      </aside>
+    </section>
+
+    <section class="panel" style="margin-bottom:24px;">
+      <div class="section-title-row">
+        <div>
+          <div class="section-kicker">Solution</div>
+          <h2 class="section-title">How the dashboard is structured</h2>
+        </div>
+      </div>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-label">Inventory snapshot logic</div>
+          <p>
+            Daily NetSuite exports are normalized and combined into a historic table per VIN, with calculated
+            signatures to detect real changes (deal status, location, balance) without duplicating rows.
+          </p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-label">GPS movement status</div>
+          <p>
+            PassTime history is summarized into “Last ping” and “Moving” flags, only if the last ping is recent
+            enough. Older devices are marked as “Unknown” to avoid false confidence.
+          </p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-label">Exception-first views</div>
+          <p>
+            Instead of showing all units, the main views rank VINs by issues: stale GPS, status mismatch,
+            missing stock numbers, or repo tickets not aligned with accounting.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" style="margin-bottom:24px;">
+      <div class="section-title-row">
+        <div>
+          <div class="section-kicker">Impact</div>
+          <h2 class="section-title">What changed after implementation</h2>
+        </div>
+      </div>
+      <div class="metric-grid">
+        <div class="metric">
+          <div class="metric-label">Time to validate a VIN</div>
+          <div class="metric-value">&minus;70%</div>
+          <div class="metric-note">From 10–15 minutes across tools to a single view.</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Stale GPS devices</div>
+          <div class="metric-value">Visible 100%</div>
+          <div class="metric-note">Every device with &gt;10 days without ping surfaces automatically.</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Status mismatches</div>
+          <div class="metric-value">Flagged daily</div>
+          <div class="metric-note">"With customer" vs GPS at yard / legal repo tickets out of sync.</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Operational confidence</div>
+          <div class="metric-value">↑</div>
+          <div class="metric-note">Managers rely on this view for repo, storage and legal decisions.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="section-title-row">
+        <div>
+          <div class="section-kicker">Implementation</div>
+          <h2 class="section-title">Data stack & techniques</h2>
+        </div>
+      </div>
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:6px;">
+        A few of the techniques behind the dashboard:
+      </p>
+      <div class="stack-chips">
+        <span class="chip">Power Query for import & cleaning</span>
+        <span class="chip">Historic registry per VIN</span>
+        <span class="chip">Row signatures to detect true changes</span>
+        <span class="chip">DAX measures for latest valid status</span>
+        <span class="chip">GPS freshness rules (&le; 10 days)</span>
+        <span class="chip">Exception-first summary pages</span>
+      </div>
+      <div class="screens-row" style="margin-top:14px;">
+        <div class="screen-card">
+          <img src="https://images.pexels.com/photos/1181467/pexels-photo-1181467.jpeg?auto=compress&cs=tinysrgb&w=1200" alt="Generic table and charts dashboard" />
+          <div class="screen-caption">Placeholder for the main inventory + GPS alignment view.</div>
+        </div>
+        <div class="screen-card">
+          <img src="https://images.pexels.com/photos/669622/pexels-photo-669622.jpeg?auto=compress&cs=tinysrgb&w=1200" alt="Generic map and status view" />
+          <div class="screen-caption">Placeholder for the GPS freshness / last ping & movement page.</div>
+        </div>
+      </div>
+    </section>
+
+    <div class="foot-note">
+      Generic stock images used as placeholders. In the final version, these will be replaced with real Power BI views
+      from the Inventory & GPS Tracking dashboard.
+    </div>
+  </main>
+</body>
+</html>
