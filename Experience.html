@@ -318,7 +318,21 @@
               <a href="index.html">Overview</a>
               <a href="experience.html" class="active">Experience</a>
               <a href="skills.html">Skills</a>
-              <a href="projects.html">Projects</a>
+              <div class="dropdown" style="position:relative;">
+                <a href="projects.html" class="dropbtn">Projects ▾</a>
+                <div class="dropdown-content" style="position:absolute; top:22px; left:0; background:#fff; border:1px solid var(--border-subtle); border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.08); display:none; min-width:200px; padding:8px 0; z-index:50;">
+                  <a href="Project1 fleetanalytics.html" style="display:block; padding:8px 16px; font-size:13px; color:var(--text-main);">Fleet Maintenance Analytics</a>
+                  <a href="Project2 GPS Analytics" style="display:block; padding:8px 16px; font-size:13px; color:var(--text-main);">GPS Tracking Dashboard</a>
+                </div>
+              </div>
+              <script>
+                document.querySelectorAll('.dropdown').forEach(dd => {
+                  const btn = dd.querySelector('.dropbtn');
+                  const menu = dd.querySelector('.dropdown-content');
+                  btn.addEventListener('mouseover',()=> menu.style.display='block');
+                  dd.addEventListener('mouseleave',()=> menu.style.display='none');
+                });
+              </script>
               <a href="contact.html">Contact</a>
             </div>
           </div>
