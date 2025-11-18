@@ -125,6 +125,53 @@
       font-weight: 500;
     }
 
+    .nav-item {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .nav-item > a {
+      padding-right: 14px;
+    }
+
+    .nav-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      margin-top: 6px;
+      min-width: 210px;
+      background: #ffffff;
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
+      display: none;
+      flex-direction: column;
+      padding: 6px 0;
+      z-index: 30;
+    }
+
+    .nav-dropdown a {
+      padding: 6px 14px;
+      font-size: 12px;
+      white-space: nowrap;
+      border-bottom: 1px solid rgba(209, 213, 219, 0.6);
+      border-bottom-style: solid;
+    }
+
+    .nav-dropdown a:last-child {
+      border-bottom: none;
+    }
+
+    .nav-dropdown a:hover {
+      background: var(--accent-soft);
+      color: var(--accent-strong);
+    }
+
+    .nav-item:hover .nav-dropdown {
+      display: flex;
+    }
+
     .nav-cta {
       display: flex;
       align-items: center;
@@ -554,16 +601,22 @@
           </div>
 
           <div class="nav-links">
-            <a href="#top" class="nav-active">Overview</a>
-            <a href="#experience">Experience</a>
-            <a href="#skills">Skills</a>
-            <a href="#projects">Projects</a>
+            <a href="index.html" class="nav-active">Overview</a>
+            <a href="Experience.html">Experience</a>
+            <a href="Skills.html">Skills</a>
+            <div class="nav-item">
+              <a href="Projects.html">Projects ▾</a>
+              <div class="nav-dropdown">
+                <a href="Project1 fleetanalytics.html">Project 1 – Fleet Maintenance Analytics</a>
+                <a href="Project2 GPS Analytics.html">Project 2 – GPS Tracking & Inventory</a>
+              </div>
+            </div>
             <a href="#contact">Contact</a>
           </div>
 
           <div class="nav-cta">
             
-            <a href="#contact" class="btn-primary">
+            <a href="mailto:jreynoso111@gmail.com?subject=Inquiry%20from%20website" class="btn-primary">
               Send email
               <span class="chevron">→</span>
             </a>
@@ -604,7 +657,7 @@
               </div>
 
               <div class="hero-cta-row">
-                <a href="#contact" class="btn-primary">
+                <a href="mailto:jreynoso111@gmail.com?subject=Role%20or%20project%20discussion" class="btn-primary">
                   Discuss a role or project
                   <span class="chevron">→</span>
                 </a>
