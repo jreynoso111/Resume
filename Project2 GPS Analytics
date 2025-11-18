@@ -41,95 +41,137 @@
       color: inherit;
     }
 
-    /* Header (same layout & sizes as Overview) */
+        /* HEADER (from Fleet Maintenance Analytics) */
     header {
-      position: sticky;
-      top: 0;
-      z-index: 20;
-      backdrop-filter: blur(10px);
-      background: rgba(245, 245, 245, 0.92);
-      border-bottom: 1px solid rgba(209, 213, 219, 0.7);
+      background:#ffffff;
+      box-shadow:0 1px 4px rgba(0,0,0,.06);
+      position:sticky;
+      top:0;
+      z-index:20;
+    }
+    .container {
+      max-width:1100px;
+      margin:0 auto;
+      padding:0 20px;
+    }
+    .header-row {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:32px;
+      padding:12px 0;
+    }
+    .header-left {
+      display:flex;
+      align-items:center;
+      gap:16px;
+    }
+    .header-avatar {
+      width:44px;
+      height:44px;
+      border-radius:50%;
+      border:2px solid #d1d5db;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight:600;
+      font-size:15px;
+      color:var(--accent-strong);
+    }
+    .header-title {
+      font-size:20px;
+      font-weight:700;
+      color:var(--accent-strong);
+    }
+    .header-subtitle {
+      font-size:14px;
+      color:var(--text-muted);
+      margin-top:1px;
+    }
+    .header-nav {
+      display:flex;
+      align-items:center;
+      gap:32px;
+      font-size:15px;
+      font-weight:500;
+    }
+    .header-nav a {
+      color:var(--text-muted);
+      text-decoration:none;
+      position:relative;
+      padding-bottom:4px;
+    }
+    .header-nav a:hover {
+      color:var(--accent-strong);
+    }
+    .header-nav a.active {
+      color:var(--accent-strong);
+    }
+    .header-nav a.active::after {
+      content:"";
+      position:absolute;
+      left:0;
+      right:0;
+      bottom:0;
+      height:2px;
+      background:var(--accent-strong);
+      border-radius:999px;
+    }
+    .header-cta {
+      background:#1f4f7b;
+      color:#ffffff;
+      padding:10px 26px;
+      border-radius:28px;
+      font-size:15px;
+      font-weight:600;
+      text-decoration:none;
+      display:flex;
+      align-items:center;
+      gap:8px;
+      white-space:nowrap;
     }
 
-    .nav-shell {
-      max-width: 1120px;
-      margin: 0 auto;
-      padding: 10px 20px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 24px;
+        .page-shell {
+      max-width:1100px;
+      margin:0 auto;
+      padding:20px 20px 40px;
+      display:flex;
+      gap:28px;
+      align-items:flex-start;
     }
-
-    .brand {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
+    .projects-sidebar {
+      width:200px;
+      background:#ffffff;
+      border:1px solid #e5e7eb;
+      border-radius:8px;
+      padding:14px 12px;
+      flex-shrink:0;
+      position:sticky;
+      top:90px;
     }
-
-    .brand-main {
-      font-size: 18px;
-      font-weight: 700;
-      letter-spacing: 0.03em;
-      text-transform: uppercase;
-      color: var(--accent-strong);
+    .projects-sidebar h3 {
+      font-size:14px;
+      font-weight:700;
+      color:#153554;
+      margin-bottom:6px;
     }
-
-    .brand-sub {
-      font-size: 13px;
-      color: var(--text-muted);
+    .projects-sidebar a {
+      display:block;
+      font-size:13px;
+      color:#374151;
+      text-decoration:none;
+      padding:4px 6px;
+      border-radius:4px;
+      margin-bottom:2px;
     }
-
-    .nav-links {
-      display: flex;
-      align-items: center;
-      gap: 18px;
-      font-size: 14px;
+    .projects-sidebar a.active {
+      background:#e0ecf7;
+      color:#153554;
+      font-weight:600;
     }
-
-    .nav-links a {
-      padding: 6px 10px;
-      border-radius: 999px;
-      color: var(--text-muted);
-      transition: background 0.18s ease, color 0.18s ease;
-    }
-
-    .nav-links a:hover {
-      background: var(--accent-soft);
-      color: var(--accent-strong);
-    }
-
-    .nav-links a.active {
-      background: var(--accent-strong);
-      color: #ffffff;
-      box-shadow: 0 8px 20px rgba(21, 53, 84, 0.35);
-    }
-
-    .nav-cta {
-      font-size: 13px;
-      padding: 7px 13px;
-      border-radius: 999px;
-      border: 1px solid rgba(31, 79, 123, 0.22);
-      background: linear-gradient(135deg, #ffffff 0%, #e5edf7 100%);
-      color: var(--accent-strong);
-      font-weight: 500;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
-    }
-
-    .nav-cta span.dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 999px;
-      background: #10b981;
-    }
-
-    .page-shell {
-      max-width: 1120px;
-      margin: 0 auto;
-      padding: 28px 20px 40px;
+    .page-main {
+      flex:1;
+      min-width:0;
     }
 
     /* Hero / Header section (match overview typography) */
@@ -490,10 +532,40 @@
       text-align: right;
     }
 
-    @media (max-width: 900px) {
+        @media (max-width: 900px) {
+      .page-shell {
+        flex-direction: column;
+        gap: 24px;
+      }
+      .projects-sidebar {
+        position: static;
+        width: 100%;
+        max-width: 100%;
+      }
       .hero {
         grid-template-columns: minmax(0, 1fr);
       }
+
+      .hero-visual {
+        order: -1;
+      }
+
+      .layout-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .features-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .metric-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .screens-row {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
 
       .hero-visual {
         order: -1;
@@ -541,25 +613,35 @@
 </head>
 <body>
   <header>
-    <div class="nav-shell">
-      <div class="brand">
-        <div class="brand-main">Juan R. Reynoso</div>
-        <div class="brand-sub">Data, Operations & Fleet Analytics</div>
+  <div class="container">
+    <div class="header-row">
+      <div class="header-left">
+        <div class="header-avatar">JR</div>
+        <div>
+          <div class="header-title">Juan R. Reynoso</div>
+          <div class="header-subtitle">Data, Operations & Fleet Analytics</div>
+        </div>
       </div>
-      <nav class="nav-links">
+      <nav class="header-nav">
         <a href="index.html">Overview</a>
         <a href="experience.html">Experience</a>
-        <a href="skills.html">Skills</a>
         <a href="projects.html" class="active">Projects</a>
       </nav>
-      <a href="mailto:juanradhamesrp@gmail.com" class="nav-cta">
-        <span class="dot"></span>
-        <span>Available for remote roles · NYC based</span>
-      </a>
+      <a href="mailto:juanradhamesrp@gmail.com" class="header-cta">CONTACT</a>
     </div>
-  </header>
+  </div>
+</header>
 
   <main class="page-shell">
+    <aside class="projects-sidebar">
+      <h3>Projects</h3>
+      <a href="fleet-maintenance-analytics.html">Fleet Maintenance Analytics System</a>
+      <a href="inventory-control-dashboard.html">Inventory Control Dashboard</a>
+      <a href="gps-tracking-movement-analysis.html">GPS Tracking & Movement Analysis</a>
+      <a href="repo-risk-monitoring-system.html">Repo & Risk Monitoring System</a>
+    </aside>
+
+    <div class="page-main">
     <section class="hero">
       <div class="hero-copy">
         <div class="hero-label-row">
@@ -741,6 +823,7 @@
       Generic stock images used as placeholders. In the final version, these will be replaced with real Power BI views
       from the Inventory & GPS Tracking dashboard.
     </div>
+      </div>
   </main>
 </body>
 </html>
