@@ -8,15 +8,26 @@
     :root {
       --bg: #f5f5f5;
       --bg-soft: #ffffff;
+      --bg-alt: #f0f2f5;
       --accent: #1f4f7b;
       --accent-soft: #e0ecf7;
       --accent-strong: #153554;
       --text-main: #111827;
       --text-muted: #6b7280;
       --border-subtle: #d1d5db;
+      --chip-bg: #e5e7eb;
+      --card-shadow: 0 18px 45px rgba(15, 23, 42, 0.12);
+      --radius-lg: 18px;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: Inter, sans-serif; background: var(--bg); color: var(--text-main); line-height: 1.6; }
+    body {
+      font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at 0 0, #e0ecf7 0, transparent 55%),
+                  radial-gradient(circle at 100% 100%, #e5e7eb 0, transparent 55%),
+                  var(--bg);
+      color: var(--text-main);
+      line-height: 1.5;
+    }
 
     /* HEADER */
     header {
@@ -153,12 +164,25 @@
     }
 
     /* HERO */
-    .hero { padding: 8px 0 32px; }
+    .hero {
+      padding: 18px 18px 22px;
+      margin-bottom: 20px;
+      background: transparent;
+      box-shadow: none;
+      border: none;
+    }
     .hero h1 { font-size: 42px; font-weight: 700; margin-bottom: 16px; color: var(--accent-strong); }
     .hero p { max-width: 600px; color: var(--text-muted); font-size: 18px; }
 
     /* SECTIONS */
-    section { padding: 16px 0; }
+    section {
+      padding: 16px 18px 18px;
+      margin-bottom: 18px;
+      background: rgba(255,255,255,0.96);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--card-shadow);
+      border: 1px solid rgba(209, 213, 219, 0.9);
+    }
     h2 { font-size: 28px; font-weight: 700; margin-bottom: 20px; color: var(--accent-strong); }
     .text-muted { color: var(--text-muted); }
 
@@ -175,10 +199,19 @@
     }
 
     .card {
-      background: #fff;
-      padding: 18px;
-      border-radius: 10px;
-      border: 1px solid var(--border-subtle);
+      background: #ffffff;
+      padding: 16px;
+      border-radius: 14px;
+      border: 1px solid rgba(209, 213, 219, 0.9);
+      box-shadow: 0 12px 35px rgba(15, 23, 42, 0.12);
+      font-size: 13px;
+    }
+    .card h3 {
+      margin-top: 10px;
+      margin-bottom: 4px;
+      font-size:14px;
+      font-weight:600;
+      color: var(--accent-strong);
     }
     .card h3 {
       margin-top: 12px;
