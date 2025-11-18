@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Inventory Control Dashboard | Juan R. Reynoso</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #f5f5f5;
+      --bg-soft: #ffffff;
+      --bg-alt: #f0f2f5;
+      --accent: #1f4f7b;
+      --accent-soft: #e0ecf7;
+      --accent-strong: #153554;
+      --text-main: #111827;
+      --text-muted: #6b7280;
+      --border-subtle: #d1d5db;
+      --chip-bg: #e5e7eb;
+    }
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:"Inter",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text-main);line-height:1.5;}
+    a{text-decoration:none;color:inherit;}
+    img{max-width:100%;display:block;}
+    .container{max-width:1100px;margin:0 auto;padding:0 1.5rem;}
+    header{background:#fff;box-shadow:0 1px 4px rgba(15,23,42,.08);position:sticky;top:0;z-index:20;}
+    .header-row{display:flex;align-items:center;justify-content:space-between;padding:.9rem 0;gap:1.5rem;}
+    .header-left{display:flex;align-items:center;gap:.9rem;}
+    .header-avatar{width:2.3rem;height:2.3rem;border-radius:999px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:.95rem;}
+    .header-title{font-size:1rem;font-weight:600;color:#020617;}
+    .header-subtitle{font-size:.82rem;color:var(--text-muted);}
+    .header-nav{display:flex;align-items:center;gap:1rem;font-size:.9rem;}
+    .header-nav a{padding:.3rem .2rem;border-bottom:2px solid transparent;color:#4b5563;}
+    .header-nav a.active{border-color:var(--accent);color:var(--accent-strong);font-weight:600;}
+    .header-cta{font-size:.86rem;font-weight:500;padding:.45rem .9rem;border-radius:999px;background:var(--accent);color:#fff;box-shadow:0 1px 3px rgba(15,23,42,.18);white-space:nowrap;}
+    .page-shell{max-width:1100px;margin:1.8rem auto 3rem;padding:0 1.5rem;display:grid;grid-template-columns:250px minmax(0,1fr);gap:2rem;align-items:flex-start;}
+    .projects-sidebar{background:var(--bg-soft);border-radius:.9rem;border:1px solid var(--border-subtle);padding:1.1rem 1rem;position:sticky;top:5.4rem;}
+    .projects-sidebar h3{font-size:.9rem;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin-bottom:.6rem;}
+    .projects-sidebar a{display:block;font-size:.9rem;padding:.35rem .55rem;border-radius:.45rem;color:var(--text-muted);transition:all .15s ease;}
+    .projects-sidebar a + a{margin-top:.15rem;}
+    .projects-sidebar a:hover{background:var(--bg-alt);color:#111827;transform:translateX(1px);}
+    .projects-sidebar a.active{background:var(--accent-soft);color:var(--accent-strong);font-weight:600;}
+    .hero{margin-bottom:2rem;padding-bottom:1.5rem;border-bottom:1px solid var(--border-subtle);}
+    .hero h1{font-size:1.6rem;line-height:1.2;font-weight:700;color:#020617;margin-bottom:.5rem;}
+    .hero p{font-size:.98rem;color:var(--text-muted);max-width:40rem;}
+    section{margin-bottom:2rem;}
+    section h2{font-size:1.12rem;font-weight:600;margin-bottom:.9rem;color:#020617;}
+    .text-muted{color:var(--text-muted);font-size:.94rem;}
+    .grid-2{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:1.5rem;}
+    .grid-3{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1.4rem;}
+    .card{background:var(--bg-soft);border-radius:.9rem;border:1px solid var(--border-subtle);padding:1rem;display:flex;flex-direction:column;gap:.8rem;}
+    .card h3{font-size:.98rem;font-weight:600;color:#111827;}
+    .img-placeholder{width:100%;height:220px;border-radius:.8rem;background-size:cover;background-position:center;border:1px solid var(--border-subtle);} 
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container header-row">
+      <div class="header-left">
+        <div class="header-avatar">JR</div>
+        <div>
+          <div class="header-title">Juan R. Reynoso</div>
+          <div class="header-subtitle">Data, Operations & Fleet Analytics</div>
+        </div>
+      </div>
+
+      <nav class="header-nav">
+        <a href="index.html">Overview</a>
+        <a href="experience.html">Experience</a>
+        <a href="projects.html" class="active">Projects</a>
+      </nav>
+
+      <a href="mailto:joe@example.com" class="header-cta">Send email →</a>
+    </div>
+  </header>
+
+  <div class="page-shell">
+    <aside class="projects-sidebar">
+      <h3>Projects</h3>
+      <a href="fleet_maintenance_analytics.html">Fleet Maintenance Analytics System</a>
+      
+      <a href="inventory_control_dashboard.html" class="active">Inventory Control Dashboard</a>
+      <a href="gps_movement_analysis.html">GPS Tracking &amp; Movement Analysis</a>
+      <a href="repo_risk_monitoring.html">Repo &amp; Risk Monitoring System</a>
+    </aside>
+
+    <main class="page-main">
+      <section class="hero">
+        <h1>Inventory Control Dashboard</h1>
+        <p>Centralized dashboard tracking inventory availability, document status, yard distribution, turnover, and operational blocks to give sales, operations and management a single source of truth.</p>
+      </section>
+
+      <section>
+        <h2>Project Overview</h2>
+        <div class="grid-2">
+          <p class="text-muted">This dashboard unifies inventory data from NetSuite, yard sheets, title records, inspections, and deal pipelines. It eliminates conflicting spreadsheets and manual reconciliations by providing real-time visibility of availability, blocks, aging, and documentation issues.</p>
+          <div class="img-placeholder" style="background-image:url('https://source.unsplash.com/800x600/?warehouse,inventory');"></div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Main Features</h2>
+        <ul class="text-muted">
+          <li>Real‑time inventory availability synced across sales, operations, and funding.</li>
+          <li>Status logic eliminating duplicates and incorrect "available" units.</li>
+          <li>Automated blocks for missing titles, inspections, paperwork, or deal conflicts.</li>
+          <li>Drill‑through pages for VIN‑level documentation and history.</li>
+          <li>Filters by yard, entity, status, model year, price range, and documentation status.</li>
+          <li>Aging analysis to surface slow‑moving units and financial exposure.</li>
+          <li>Export‑ready structured tables for sales and compliance teams.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Sample Screenshots</h2>
+        <div class="grid-2">
+          <div class="img-placeholder" style="height:320px;background-image:url('https://source.unsplash.com/900x700/?powerbi,analytics');"></div>
+          <div class="img-placeholder" style="height:320px;background-image:url('https://source.unsplash.com/900x700/?trucks,fleet');"></div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Impact</h2>
+        <p class="text-muted">
+          This dashboard removed conflicting spreadsheets and manual inventory checks. It exposed hidden blocks,
+          corrected dozens of incorrect availability statuses, and reduced sales delays caused by missing titles,
+          expired inspections, or units stuck off‑yard. Managers gained accurate yard distribution, real turnover rates,
+          and visibility over financial bottlenecks. Operations now make decisions with validated, clean, real‑time data.
+        </p>
+      </section>
+
+      <section>
+        <h2>Key Components</h2>
+        <div class="grid-3">
+          <div class="card">
+            <div class="img-placeholder" style="background-image:url('https://source.unsplash.com/800x600/?dashboard,analytics');"></div>
+            <h3>Status Matrix</h3>
+            <p class="text-muted">Defines unit status (available, sold, in deal, blocked, missing docs, in transit) using automated business rules.</p>
+          </div>
+
+          <div class="card">
+            <div class="img-placeholder" style="background-image:url('https://source.unsplash.com/800x600/?paperwork,documents');"></div>
+            <h3>Title & Documentation Tracker</h3>
+            <p class="text-muted">Identifies missing titles, inspections, registrations, or compliance paperwork and tracks aging.</p>
+          </div>
+
+          <div class="card">
+            <div class="img-placeholder" style="background-image:url('https://source.unsplash.com/800x600/?yard,logistics');"></div>
+            <h3>Yard & Location View</h3>
+            <p class="text-muted">Shows distribution of units across yards, highlighting overcrowding, bottlenecks and transit delays.</p>
