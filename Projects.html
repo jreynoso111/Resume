@@ -369,5 +369,33 @@
 
     </div>
   </section>
+<script>
+const menu = document.querySelector('.projects-menu');
+const dropdown = document.querySelector('.projects-dropdown');
+let hideTimer;
+menu.addEventListener('mouseenter', () => {
+  clearTimeout(hideTimer);
+  dropdown.style.opacity = '1';
+  dropdown.style.visibility = 'visible';
+  dropdown.style.transform = 'translateY(0)';
+});
+menu.addEventListener('mouseleave', () => {
+  hideTimer = setTimeout(() => {
+    dropdown.style.opacity = '0';
+    dropdown.style.visibility = 'hidden';
+    dropdown.style.transform = 'translateY(6px)';
+  }, 1000);
+});
+dropdown.addEventListener('mouseenter', () => {
+  clearTimeout(hideTimer);
+});
+dropdown.addEventListener('mouseleave', () => {
+  hideTimer = setTimeout(() => {
+    dropdown.style.opacity = '0';
+    dropdown.style.visibility = 'hidden';
+    dropdown.style.transform = 'translateY(6px)';
+  }, 1000);
+});
+</script>
 </body>
 </html>
