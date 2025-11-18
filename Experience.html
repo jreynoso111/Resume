@@ -103,6 +103,11 @@
       color: var(--text-muted);
     }
 
+    .nav-main {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+    }
     .nav-links {
       display: flex;
       align-items: center;
@@ -135,12 +140,6 @@
       background: var(--accent-strong);
     }
 
-    .nav-main {
-      flex: 1;
-      display: flex;
-      justify-content: center;
-    }
-
     .nav-cta {
       padding: 10px 22px;
       border-radius: 999px;
@@ -156,6 +155,32 @@
     }
     .nav-cta:hover {
       background: #153554;
+    }
+
+    .dropdown {
+      position: relative;
+    }
+    .dropdown-content {
+      position: absolute;
+      top: 22px;
+      left: 0;
+      background: #ffffff;
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      display: none;
+      min-width: 220px;
+      padding: 8px 0;
+      z-index: 50;
+    }
+    .dropdown-content a {
+      display: block;
+      padding: 8px 16px;
+      font-size: 13px;
+      color: var(--text-main);
+    }
+    .dropdown-content a:hover {
+      background: #f3f4f6;
     }
 
     /* EXPERIENCE PAGE LAYOUT */
@@ -175,7 +200,12 @@
       margin-bottom: 4px;
       color: var(--accent-strong);
     }
-    .page-subtitle { font-size: 14px; color: var(--text-main); max-width: 560px; line-height: 1.65; max-width: 560px;
+    .page-subtitle {
+      font-size: 14px;
+      color: var(--text-main);
+      max-width: 630px;
+      line-height: 1.65;
+      text-align: justify;
     }
 
     .experience-layout {
@@ -316,24 +346,15 @@
           <div class="nav-main">
             <div class="nav-links">
               <a href="index.html">Overview</a>
-              <a href="experience.html" class="active">Experience</a>
-              <a href="skills.html">Skills</a>
-              <div class="dropdown" style="position:relative;">
-                <a href="projects.html" class="dropbtn">Projects ▾</a>
-                <div class="dropdown-content" style="position:absolute; top:22px; left:0; background:#fff; border:1px solid var(--border-subtle); border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.08); display:none; min-width:200px; padding:8px 0; z-index:50;">
-                  <a href="Project1 fleetanalytics.html" style="display:block; padding:8px 16px; font-size:13px; color:var(--text-main);">Fleet Maintenance Analytics</a>
-                  <a href="Project2 GPS Analytics" style="display:block; padding:8px 16px; font-size:13px; color:var(--text-main);">GPS Tracking Dashboard</a>
+              <a href="Experience.html" class="active">Experience</a>
+              <a href="Skills.html">Skills</a>
+              <div class="dropdown">
+                <a href="Projects.html" class="dropbtn">Projects ▾</a>
+                <div class="dropdown-content">
+                  <a href="Project1 fleetanalytics.html">Fleet Maintenance Analytics</a>
+                  <a href="Project2 GPS Analytics">GPS Tracking Dashboard</a>
                 </div>
               </div>
-              <script>
-                document.querySelectorAll('.dropdown').forEach(dd => {
-                  const btn = dd.querySelector('.dropbtn');
-                  const menu = dd.querySelector('.dropdown-content');
-                  btn.addEventListener('mouseover',()=> menu.style.display='block');
-                  dd.addEventListener('mouseleave',()=> menu.style.display='none');
-                });
-              </script>
-              <a href="contact.html">Contact</a>
             </div>
           </div>
           <a href="mailto:" class="nav-cta">Send email <span aria-hidden="true">→</span></a>
@@ -345,16 +366,17 @@
       <div class="shell experience-shell">
         <section class="page-intro">
           <h1 class="page-title">Experience</h1>
-          <p class="page-subtitle" style="text-align:justify;">
+          <p class="page-subtitle">
             I focus on transforming complex operational data into practical insights that support fleet, maintenance, and inventory decisions. My work is grounded in clarity, structure, and accuracy. I communicate results directly and professionally, in both Spanish and English.
           </p>
-                  <p class="page-subtitle" style="text-align:justify;" style="margin-top:10px; max-width:620px; font-size:13px; color:var(--text-main);">
-            I built my career through hands‑on work, not theory. I entered the Metro de Santo Domingo at a young age and learned by dealing directly with technical teams, equipment failures, service demands, and day‑to‑day operational pressure. Over time, I moved from basic technical tasks to leading reporting, quality control, and KPI analysis for critical transportation systems. This shaped my approach today: understand the operation first, then build data models that reflect reality—not assumptions.
+          <p class="page-subtitle" style="margin-top:10px;">
+            I built my career through hands-on work, not theory. I entered the Metro de Santo Domingo at a young age and learned by dealing directly with technical teams, equipment failures, service demands, and day-to-day operational pressure. Over time, I moved from basic technical tasks to leading reporting, quality control, and KPI analysis for critical transportation systems. This shaped my approach today: understand the operation first, then build data models that reflect reality—not assumptions.
           </p>
-        <p class="page-subtitle" style="text-align:justify;" style="margin-top:14px; max-width:620px; font-size:13px; color:var(--text-main);">
+          <p class="page-subtitle" style="margin-top:14px;">
             My academic foundation combines technical, analytical, and operational training. I completed all coursework for a Technologist degree in Food Science at the Universidad Autónoma de Santo Domingo (UASD) and strengthened my analytical profile with Data Analysis and Data Visualization certifications from IBM and McGuire University, completed through accredited online learning platforms. I expanded into Big Data through the Railway Train Academy and earned an Internal Auditor certification under ISO 9001:2015 through INFOTEP. I also developed strong technical knowledge across metro subsystems—including SCADA, telephony, public address, TETRA radio, intercom, CCTV, and ticketing. This combination of field experience and structured training allows me to understand systems deeply and solve operational problems with precision.
           </p>
         </section>
+
         <section class="experience-layout">
           <div>
             <div class="experience-section-title">Professional Experience</div>
@@ -409,7 +431,7 @@
                 <div class="exp-details">
                   <ul>
                     <li>Managed maintenance and quality control for automated fare collection systems.</li>
-                    <li>Led the ticketing team directly and performed quality‑control oversight (not operations) for SCADA, CCTV, access control, TETRA radio, telephony, intercom, and other metro subsystems.</li>
+                    <li>Led the ticketing team directly and performed quality-control oversight (not operations) for SCADA, CCTV, access control, TETRA radio, telephony, intercom, and other metro subsystems.</li>
                     <li>Calculated KPIs and economic impact of maintenance plans based on contractual SLAs.</li>
                     <li>Implemented structured reporting to reduce downtime and improve response times.</li>
                   </ul>
@@ -441,14 +463,14 @@
                 </div>
               </article>
 
-            </div></div>
+            </div>
+          </div>
 
           <aside>
-            <div class="aside-image" style="width:100%; border-radius: var(--radius-md); overflow:hidden; margin-bottom:22px; margin-top:-530px; box-shadow:0 8px 18px rgba(15,23,42,0.06);">
+            <div class="aside-image" style="width:100%; border-radius: var(--radius-md); overflow:hidden; margin-bottom:22px; margin-top:-450px; box-shadow:0 8px 18px rgba(15,23,42,0.06);">
               <img src="https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=800&q=80" alt="Professional Illustration" style="width:100%; height:520px; object-fit:cover;" />
             </div>
-            
-            
+
             <div class="summary-card">
               <h3>Key Strengths</h3>
               <ul>
@@ -487,5 +509,14 @@
       </div>
     </footer>
   </div>
+
+  <script>
+    document.querySelectorAll('.dropdown').forEach(dd => {
+      const btn = dd.querySelector('.dropbtn');
+      const menu = dd.querySelector('.dropdown-content');
+      btn.addEventListener('mouseover', () => menu.style.display = 'block');
+      dd.addEventListener('mouseleave', () => menu.style.display = 'none');
+    });
+  </script>
 </body>
 </html>
