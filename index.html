@@ -125,71 +125,10 @@
       font-weight: 500;
     }
 
-    .nav-item {
-      position: relative;
-      display: flex;
-      align-items: center;
-    }
-
-    .nav-item > a {
-      padding-right: 14px;
-    }
-
-    .nav-dropdown {
-      position: absolute;
-      top: 100%;
-      left: 0;
-      margin-top: 6px;
-      min-width: 210px;
-      background: #ffffff;
-      border: 1px solid var(--border-subtle);
-      border-radius: 8px;
-      box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
-      display: none;
-      flex-direction: column;
-      padding: 6px 0;
-      z-index: 30;
-    }
-
-    .nav-dropdown a {
-      padding: 6px 14px;
-      font-size: 12px;
-      white-space: nowrap;
-      border-bottom: 1px solid rgba(209, 213, 219, 0.6);
-      border-bottom-style: solid;
-    }
-
-    .nav-dropdown a:last-child {
-      border-bottom: none;
-    }
-
-    .nav-dropdown a:hover {
-      background: var(--accent-soft);
-      color: var(--accent-strong);
-    }
-
-    .nav-item:hover .nav-dropdown {
-      display: flex;
-    }
-
     .nav-cta {
       display: flex;
       align-items: center;
       gap: 8px;
-    }
-    .btn-ghost {
-      padding: 6px 12px;
-      border-radius: var(--radius-pill);
-      border: 1px solid var(--border-subtle);
-      font-size: 12px;
-      color: var(--accent-strong);
-      background: #ffffff;
-      cursor: pointer;
-      transition: background 0.15s ease, border-color 0.15s ease;
-    }
-    .btn-ghost:hover {
-      background: var(--accent-soft);
-      border-color: var(--accent);
     }
 
     .btn-primary {
@@ -212,6 +151,44 @@
     .btn-primary:hover {
       background: var(--accent-strong);
       border-color: var(--accent-strong);
+    }
+
+    /* DROPDOWN PROJECTS */
+    .nav-item {
+      position: relative;
+    }
+
+    .nav-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      margin-top: 6px;
+      min-width: 220px;
+      background: #ffffff;
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
+      display: flex;
+      flex-direction: column;
+      padding: 6px 0;
+      z-index: 30;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s ease;
+    }
+
+    .nav-dropdown a {
+      padding: 6px 14px;
+      font-size: 12px;
+      white-space: nowrap;
+      border-bottom: 1px solid rgba(209, 213, 219, 0.6);
+    }
+    .nav-dropdown a:last-child { border-bottom: none; }
+    .nav-dropdown a:hover { background: var(--accent-soft); color: var(--accent-strong); }
+
+    .nav-dropdown.show {
+      opacity: 1;
+      pointer-events: auto;
     }
 
     /* HERO */
@@ -328,10 +305,6 @@
       position: relative;
     }
 
-    .hero-glow {
-      display: none;
-    }
-
     .hero-card {
       background: var(--bg-soft);
       border-radius: 14px;
@@ -340,6 +313,17 @@
       padding: 14px;
       position: relative;
       overflow: hidden;
+    }
+
+    .hero-chip {
+      font-size: 10px;
+      padding: 4px 8px;
+      border-radius: var(--radius-pill);
+      background: #ffffff;
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
     }
 
     .hero-card-header {
@@ -374,17 +358,6 @@
     .profile-role {
       font-size: 11px;
       color: var(--text-muted);
-    }
-
-    .hero-chip {
-      font-size: 10px;
-      padding: 4px 8px;
-      border-radius: var(--radius-pill);
-      background: #ffffff;
-      border: 1px solid var(--border-subtle);
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
     }
 
     .hero-img-frame {
@@ -604,19 +577,17 @@
             <a href="index.html" class="nav-active">Overview</a>
             <a href="Experience.html">Experience</a>
             <a href="Skills.html">Skills</a>
-            <div class="nav-item">
+            <div class="nav-item nav-item-projects">
               <a href="Projects.html">Projects ▾</a>
-              <div class="nav-dropdown">
+              <div class="nav-dropdown" id="projects-dropdown">
                 <a href="Project1 fleetanalytics.html">Project 1 – Fleet Maintenance Analytics</a>
                 <a href="Project2 GPS Analytics.html">Project 2 – GPS Tracking & Inventory</a>
               </div>
             </div>
-            <a href="#contact">Contact</a>
           </div>
 
           <div class="nav-cta">
-            
-            <a href="mailto:jreynoso111@gmail.com?subject=Inquiry%20from%20website" class="btn-primary">
+            <a href="mailto:jreynoso111@gmail.com" class="btn-primary">
               Send email
               <span class="chevron">→</span>
             </a>
@@ -634,7 +605,8 @@
               <div class="hero-label-row">
                 <div class="hero-label">
                   <span class="hero-label-dot"></span>
-                  Available for remote roles · Located in NYC</div>
+                  Available for remote roles · Located in NYC
+                </div>
                 <div class="hero-tagline-chip">Data analysis · reporting · inventory management</div>
               </div>
 
@@ -657,34 +629,31 @@
               </div>
 
               <div class="hero-cta-row">
-                <a href="mailto:jreynoso111@gmail.com?subject=Role%20or%20project%20discussion" class="btn-primary">
+                <a href="mailto:jreynoso111@gmail.com" class="btn-primary">
                   Discuss a role or project
                   <span class="chevron">→</span>
                 </a>
-                <a href="#experience" class="btn-ghost">Skip to track record</a>
               </div>
 
               <div class="hero-meta-row">
                 <div class="hero-meta-item">
                   <div class="meta-dot">✔</div>
-                  <div>Hands-on experience with metro fare systems & truck fleets</div>
+                  <div>Hands-on experience with metro systems and truck fleets.</div>
                 </div>
                 <div class="hero-meta-item">
                   <div class="meta-dot">★</div>
-                  <div>Strong analytical and problem‑solving mindset</div>
+                  <div>Strong analytical and problem‑solving mindset.</div>
                 </div>
               </div>
             </div>
 
             <!-- RIGHT -->
             <div class="hero-card-wrap">
-              <div class="hero-glow"></div>
-              <article class="hero-card" style="position:relative;" aria-label="Portfolio snapshot">
+              <article class="hero-card" aria-label="Portfolio snapshot">
                 <div class="hero-chip" style="position:absolute; top:10px; right:10px;">Portfolio overview</div>
                 <header class="hero-card-header">
                   <div class="profile-chunk">
                     <div class="profile-avatar">
-                      <!-- GENERIC AVATAR IMAGE FROM INTERNET -->
                       <img src="https://images.pexels.com/photos/3184613/pexels-photo-3184613.jpeg?auto=compress&cs=tinysrgb&w=600" alt="Professional at workstation" />
                     </div>
                     <div class="profile-meta">
@@ -692,11 +661,9 @@
                       <div class="profile-role">Data & Operations Analyst</div>
                     </div>
                   </div>
-                  
                 </header>
 
                 <div class="hero-img-frame">
-                  <!-- GENERIC DASHBOARD IMAGE FROM INTERNET -->
                   <img src="https://images.pexels.com/photos/669610/pexels-photo-669610.jpeg?auto=compress&cs=tinysrgb&w=1200" alt="Data dashboard on multiple screens" />
                 </div>
 
@@ -711,7 +678,7 @@
                   </div>
                   <div class="hero-stat">
                     <div class="hero-stat-label">Tools</div>
-                    <div class="hero-stat-value">Power BI · Excel</div>
+                    <div class="hero-stat-value">Power BI · Excel · Python</div>
                   </div>
                 </footer>
               </article>
@@ -727,9 +694,9 @@
               <div class="section-label">Summary</div>
               <h2 class="section-title">Professional profile</h2>
               <p class="section-sub">
-                My background combines hands‑on maintenance management, fraud detection, and data analytics. That means I
-                understand both the spreadsheets and the reality in the yard, workshop or station — and I build reporting
-                with that context in mind.
+                My background combines hands‑on maintenance management, fraud detection, and data analytics. I understand
+                both the spreadsheets and the reality in the yard, workshop or station, and I build reporting with that
+                operational context in mind.
               </p>
 
               <div class="highlight-list">
@@ -738,8 +705,8 @@
                   <div class="highlight-body">
                     <div class="highlight-title">Maintenance & downtime visibility</div>
                     <div class="highlight-text">
-                      Track failures, work orders and recurring issues to show what is really driving downtime and
-                      cost — not just what the system reports by default.
+                      Track failures, work orders and recurring issues to show what is really driving downtime and costs,
+                      not just what the default system reports.
                     </div>
                   </div>
                 </div>
@@ -750,7 +717,7 @@
                     <div class="highlight-title">Inventory & parts control</div>
                     <div class="highlight-text">
                       Build clear views of stock levels, price changes and consumption patterns so you know where money is
-                      stuck in shelves and where shortages will block operations.
+                      tied up in shelves and where shortages will block operations.
                     </div>
                   </div>
                 </div>
@@ -760,8 +727,8 @@
                   <div class="highlight-body">
                     <div class="highlight-title">Reporting that non‑analysts can use</div>
                     <div class="highlight-text">
-                      Design dashboards and trackers that operations managers, mechanics and finance can actually read and
-                      use to make decisions — without a manual.
+                      Design dashboards and trackers that operations managers, mechanics and finance can read and use to
+                      make decisions without needing a manual.
                     </div>
                   </div>
                 </div>
@@ -769,24 +736,27 @@
             </div>
 
             <div>
-              <div class="mini-grid" id="projects">
+              <div class="mini-grid">
                 <article class="mini-card">
                   <div class="mini-label">Recent work</div>
                   <div class="mini-main">Fleet maintenance & GPS tracking (M&T Equipment Funding)</div>
                   <div class="mini-meta">
-                    Consolidating vehicle, GPS and maintenance data into a single consistent view to reduce blind spots
-                    on active units, repossessions and at‑risk assets.
+                    Consolidating vehicle, GPS and maintenance data into a consistent view to reduce blind spots on
+                    active units, repossessions and at‑risk assets.
                   </div>
                 </article>
 
                 <article class="mini-card">
                   <div class="mini-label">Previous experience</div>
-                  <div class="mini-main">Metro system maintenance management</div>
+                  <div class="mini-main">Metro of Santo Domingo – Maintenance quality control</div>
                   <div class="mini-meta">
-                    Managed maintenance reporting and quality control for the Metro of Santo Domingo’s maintenance department, including KPI calculation and economic impact analysis based on contractual requirements.</div>
+                    Managed maintenance reporting and quality control for the Metro of Santo Domingo’s maintenance
+                    department, including KPI calculation and economic impact analysis based on contractual
+                    requirements.
+                  </div>
                 </article>
 
-                <article class="mini-card" id="skills">
+                <article class="mini-card">
                   <div class="mini-label">Core tools</div>
                   <div class="skills-strip">
                     <span class="skill-chip">Power BI (DAX & Power Query)</span>
@@ -800,8 +770,8 @@
                   <div class="mini-label">Contact</div>
                   <div class="mini-main">Open to roles & consulting</div>
                   <div class="mini-meta">
-                    Based in New York (Queens). Available for full‑time positions, hybrid/remote roles and concrete
-                    analysis projects. Use this site to review my experience, and reach out to discuss how I can help.
+                    Based in New York (Queens). Available for full‑time positions, hybrid/remote roles and specific
+                    analysis projects. Use the email links on this page to reach out directly.
                   </div>
                 </article>
               </div>
@@ -817,7 +787,6 @@
           <div>© <span id="year"></span> Juan R. Reynoso. All rights reserved.</div>
           <div class="footer-links">
             <a href="#top">Back to top</a>
-            <a href="#contact">Contact</a>
           </div>
         </div>
       </div>
@@ -827,6 +796,26 @@
   <script>
     // Set current year
     document.getElementById("year").textContent = new Date().getFullYear();
+
+    // Projects dropdown with 1s delay on mouse leave
+    (function () {
+      var navItem = document.querySelector('.nav-item-projects');
+      var dropdown = document.getElementById('projects-dropdown');
+      if (!navItem || !dropdown) return;
+
+      var hideTimeout;
+
+      navItem.addEventListener('mouseenter', function () {
+        clearTimeout(hideTimeout);
+        dropdown.classList.add('show');
+      });
+
+      navItem.addEventListener('mouseleave', function () {
+        hideTimeout = setTimeout(function () {
+          dropdown.classList.remove('show');
+        }, 1000); // 1 second delay
+      });
+    })();
   </script>
 </body>
 </html>
