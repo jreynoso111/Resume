@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>GPS Tracking & Movement Analysis | Juan R. Reynoso</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #f5f5f5;
+      --bg-soft: #ffffff;
+      --bg-alt: #f0f2f5;
+      --accent: #1f4f7b;
+      --accent-soft: #e0ecf7;
+      --accent-strong: #153554;
+      --text-main: #111827;
+      --text-muted: #6b7280;
+      --border-subtle: #d1d5db;
+      --chip-bg: #e5e7eb;
+      --card-shadow: 0 18px 45px rgba(15, 23, 42, 0.12);
+      --radius-lg: 18px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at 0 0, #e0ecf7 0, transparent 55%),
+                  radial-gradient(circle at 100% 100%, #e5e7eb 0, transparent 55%),
+                  var(--bg);
+      color: var(--text-main);
+      line-height: 1.5;
+    }
+
+    /* HEADER */
+    header {
+      background:#ffffff;
+      box-shadow:0 1px 4px rgba(0,0,0,.06);
+      position:sticky;
+      top:0;
+      z-index:20;
+    }
+    .container {
+      max-width:1100px;
+      margin:0 auto;
+      padding:0 20px;
+    }
+    .header-row {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:32px;
+      padding:12px 0;
+    }
+    .header-left {
+      display:flex;
+      align-items:center;
+      gap:16px;
+    }
+    .header-avatar {
+      width:44px;
+      height:44px;
+      border-radius:50%;
+      border:2px solid #d1d5db;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight:600;
+      font-size:15px;
+      color:var(--accent-strong);
+    }
+    .header-title {
+      font-size:20px;
+      font-weight:700;
+      color:var(--accent-strong);
+    }
+    .header-subtitle {
+      font-size:14px;
+      color:var(--text-muted);
+      margin-top:1px;
+    }
+    .header-nav {
+      display:flex;
+      align-items:center;
+      gap:32px;
+      font-size:15px;
+      font-weight:500;
+    }
+    .header-nav a {
+      color:var(--text-muted);
+      text-decoration:none;
+      position:relative;
+      padding-bottom:4px;
+    }
+    .header-nav a:hover {
+      color:var(--accent-strong);
+    }
+    .header-nav a.active {
+      color:var(--accent-strong);
+    }
+    .header-nav a.active::after {
+      content:"";
+      position:absolute;
+      left:0;
+      right:0;
+      bottom:0;
+      height:2px;
+      background:var(--accent-strong);
+      border-radius:999px;
+    }
+    .header-cta {
+      background:#1f4f7b;
+      color:#ffffff;
+      padding:10px 26px;
+      border-radius:28px;
+      font-size:15px;
+      font-weight:600;
+      text-decoration:none;
+      display:flex;
+      align-items:center;
+      gap:8px;
+      white-space:nowrap;
+    }
+
+    /* LAYOUT */
+    .page-shell {
+      max-width:1100px;
+      margin:0 auto;
+      padding:20px 20px 40px;
+      display:flex;
+      gap:28px;
+      align-items:flex-start;
+    }
+    .projects-sidebar {
+      width:200px;
+      background:#ffffff;
+      border:1px solid #e5e7eb;
+      border-radius:8px;
+      padding:14px 12px;
+      flex-shrink:0;
+      position:sticky;
+      top:90px;
+    }
+    .projects-sidebar h3 {
+      font-size:14px;
+      font-weight:700;
+      color:#153554;
+      margin-bottom:6px;
+    }
+    .projects-sidebar a {
+      display:block;
+      font-size:13px;
+      color:#374151;
+      text-decoration:none;
+      padding:4px 6px;
+      border-radius:4px;
+      margin-bottom:2px;
+    }
+    .projects-sidebar a.active {
+      background:#e0ecf7;
+      color:#153554;
+      font-weight:600;
+    }
+    .page-main {
+      flex:1;
+      min-width:0;
+    }
+
+    /* HERO */
+    .hero {
+      padding: 18px 18px 22px;
+      margin-bottom: 20px;
+      background: transparent;
+      box-shadow: none;
+      border: none;
+    }
+    .hero h1 { font-size: 42px; font-weight: 700; margin-bottom: 16px; color: var(--accent-strong); }
+    .hero p { max-width: 600px; color: var(--text-muted); font-size: 18px; }
+
+    /* SECTIONS */
+    section {
+      padding: 16px 18px 18px;
+      margin-bottom: 18px;
+      background: rgba(255,255,255,0.96);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--card-shadow);
+      border: 1px solid rgba(209, 213, 219, 0.9);
+    }
+    h2 { font-size: 28px; font-weight: 700; margin-bottom: 20px; color: var(--accent-strong); }
+    .text-muted { color: var(--text-muted); }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 26px; }
+
+    .img-placeholder {
+      width: 100%;
+      height: 260px;
+      border-radius: 8px;
+      background: #d9d9d9;
+      background-size: cover;
+      background-position: center;
+    }
+
+    .card {
+      background: #ffffff;
+      padding: 16px;
+      border-radius: 14px;
+      border: 1px solid rgba(209, 213, 219, 0.9);
+      box-shadow: 0 12px 35px rgba(15, 23, 42, 0.12);
+      font-size: 13px;
+    }
+    .card h3 {
+      margin-top: 12px;
+      margin-bottom: 6px;
+      font-size:16px;
+      font-weight:600;
+      color: var(--accent-strong);
+    }
+
+    ul { margin-left: 20px; }
+    @media (max-width: 900px) {
+      .page-shell {
+        flex-direction: column;
+        gap: 24px;
+      }
+      .projects-sidebar {
+        position: static;
+        width: 100%;
+        max-width: 100%;
+      }
+      .page-main {
+        width: 100%;
+      }
+      .grid-2 {
+        grid-template-columns: 1fr;
+      }
+      .grid-3 {
+        grid-template-columns: 1fr;
+      }
+      .hero h1 {
+        font-size: 32px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="container header-row">
+    <div class="header-left">
+      <div class="header-avatar">JR</div>
+      <div>
+        <div class="header-title">Juan R. Reynoso</div>
+        <div class="header-subtitle">Data, Operations & Fleet Analytics</div>
+      </div>
+    </div>
+
+    <nav class="header-nav">
+      <a href="index.html">Overview</a>
+      <a href="experience.html">Experience</a>
+      <a href="projects.html" class="active">Projects</a>
+    </nav>
+
+    <a href="mailto:joe@example.com" class="header-cta">Send email →</a>
+  </div>
+</header>
+
+<div class="page-shell">
+  <aside class="projects-sidebar">
+    <h3>Projects</h3>
+    <a href="fleet_maintenance_analytics.html">Fleet Maintenance Analytics System</a>
+    <a href="inventory_control_dashboard.html">Inventory Control Dashboard</a>
+    <a href="gps_movement_analysis.html" class="active">GPS Tracking &amp; Movement Analysis</a>
+    <a href="repo_risk_monitoring.html">Repo &amp; Risk Monitoring System</a>
+  </aside>
+
+  <main class="page-main">
+    <section class="hero">
+      <h1>GPS Tracking &amp; Movement Analysis</h1>
+      <p>A project that turns raw GPS pings from financed trucks and trailers into clear movement stories: where units are, how they move, when they stop reporting, and which assets need attention first.</p>
+    </section>
+
+    <section style="margin-top:-20px;">
+      <h2>Project Overview</h2>
+      <div class="grid-2">
+        <p class="text-muted">
+          GPS data arrives as thousands of individual pings spread across vendor portals. Used this way, it is slow and painful to answer simple questions like "where is this unit now?" or "how long has it been inactive?".
+          <br><br>
+          This project centralizes GPS exports, cleans the feeds, maps devices to stock numbers and deals, and exposes movement patterns through Power BI dashboards that collections, repo and management can actually use.
+        </p>
+        <div class="img-placeholder" style="background-image:url('https://source.unsplash.com/800x600/?gps,map');"></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Key Components</h2>
+      <div class="grid-3">
+        <div class="card">
+          <div class="img-placeholder" style="background-image:url('https://source.unsplash.com/800x600/?dashboard,map');"></div>
+          <h3>Movement &amp; Status Dashboard</h3>
+          <p class="text-muted">Portfolio view of last location, last movement, city/state and non-reporting tiers (24h, 48h, 72h+).</p>
+        </div>
+
+        <div class="card">
+          <div class="img-placeholder" style="background-image:url('https://source.unsplash.com/800x600/?data,flow');"></div>
+          <h3>Device &amp; Inventory Mapping</h3>
+          <p class="text-muted">Standardizes device IDs and links them to stock numbers, VINs and active deals so internal and GPS views match.</p>
+        </div>
+
+        <div class="card">
+          <div class="img-placeholder" style="background-image:url('https://source.unsplash.com/800x600/?truck,fleet');"></div>
+          <h3>Collections Support</h3>
+          <p class="text-muted">Designed around the real questions from collections and repo: where is the unit, since when, and what changed versus last week.</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Main Features</h2>
+      <ul class="text-muted">
+        <li>Daily ingestion of GPS CSV/API exports with device ID, timestamp, coordinates and status.</li>
+        <li>Automated mapping between device IDs, inventory records, VINs and active deals.</li>
+        <li>Non-reporting bands (24h / 48h / 72h+) surfaced as a watchlist instead of raw files.</li>
+        <li>Unit-level movement timelines showing trips, stops and long inactivity periods.</li>
+        <li>Filters by region, unit type, risk level and repo status to prioritize work.</li>
+        <li>Consistent structure so the same dashboard supports collections, repo and management reviews.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Sample Screenshots</h2>
+      <div class="grid-2">
+        <div class="img-placeholder" style="height:320px;background-image:url('https://source.unsplash.com/900x700/?gps,dashboard');"></div>
+        <div class="img-placeholder" style="height:320px;background-image:url('https://source.unsplash.com/900x700/?truck,location');"></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Impact</h2>
+      <p class="text-muted">
+        Before this project, GPS data was checked manually in separate vendor portals, making it slow and inconsistent to prepare a single case. With a unified model and dashboards, the team can see location, last movement and non-reporting status for every asset in seconds, work from a ranked list of problematic units, and keep a movement history that can be revisited during disputes or negotiations.
+      </p>
+    </section>
+  </main>
+</div>
+
+</body>
+</html>
