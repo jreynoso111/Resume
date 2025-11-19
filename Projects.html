@@ -9,7 +9,7 @@
     :root {
       --bg: #f5f5f5;
       --bg-soft: #ffffff;
-      --bg-alt: #eef1f5;
+      --bg-alt: #f0f2f5;
       --accent: #1f4f7b;
       --accent-soft: #e0ecf7;
       --accent-strong: #153554;
@@ -17,7 +17,11 @@
       --text-muted: #6b7280;
       --border-subtle: #d1d5db;
       --chip-bg: #e5e7eb;
-      --shadow-soft: 0 10px 30px rgba(15, 23, 42, 0.06);
+      --card-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+      --radius-lg: 16px;
+      --radius-md: 10px;
+      --radius-pill: 999px;
+      --max-width: 1120px;
     }
 
     * {
@@ -31,6 +35,7 @@
       background: var(--bg);
       color: var(--text-main);
       line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
     }
 
     a {
@@ -40,21 +45,22 @@
 
     /* HEADER */
     header {
-      background: #ffffff;
-      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
       position: sticky;
       top: 0;
       z-index: 20;
+      backdrop-filter: blur(8px);
+      background: rgba(255, 255, 255, 0.96);
+      border-bottom: 1px solid var(--border-subtle);
     }
 
     .nav {
-      max-width: 1150px;
+      max-width: var(--max-width);
       margin: 0 auto;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 40px;
-      padding: 12px 24px;
+      padding: 12px 18px;
     }
 
     .profile-block {
@@ -300,6 +306,7 @@
             <a href="Project3%20-%20Repossession%20dashboard.html">Repo & Risk Monitoring System</a>
           </div>
         </div>
+        <a href="About.html">About Me</a>
       </nav>
       <div class="header-cta">
         <a href="mailto:jreynoso111@gmail.com" class="email-btn">Send email →</a>
