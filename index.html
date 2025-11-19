@@ -270,26 +270,39 @@
       color: var(--text-muted);
     }
 
+    .hero-actions {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 12px;
+      margin-top: 4px;
+      max-width: 720px;
+    }
     .hero-cta-row {
       display: flex;
       flex-wrap: wrap;
-      gap: 10px;
+      gap: 12px;
       align-items: center;
-      margin-bottom: 16px;
     }
 
     .hero-meta-row {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 10px 14px;
       font-size: 11px;
       color: var(--text-muted);
+      width: 100%;
+      background: #ffffff;
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 10px 12px;
     }
     .hero-meta-item {
-      display: flex;
+      display: grid;
+      grid-template-columns: auto 1fr;
       align-items: center;
-      gap: 8px;
-      line-height: 1.4;
+      gap: 10px;
+      line-height: 1.55;
     }
     .meta-dot {
       width: 8px;
@@ -589,6 +602,7 @@
                 <a href="Project3 - Repossession dashboard.html">Repo & Risk Monitoring System</a>
               </div>
             </div>
+            <a href="About.html">About Me</a>
           </div>
 
           <div class="nav-cta">
@@ -612,8 +626,6 @@
                 <div class="hero-label"><span class="hero-label-dot"></span>Located in NYC</div>
               </div>
 
-              <div class="hero-tagline-chip">Data analysis · reporting · inventory management</div>
-
               <h1 class="hero-title">
                 Data & operations professional focused on
                 <span class="accent">maintenance, inventory and fleet performance</span>.
@@ -632,21 +644,23 @@
                 <div class="pill">Bilingual: Spanish & English</div>
               </div>
 
-              <div class="hero-cta-row">
-                <a href="mailto:jreynoso111@gmail.com" class="btn-primary">
-                  Discuss a role or project
-                  <span class="chevron">→</span>
-                </a>
-              </div>
-
-              <div class="hero-meta-row">
-                <div class="hero-meta-item">
-                  <div class="meta-dot">✔</div>
-                  <div>Hands-on experience with metro systems and truck fleets.</div>
+              <div class="hero-actions">
+                <div class="hero-cta-row">
+                  <a href="mailto:jreynoso111@gmail.com" class="btn-primary">
+                    Discuss a role or project
+                    <span class="chevron">→</span>
+                  </a>
                 </div>
-                <div class="hero-meta-item">
-                  <div class="meta-dot">★</div>
-                  <div>Strong analytical and problem‑solving mindset.</div>
+
+                <div class="hero-meta-row">
+                  <div class="hero-meta-item">
+                    <div class="meta-dot">✔</div>
+                    <div>Hands-on experience with metro systems and truck fleets.</div>
+                  </div>
+                  <div class="hero-meta-item">
+                    <div class="meta-dot">★</div>
+                    <div>Strong analytical and problem‑solving mindset.</div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -674,7 +688,7 @@
                 <footer class="hero-card-footer">
                   <div class="hero-stat">
                     <div class="hero-stat-label">Years in operations</div>
-                    <div class="hero-stat-value">10+ years</div>
+                    <div class="hero-stat-value">15+ years</div>
                   </div>
                   <div class="hero-stat">
                     <div class="hero-stat-label">Core focus</div>

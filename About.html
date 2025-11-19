@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>About Me | Juan R. Reynoso</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #f5f5f5;
+      --bg-soft: #ffffff;
+      --bg-alt: #f0f2f5;
+      --accent: #1f4f7b;
+      --accent-soft: #e0ecf7;
+      --accent-strong: #153554;
+      --text-main: #111827;
+      --text-muted: #6b7280;
+      --border-subtle: #d1d5db;
+      --card-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+      --radius-lg: 16px;
+      --radius-md: 10px;
+      --radius-pill: 999px;
+      --max-width: 1120px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text-main);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { text-decoration: none; color: inherit; }
+
+    .page { min-height: 100vh; display: flex; flex-direction: column; }
+    .shell { width: 100%; max-width: var(--max-width); margin: 0 auto; padding: 0 18px; }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(8px);
+      background: rgba(255, 255, 255, 0.96);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 0;
+      gap: 16px;
+    }
+    .logo-wrap { display: flex; align-items: center; gap: 10px; }
+    .logo-mark {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 1px solid var(--border-subtle);
+      background: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 14px;
+      color: var(--accent-strong);
+    }
+    .logo-text-block { display: flex; flex-direction: column; gap: 2px; }
+    .logo-title { font-size: 15px; font-weight: 600; color: var(--accent-strong); }
+    .logo-sub { font-size: 11px; color: var(--text-muted); }
+
+    .nav-links { display: flex; align-items: center; gap: 18px; font-size: 13px; }
+    .nav-links a { padding: 4px 0; border-bottom: 2px solid transparent; color: var(--text-muted); transition: color 0.15s ease, border-color 0.15s ease; }
+    .nav-links a:hover { color: var(--accent-strong); border-color: var(--accent-soft); }
+    .nav-links a.nav-active { color: var(--accent-strong); border-color: var(--accent); font-weight: 500; }
+
+    .btn-primary {
+      padding: 7px 16px;
+      border-radius: var(--radius-pill);
+      border: 1px solid var(--accent);
+      font-size: 13px;
+      font-weight: 600;
+      color: #ffffff;
+      background: var(--accent);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+    .btn-primary:hover { background: var(--accent-strong); border-color: var(--accent-strong); }
+
+    main { padding: 28px 0 40px; }
+    .about-hero {
+      background: linear-gradient(135deg, rgba(31, 79, 123, 0.08), rgba(21, 53, 84, 0.12));
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 22px;
+      box-shadow: var(--card-shadow);
+    }
+    .section-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--text-muted); margin-bottom: 8px; }
+    .section-title { font-size: 24px; margin-bottom: 10px; letter-spacing: -0.01em; }
+    .section-sub { font-size: 14px; color: var(--text-muted); max-width: 760px; }
+
+    .grid { display: grid; gap: 16px; margin-top: 20px; }
+    .grid.two { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+    .card {
+      background: #ffffff;
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 14px;
+      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+    }
+    .card h3 { font-size: 15px; margin-bottom: 6px; }
+    .card p { font-size: 13px; color: var(--text-muted); }
+    ul { padding-left: 18px; color: var(--text-muted); font-size: 13px; }
+    li + li { margin-top: 4px; }
+
+    footer {
+      padding: 14px 0 18px;
+      border-top: 1px solid var(--border-subtle);
+      margin-top: auto;
+      background: #ffffff;
+    }
+    .footer-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; font-size: 11px; color: var(--text-muted); }
+    .footer-links { display: flex; flex-wrap: wrap; gap: 12px; }
+    .footer-links a { text-decoration: underline; text-underline-offset: 3px; color: var(--accent-strong); }
+
+    @media (max-width: 720px) {
+      .nav { flex-wrap: wrap; row-gap: 8px; }
+      .nav-links { width: 100%; justify-content: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <div class="shell">
+        <nav class="nav">
+          <div class="logo-wrap">
+            <div class="logo-mark">JR</div>
+            <div class="logo-text-block">
+              <div class="logo-title">Juan R. Reynoso</div>
+              <div class="logo-sub">Data, Operations & Fleet Analytics</div>
+            </div>
+          </div>
+          <div class="nav-links">
+            <a href="index.html">Overview</a>
+            <a href="Experience.html">Experience</a>
+            <a href="Projects.html">Projects</a>
+            <a href="About.html" class="nav-active">About Me</a>
+          </div>
+          <a href="mailto:jreynoso111@gmail.com" class="btn-primary">Contact</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <div class="shell">
+        <section class="about-hero">
+          <div class="section-label">About Me</div>
+          <h1 class="section-title">Operator, analyst, and builder of practical reporting.</h1>
+          <p class="section-sub">
+            I spent over 15 years inside maintenance shops, rail systems, and fleet operations before moving deeper into data and analytics. That hands-on time guides how I scope problems, clean data, and design reports: everything should be simple to read, grounded in operational reality, and ready for action.
+          </p>
+        </section>
+
+        <div class="grid two">
+          <article class="card">
+            <h3>What drives my work</h3>
+            <ul>
+              <li>Translating operational pain points into clear metrics and dashboards.</li>
+              <li>Reducing waste by pairing maintenance data with cost and inventory signals.</li>
+              <li>Documenting processes so improvements stick beyond a single report.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>How I collaborate</h3>
+            <ul>
+              <li>Work directly with technicians, controllers, and managers to capture real constraints.</li>
+              <li>Prototype quickly in Power BI, Excel, or Python notebooks to validate ideas.</li>
+              <li>Communicate findings in Spanish or English depending on the team.</li>
+            </ul>
+          </article>
+        </div>
+
+        <div class="grid two">
+          <article class="card">
+            <h3>Focus areas</h3>
+            <p>Maintenance reliability, inventory stewardship, fraud detection, and fleet utilization.</p>
+          </article>
+          <article class="card">
+            <h3>Toolkit</h3>
+            <p>Power BI, DAX, Power Query, advanced Excel, Python automation, and practical SOPs that help teams adopt new reporting.</p>
+          </article>
+        </div>
+      </div>
+    </main>
+
+    <footer>
+      <div class="shell">
+        <div class="footer-row">
+          <div>© <span id="year"></span> Juan R. Reynoso. All rights reserved.</div>
+          <div class="footer-links">
+            <a href="index.html">Back to overview</a>
+          </div>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    document.getElementById("year").textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>
