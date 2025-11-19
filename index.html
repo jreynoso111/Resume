@@ -279,15 +279,16 @@
     }
 
     .hero-meta-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 14px;
+      display: grid;
+      grid-template-columns: minmax(0,1fr);
+      gap: 10px;
       font-size: 11px;
       color: var(--text-muted);
+      align-items: start;
     }
     .hero-meta-item {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       gap: 8px;
     }
     .meta-dot {
