@@ -24,24 +24,42 @@
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    
     body {
       font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
       background: var(--bg);
       color: var(--text-main);
-      line-height: 1.5;
+      line-height: 1.6;
       -webkit-font-smoothing: antialiased;
+      /* Ensure body takes full height for particles */
+      min-height: 100vh;
+      position: relative;
     }
+
+    /* Particle Canvas Styles */
+    #particle-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1; /* Behind everything */
+      opacity: 0.6; /* Subtle effect */
+      pointer-events: none;
+    }
+
     a { text-decoration: none; color: inherit; }
 
-    .page { min-height: 100vh; display: flex; flex-direction: column; }
+    .page { min-height: 100vh; display: flex; flex-direction: column; position: relative; z-index: 1; }
     .shell { width: 100%; max-width: var(--max-width); margin: 0 auto; padding: 0 18px; }
 
+    /* Navigation */
     header {
       position: sticky;
       top: 0;
       z-index: 20;
       backdrop-filter: blur(8px);
-      background: rgba(255, 255, 255, 0.96);
+      background: rgba(255, 255, 255, 0.90);
       border-bottom: 1px solid var(--border-subtle);
     }
     .nav {
@@ -90,49 +108,107 @@
     }
     .btn-primary:hover { background: var(--accent-strong); border-color: var(--accent-strong); }
 
-    main { padding: 28px 0 40px; }
-    .about-hero {
-      background: linear-gradient(135deg, rgba(31, 79, 123, 0.08), rgba(21, 53, 84, 0.12));
+    /* Main Content */
+    main { padding: 40px 0 60px; }
+
+    .intro-section {
+      margin-bottom: 40px;
+    }
+    .intro-label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      font-weight: 600;
+      margin-bottom: 12px;
+      display: block;
+    }
+    .intro-title {
+      font-size: 32px;
+      line-height: 1.2;
+      color: var(--accent-strong);
+      margin-bottom: 20px;
+      font-weight: 700;
+    }
+    .intro-text {
+      font-size: 16px;
+      color: var(--text-muted);
+      max-width: 800px;
+      margin-bottom: 16px;
+    }
+
+    /* Content Cards */
+    .story-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 24px;
+    }
+    
+    .card {
+      background: rgba(255, 255, 255, 0.85); /* Slight transparency for particles */
       border: 1px solid var(--border-subtle);
       border-radius: var(--radius-lg);
-      padding: 22px;
-      box-shadow: var(--card-shadow);
+      padding: 24px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+      height: 100%;
+      backdrop-filter: blur(5px);
     }
-    .section-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--text-muted); margin-bottom: 8px; }
-    .section-title { font-size: 24px; margin-bottom: 10px; letter-spacing: -0.01em; }
-    .section-sub { font-size: 14px; color: var(--text-muted); max-width: 760px; }
 
-    .grid { display: grid; gap: 16px; margin-top: 20px; }
-    .grid.two { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
-    .card {
-      background: #ffffff;
-      border: 1px solid var(--border-subtle);
-      border-radius: 12px;
-      padding: 14px;
-      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+    .card h3 {
+      font-size: 18px;
+      color: var(--accent-strong);
+      margin-bottom: 12px;
+      border-bottom: 1px solid var(--accent-soft);
+      padding-bottom: 8px;
     }
-    .card h3 { font-size: 15px; margin-bottom: 6px; }
-    .card p { font-size: 13px; color: var(--text-muted); }
-    ul { padding-left: 18px; color: var(--text-muted); font-size: 13px; }
-    li + li { margin-top: 4px; }
+
+    .card p {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+    }
+
+    .card p:last-child { margin-bottom: 0; }
+
+    .tag-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .tag {
+      background: var(--accent-soft);
+      color: var(--accent-strong);
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 500;
+    }
 
     footer {
       padding: 14px 0 18px;
       border-top: 1px solid var(--border-subtle);
       margin-top: auto;
-      background: #ffffff;
+      background: rgba(255, 255, 255, 0.9);
     }
     .footer-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; font-size: 11px; color: var(--text-muted); }
     .footer-links { display: flex; flex-wrap: wrap; gap: 12px; }
     .footer-links a { text-decoration: underline; text-underline-offset: 3px; color: var(--accent-strong); }
 
+    @media (max-width: 800px) {
+      .story-grid { grid-template-columns: 1fr; }
+    }
     @media (max-width: 720px) {
       .nav { flex-wrap: wrap; row-gap: 8px; }
       .nav-links { width: 100%; justify-content: flex-start; }
+      .intro-title { font-size: 26px; }
     }
   </style>
 </head>
 <body>
+
+  <canvas id="particle-canvas"></canvas>
+
   <div class="page">
     <header>
       <div class="shell">
@@ -157,42 +233,71 @@
 
     <main>
       <div class="shell">
-        <section class="about-hero">
-          <div class="section-label">About Me</div>
-          <h1 class="section-title">Curious, grounded, and motivated by the people around me.</h1>
-          <p class="section-sub">
-            I'm a family-first, bilingual traveler who grew up between communities and cultures. I love hearing how people solve problems, tinkering with whatever is in front of me, and turning shared meals into a ritual that keeps loved ones close.
+        
+        <section class="intro-section">
+          <span class="intro-label">The Person Behind the Data</span>
+          <h1 class="intro-title">An active mind, driven by values and a history of solving complex problems.</h1>
+          <p class="intro-text">
+            I am Juan Radhamés Reynoso Pérez. Born in Santo Domingo in September 1987, I come from a close-knit family that instilled in me a strong sense of integrity and the importance of doing good work.
+          </p>
+          <p class="intro-text">
+            I currently live in New York, having moved back a year ago, but my professional character was forged during 16 years of service at the Santo Domingo Metro.
           </p>
         </section>
 
-        <div class="grid two">
-          <article class="card">
-            <h3>What matters to me</h3>
-            <ul>
-              <li>Creating a calm, dependable home for my kids with routines they can count on.</li>
-              <li>Making space for curiosity—books, podcasts, and long conversations over coffee.</li>
-              <li>Sharing food as a love language, whether it's a quick breakfast or a slow Sunday dinner.</li>
-            </ul>
-          </article>
-          <article class="card">
-            <h3>How I show up</h3>
-            <ul>
-              <li>Listen first and reflect back what I heard so people know they're understood.</li>
-              <li>Stay steady and patient when plans change, looking for the next best step.</li>
-              <li>Switch comfortably between Spanish and English to keep everyone included.</li>
-            </ul>
-          </article>
-        </div>
+        <div class="story-grid">
+          
+          <div style="display: flex; flex-direction: column; gap: 24px;">
+            <article class="card">
+              <h3>The Metro Era (16 Years)</h3>
+              <p>
+                My relationship with the Santo Domingo Metro began very early in the project's history. I started at the Central Control as a Technical Assistant, but my curiosity and work ethic quickly opened new doors.
+              </p>
+              <p>
+                After my first year, I was transferred to the Maintenance Department, specifically focusing on <strong>Telecommunications, Signaling, and Ticketing</strong>. Over the next decade and a half, this wasn't just a job—it was a school of life. I gained deep technical training in railway security systems, installation operations, and quality control.
+              </p>
+              <p>
+                It was here that I developed my passion for analytics. Managing maintenance control and anti-fraud systems taught me that data isn't just numbers—it's the heartbeat of an operation.
+              </p>
+            </article>
 
-        <div class="grid two">
-          <article class="card">
-            <h3>Outside the office</h3>
-            <p>I recharge with evening walks, sketching ideas in a notebook, and road trips with my family that end at a local food spot.</p>
-          </article>
-          <article class="card">
-            <h3>Roots and rhythms</h3>
-            <p>Born in a big city but happiest near the water, I bring a mix of Latino warmth and practical midwestern sensibility wherever I go.</p>
-          </article>
+            <article class="card">
+              <h3>Education & Growth</h3>
+              <p>
+                I am a lifelong learner with an active mind that never stays still. I hold a degree in <strong>Higher Technology in Food Engineering</strong> from the Autonomous University of Santo Domingo (UASD).
+              </p>
+              <p>
+                While my career pivoted toward transportation and data technology, that engineering background gave me a rigorous foundation in process management, safety standards, and project structure that I apply to everything I do today.
+              </p>
+            </article>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 24px;">
+            <article class="card">
+              <h3>Who I Am</h3>
+              <p>
+                I am a person who is always trying to learn something new. Whether it is solving a complex inventory problem or learning a new software tool, I thrive on challenges.
+              </p>
+              <p>
+                Moving back to New York has been a new chapter, bringing my experience from the Dominican Republic to new environments, blending my technical history with the fast-paced culture of NYC.
+              </p>
+            </article>
+
+            <article class="card">
+              <h3>Passions</h3>
+              <p>When I step away from the data dashboards and logistics, you can find me immersing myself in:</p>
+              <div class="tag-container">
+                <span class="tag">Photography</span>
+                <span class="tag">Nature & Camping</span>
+                <span class="tag">Animals</span>
+                <span class="tag">Computers & Tech</span>
+              </div>
+              <p style="margin-top: 15px; font-size: 13px; font-style: italic;">
+                "I believe in finding the balance between the digital world and the natural world."
+              </p>
+            </article>
+          </div>
+
         </div>
       </div>
     </main>
@@ -211,6 +316,97 @@
 
   <script>
     document.getElementById("year").textContent = new Date().getFullYear();
+
+    /* --- Particle Background Logic --- */
+    (function() {
+      const canvas = document.getElementById('particle-canvas');
+      const ctx = canvas.getContext('2d');
+      let width, height;
+      let particles = [];
+
+      // Configuration
+      const particleCount = 60; // Number of dots
+      const connectionDistance = 150; // Max distance to draw a line
+      const speed = 0.3; // Movement speed
+
+      function resize() {
+        width = window.innerWidth;
+        height = window.innerHeight;
+        canvas.width = width;
+        canvas.height = height;
+      }
+
+      class Particle {
+        constructor() {
+          this.x = Math.random() * width;
+          this.y = Math.random() * height;
+          this.vx = (Math.random() - 0.5) * speed;
+          this.vy = (Math.random() - 0.5) * speed;
+          this.size = Math.random() * 2 + 1;
+        }
+
+        update() {
+          this.x += this.vx;
+          this.y += this.vy;
+
+          // Bounce off edges
+          if (this.x < 0 || this.x > width) this.vx *= -1;
+          if (this.y < 0 || this.y > height) this.vy *= -1;
+        }
+
+        draw() {
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(31, 79, 123, 0.3)'; // Using theme color var(--accent)
+          ctx.fill();
+        }
+      }
+
+      function init() {
+        resize();
+        for (let i = 0; i < particleCount; i++) {
+          particles.push(new Particle());
+        }
+        animate();
+      }
+
+      function animate() {
+        ctx.clearRect(0, 0, width, height);
+        
+        // Update and draw particles
+        for (let i = 0; i < particles.length; i++) {
+          particles[i].update();
+          particles[i].draw();
+
+          // Draw connections
+          for (let j = i; j < particles.length; j++) {
+            const dx = particles[i].x - particles[j].x;
+            const dy = particles[i].y - particles[j].y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            if (distance < connectionDistance) {
+              ctx.beginPath();
+              ctx.strokeStyle = `rgba(31, 79, 123, ${0.15 - distance/connectionDistance * 0.15})`;
+              ctx.lineWidth = 1;
+              ctx.moveTo(particles[i].x, particles[i].y);
+              ctx.lineTo(particles[j].x, particles[j].y);
+              ctx.stroke();
+            }
+          }
+        }
+        requestAnimationFrame(animate);
+      }
+
+      window.addEventListener('resize', () => {
+        resize();
+        particles = [];
+        for (let i = 0; i < particleCount; i++) {
+          particles.push(new Particle());
+        }
+      });
+
+      init();
+    })();
   </script>
 </body>
 </html>
