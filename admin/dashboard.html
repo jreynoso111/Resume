@@ -4,97 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Joe Reynoso</title>
-    <style>
-        /* --- ESTILOS BÁSICOS (CSS) --- */
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #f3f4f6;
-            margin: 0;
-            padding: 0;
-        }
-        
-        /* Barra superior */
-        header {
-            background-color: #1f2937;
-            color: white;
-            padding: 1rem 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        header h1 { margin: 0; font-size: 1.2rem; }
-        #logout-btn {
-            background-color: #dc2626;
-            color: white;
-            border: none;
-            padding: 0.5rem 1rem;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-
-        /* Contenedor principal */
-        main {
-            max-width: 800px;
-            margin: 2rem auto;
-            padding: 0 1rem;
-        }
-
-        /* Tarjetas / Secciones */
-        .card {
-            background: white;
-            padding: 2rem;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            margin-bottom: 2rem;
-        }
-        .card h2 { margin-top: 0; border-bottom: 2px solid #f3f4f6; padding-bottom: 0.5rem; }
-
-        /* Formularios */
-        .form-group { margin-bottom: 1rem; }
-        label { display: block; margin-bottom: 0.5rem; font-weight: bold; color: #374151; }
-        input, textarea {
-            width: 100%;
-            padding: 0.5rem;
-            border: 1px solid #d1d5db;
-            border-radius: 4px;
-            box-sizing: border-box;
-        }
-        textarea { height: 100px; }
-        .row { display: flex; gap: 1rem; }
-        .col { flex: 1; }
-
-        /* Botones */
-        .btn-primary {
-            background-color: #2563eb;
-            color: white;
-            border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 1rem;
-        }
-        .btn-primary:hover { background-color: #1d4ed8; }
-
-        /* Lista de items (Experiencias) */
-        .item-list { list-style: none; padding: 0; }
-        .item-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1rem;
-            border-bottom: 1px solid #eee;
-        }
-        .item-row:last-child { border-bottom: none; }
-        .btn-delete {
-            background-color: white;
-            color: #dc2626;
-            border: 1px solid #dc2626;
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .btn-delete:hover { background-color: #fee2e2; }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
@@ -168,17 +78,17 @@
 
     <script>
         // --- CONFIGURACIÓN ---
-        // REEMPLAZA ESTOS VALORES CON LOS DE TU PROYECTO
         const SUPABASE_URL = 'https://nqoyljwjmsscbiukeiqb.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5xb3lsandqbXNzY2JpdWtlaXFiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyNDA5NDcsImV4cCI6MjA4MDgxNjk0N30.cjvblSPvkT6goAhjt-eHHjnl9VEcpDCpCBcohXeAxAU';
         
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        // Usamos 'sb' para evitar conflicto con la variable global 'supabase'
+        const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         // --- 1. SEGURIDAD: Verificar Sesión ---
         async function checkAuth() {
-            const { data: { session } } = await supabase.auth.getSession();
+            const { data: { session } } = await sb.auth.getSession();
             if (!session) {
-                // Si no hay sesión, fuera de aquí
+                // Si no hay sesión, volver al login
                 window.location.href = 'index.html'; 
             }
         }
@@ -186,7 +96,7 @@
 
         // Botón Logout
         document.getElementById('logout-btn').addEventListener('click', async () => {
-            await supabase.auth.signOut();
+            await sb.auth.signOut();
             window.location.href = 'index.html';
         });
 
@@ -194,8 +104,8 @@
         
         // Cargar datos actuales del perfil
         async function loadProfileData() {
-            // Intentamos buscar el perfil con ID 1 (asumimos que solo habrá uno para tu CV)
-            let { data, error } = await supabase.from('profile').select('*').limit(1).single();
+            // Buscamos el perfil (limit 1)
+            let { data, error } = await sb.from('profile').select('*').limit(1).single();
             
             if (data) {
                 document.getElementById('prof-name').value = data.full_name || '';
@@ -212,14 +122,10 @@
                 full_name: document.getElementById('prof-name').value,
                 headline: document.getElementById('prof-headline').value,
                 bio: document.getElementById('prof-bio').value
-                // Nota: Podríamos añadir updated_at: new Date()
             };
 
-            // Usamos upsert: si existe lo actualiza, si no lo crea. 
-            // Necesitamos pasarle un ID si queremos actualizar, pero como es el único perfil,
-            // la lógica ideal es saber si ya existe. Para simplificar, asumiremos que el ID=1 es TU perfil.
-            // Si la tabla está vacía, esto creará el ID 1.
-            const { error } = await supabase.from('profile').upsert({ id: 1, ...updates });
+            // Usamos upsert. Asumimos ID=1 para el perfil principal.
+            const { error } = await sb.from('profile').upsert({ id: 1, ...updates });
 
             if (error) alert('Error al guardar perfil: ' + error.message);
             else alert('Perfil actualizado correctamente');
@@ -233,7 +139,7 @@
             const list = document.getElementById('experience-list');
             list.innerHTML = 'Cargando...';
 
-            const { data, error } = await supabase
+            const { data, error } = await sb
                 .from('experience')
                 .select('*')
                 .order('start_date', { ascending: false });
@@ -272,28 +178,27 @@
                 company: document.getElementById('exp-company').value,
                 role: document.getElementById('exp-role').value,
                 start_date: document.getElementById('exp-start').value,
-                end_date: document.getElementById('exp-end').value || null, // Si está vacío mandamos null
+                end_date: document.getElementById('exp-end').value || null, 
                 description: document.getElementById('exp-desc').value,
-                is_current: !document.getElementById('exp-end').value // Si no hay fecha fin, es actual
+                is_current: !document.getElementById('exp-end').value
             };
 
-            const { error } = await supabase.from('experience').insert([newExp]);
+            const { error } = await sb.from('experience').insert([newExp]);
 
             if (error) {
                 alert('Error: ' + error.message);
             } else {
-                // Limpiar formulario y recargar lista
                 document.getElementById('experience-form').reset();
                 loadExperiences();
                 alert('Experiencia agregada!');
             }
         });
 
-        // Eliminar Experiencia (Función global para que el HTML onclick la vea)
+        // Eliminar Experiencia
         window.deleteExperience = async (id) => {
             if(!confirm('¿Seguro que quieres borrar esta experiencia?')) return;
 
-            const { error } = await supabase.from('experience').delete().eq('id', id);
+            const { error } = await sb.from('experience').delete().eq('id', id);
             
             if (error) alert('Error al borrar: ' + error.message);
             else loadExperiences();
