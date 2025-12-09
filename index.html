@@ -6,23 +6,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
-    /* ESTILOS DEL CANVAS DE FONDO - CORREGIDO PARA SCROLL */
+    /* ESTILOS DEL CANVAS - ORDEN CORREGIDO */
     #bg-canvas {
-        /* CAMBIO 1: absolute en lugar de fixed para que cubra toda la web */
         position: absolute; 
         top: 0;
         left: 0;
         width: 100%;
         height: 100%;
-        /* z-index alto para estar encima de secciones blancas */
-        z-index: 9999;
-        /* pointer-events none para poder dar click a lo de abajo */
+        z-index: 0; /* Capa 0: Detrás del contenido, sobre el fondo gris */
         pointer-events: none;
     }
 
     :root {
       --bg: #f5f5f5;
-      --bg-soft: #ffffff;
+      /* FONDO SUAVE CON TRANSPARENCIA (EFECTO CRISTAL) */
+      --bg-soft: rgba(255, 255, 255, 0.85); 
       --bg-alt: #f0f2f5;
       --accent: #1f4f7b;
       --accent-soft: #e0ecf7;
@@ -40,7 +38,6 @@
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
     
-    /* Agregamos relative al body para asegurar que el canvas absoluto se posicione bien */
     body {
       position: relative;
       font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
@@ -52,11 +49,15 @@
     a { text-decoration: none; color: inherit; }
     img { max-width: 100%; display: block; }
 
+    /* CAPA DE CONTENIDO SUPERIOR */
     .page {
+      position: relative;
+      z-index: 1; /* Capa 1: Todo el contenido va encima del canvas */
       min-height: 100vh;
       display: flex;
       flex-direction: column;
     }
+
     .shell {
       width: 100%;
       max-width: var(--max-width);
@@ -69,8 +70,8 @@
       position: sticky;
       top: 0;
       z-index: 20;
-      backdrop-filter: blur(8px);
-      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(12px);
+      background: rgba(255, 255, 255, 0.85); /* Transparencia para ver pasar partículas */
       border-bottom: 1px solid var(--border-subtle);
     }
     .nav {
@@ -309,7 +310,8 @@
       font-size: 11px;
       color: var(--text-muted);
       width: 100%;
-      background: #ffffff;
+      background: var(--bg-soft); /* Uso de variable transparente */
+      backdrop-filter: blur(5px);
       border: 1px solid var(--border-subtle);
       border-radius: 12px;
       padding: 10px 12px;
@@ -339,7 +341,8 @@
     }
 
     .hero-card {
-      background: var(--bg-soft);
+      background: var(--bg-soft); /* Transparente para ver partículas */
+      backdrop-filter: blur(8px);
       border-radius: 14px;
       border: 1px solid var(--border-subtle);
       box-shadow: var(--card-shadow);
@@ -419,7 +422,7 @@
     .hero-stat {
       padding: 7px 8px;
       border-radius: 8px;
-      background: #f9fafb;
+      background: rgba(249, 250, 251, 0.7);
       border: 1px solid var(--border-subtle);
     }
     .hero-stat-label {
@@ -471,7 +474,8 @@
       padding: 8px 10px;
       border-radius: 10px;
       border: 1px solid var(--border-subtle);
-      background: #ffffff;
+      background: var(--bg-soft); /* Transparente */
+      backdrop-filter: blur(4px);
     }
     .highlight-badge {
       width: 22px;
@@ -506,7 +510,8 @@
     .mini-card {
       padding: 9px 10px;
       border-radius: 10px;
-      background: #ffffff;
+      background: var(--bg-soft); /* Transparente */
+      backdrop-filter: blur(4px);
       border: 1px solid var(--border-subtle);
       font-size: 12px;
     }
@@ -534,7 +539,7 @@
       padding: 4px 8px;
       border-radius: var(--radius-pill);
       font-size: 11px;
-      background: #f9fafb;
+      background: rgba(249, 250, 251, 0.7);
       border: 1px solid var(--border-subtle);
       color: var(--text-muted);
     }
@@ -544,7 +549,8 @@
       padding: 14px 0 18px;
       border-top: 1px solid var(--border-subtle);
       margin-top: auto;
-      background: #ffffff;
+      background: var(--bg-soft);
+      backdrop-filter: blur(5px);
     }
     .footer-row {
       display: flex;
@@ -832,7 +838,7 @@
         </div>
       </section>
           
-      <section class="education" style="width:100%; background:#ffffff; border-top:1px solid var(--border-subtle); padding:40px 0; margin-top:20px;">
+      <section class="education" style="width:100%; background:rgba(255, 255, 255, 0.85); backdrop-filter: blur(8px); border-top:1px solid var(--border-subtle); padding:40px 0; margin-top:20px;">
         <div class="shell" style="max-width:var(--max-width); margin:0 auto;">
           <div class="section-label" style="margin-bottom:10px;">Education</div>
           <h2 class="section-title" style="font-size:20px; margin-bottom:12px;">Academic Background</h2>
@@ -981,12 +987,12 @@
         let particles = [];
         
         // CONFIGURACIÓN
-        const particleCount = 70; // Aumenté un poco la cantidad porque ahora el espacio es más grande
+        const particleCount = 70; 
         const connectionDistance = 150; 
         
         function resize() {
             width = window.innerWidth;
-            // CAMBIO 2: Usar scrollHeight para obtener el alto de todo el contenido, no solo la ventana
+            // Usar scrollHeight para obtener el alto de todo el contenido
             height = document.documentElement.scrollHeight;
             
             canvas.width = width;
