@@ -6,16 +6,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
-    /* ESTILOS DEL CANVAS DE FONDO - CORREGIDO */
+    /* ESTILOS DEL CANVAS DE FONDO - CORREGIDO PARA SCROLL */
     #bg-canvas {
-        position: fixed;
+        /* CAMBIO 1: absolute en lugar de fixed para que cubra toda la web */
+        position: absolute; 
         top: 0;
         left: 0;
         width: 100%;
         height: 100%;
-        /* CAMBIO AQUÍ: De -1 a 9999 para que esté encima de todo */
+        /* z-index alto para estar encima de secciones blancas */
         z-index: 9999;
-        /* CRÍTICO: Esto permite que los clicks pasen a través del canvas a los botones debajo */
+        /* pointer-events none para poder dar click a lo de abajo */
         pointer-events: none;
     }
 
@@ -38,7 +39,10 @@
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    /* Agregamos relative al body para asegurar que el canvas absoluto se posicione bien */
     body {
+      position: relative;
       font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
       background: var(--bg);
       color: var(--text-main);
@@ -970,19 +974,21 @@
   <script>
     (function() {
         const canvas = document.getElementById('bg-canvas');
-        if (!canvas) return; // Seguridad
+        if (!canvas) return;
 
         const ctx = canvas.getContext('2d');
         let width, height;
         let particles = [];
         
         // CONFIGURACIÓN
-        const particleCount = 60; // Cantidad de nodos
-        const connectionDistance = 150; // Distancia máxima para conectar
+        const particleCount = 70; // Aumenté un poco la cantidad porque ahora el espacio es más grande
+        const connectionDistance = 150; 
         
         function resize() {
             width = window.innerWidth;
-            height = window.innerHeight;
+            // CAMBIO 2: Usar scrollHeight para obtener el alto de todo el contenido, no solo la ventana
+            height = document.documentElement.scrollHeight;
+            
             canvas.width = width;
             canvas.height = height;
         }
@@ -991,20 +997,22 @@
             constructor() {
                 this.x = Math.random() * width;
                 this.y = Math.random() * height;
-                this.vx = (Math.random() - 0.5) * 0.8; // Velocidad suave
+                this.vx = (Math.random() - 0.5) * 0.8; 
                 this.vy = (Math.random() - 0.5) * 0.8;
                 this.size = Math.random() * 2 + 1;
             }
             update() {
                 this.x += this.vx;
                 this.y += this.vy;
+                
+                // Rebotes
                 if (this.x < 0 || this.x > width) this.vx *= -1;
                 if (this.y < 0 || this.y > height) this.vy *= -1;
             }
             draw() {
                 ctx.beginPath();
                 ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                ctx.fillStyle = 'rgba(31, 79, 123, 0.4)'; // Tu color accent
+                ctx.fillStyle = 'rgba(31, 79, 123, 0.4)'; 
                 ctx.fill();
             }
         }
@@ -1032,7 +1040,6 @@
                     
                     if (distance < connectionDistance) {
                         ctx.beginPath();
-                        // Color de línea desvaneciéndose con la distancia
                         ctx.strokeStyle = `rgba(31, 79, 123, ${0.15 * (1 - distance / connectionDistance)})`;
                         ctx.lineWidth = 1;
                         ctx.moveTo(particles[i].x, particles[i].y);
@@ -1044,13 +1051,15 @@
             requestAnimationFrame(animate);
         }
         
+        // Escuchar cambios de tamaño
         window.addEventListener('resize', () => {
             resize();
             particles = [];
             init();
         });
         
-        init();
+        // Timeout para asegurar que el contenido cargó y la altura es correcta
+        setTimeout(init, 100);
         animate();
     })();
   </script>
