@@ -6,7 +6,7 @@
   const IMAGE_PREFIX = 'resume_image_edit_v1';
 
   const css = `
-    .admin-fab{z-index:9999;border:1px solid #1f4f7b;background:#1f4f7b;color:#fff;border-radius:999px;padding:8px 14px;font:600 12px Inter,system-ui;cursor:pointer;box-shadow:0 6px 15px rgba(15,23,42,.2)}
+    .admin-fab{position:fixed;right:18px;bottom:18px;z-index:9999;border:1px solid #1f4f7b;background:#1f4f7b;color:#fff;border-radius:999px;padding:8px 14px;font:600 12px Inter,system-ui;cursor:pointer;box-shadow:0 6px 15px rgba(15,23,42,.2)}
     .admin-fab[data-state="on"]{background:#153554}
     .admin-modal{position:fixed;inset:0;background:rgba(17,24,39,.55);display:none;align-items:center;justify-content:center;z-index:10000;padding:16px}
     .admin-modal.show{display:flex}
@@ -75,14 +75,6 @@
       .slice(0, 48) || 'image';
   }
 
-  function toDataURL(blob) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(String(reader.result || ''));
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  }
 
   function loadImageFromFile(file) {
     return new Promise((resolve, reject) => {
@@ -182,10 +174,15 @@
   function applySavedImages() {
     const path = location.pathname || 'index';
     document.querySelectorAll('[data-admin-image-id]').forEach((el) => {
-      const saved = localStorage.getItem(imageKeyFor(path, el.dataset.adminImageId));
+      const storageKey = imageKeyFor(path, el.dataset.adminImageId);
+      const saved = localStorage.getItem(storageKey);
       const kind = el.dataset.adminImageKind;
       applyImageFit(el, kind);
       if (!saved) return;
+      if (saved.startsWith('data:')) {
+        localStorage.removeItem(storageKey);
+        return;
+      }
 
       if (kind === 'img') {
         el.src = saved;
@@ -218,24 +215,13 @@
       try {
         const reduced = await reduceImage(file);
         const path = location.pathname || 'index';
-        let storedPath;
-
-        try {
-          storedPath = await saveReducedImageToRepo(reduced.blob, reduced.baseName, reduced.ext);
-        } catch (repoError) {
-          const dataUrl = await toDataURL(reduced.blob);
-          storedPath = dataUrl;
-          console.warn('No se pudo guardar en carpeta del repo, se usa fallback localStorage.', repoError);
-          notify('No se pudo guardar en assets/uploads automáticamente. Se aplicó fallback local en este navegador.', 'warn');
-        }
+        const storedPath = await saveReducedImageToRepo(reduced.blob, reduced.baseName, reduced.ext);
 
         const key = imageKeyFor(path, target.dataset.adminImageId);
         try {
           localStorage.setItem(key, storedPath);
         } catch (storageErr) {
-          console.error(storageErr);
-          notify('No se pudo guardar el fallback local (espacio del navegador lleno).', 'error');
-          return;
+          console.warn('No se pudo persistir la ruta en localStorage, se mantiene enlace aplicado en el DOM.', storageErr);
         }
 
         if (target.dataset.adminImageKind === 'img') {
@@ -245,14 +231,10 @@
         }
 
         applyImageFit(target, target.dataset.adminImageKind);
-        if (storedPath.startsWith('data:')) {
-          notify('Imagen aplicada con fallback local del navegador.', 'warn');
-        } else {
-          notify('Imagen guardada y aplicada correctamente.', 'success');
-        }
+        notify('Imagen guardada en assets/uploads y aplicada correctamente.', 'success');
       } catch (err) {
         console.error(err);
-        notify('Error procesando la imagen. Intenta con otro archivo.', 'error');
+        notify('No se pudo guardar la imagen en assets/uploads. Verifica permisos de carpeta y vuelve a intentar.', 'error');
       }
     });
 
@@ -513,15 +495,6 @@
   applySavedContent();
   applySavedImages();
   createUI();
-
-  const headerMountPoint = document.querySelector('header .nav-cta, header .nav-links, header .nav, header');
-  if (headerMountPoint) {
-    headerMountPoint.appendChild(fab);
-  } else {
-    fab.style.position = 'fixed';
-    fab.style.right = '18px';
-    fab.style.top = '18px';
-  }
 
   setAdminMode(isAdmin());
   window.addEventListener('load', () => markEditableImages(), { once: true });
