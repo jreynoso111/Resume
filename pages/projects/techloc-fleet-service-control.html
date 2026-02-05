@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Inventory Control Dashboard | Juan R. Reynoso</title>
+  <title>TechLoc Fleet & Service Control Platform | Juan R. Reynoso</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
@@ -97,53 +97,35 @@
     .projects-sidebar a:hover { background: var(--accent-soft); color: var(--accent-strong); }
     .projects-sidebar a.active { background: var(--accent-soft); color: var(--accent-strong); font-weight: 600; }
 
-    @media (max-width: 980px) {
-      .header-row {
-        flex-wrap: wrap;
-        justify-content: flex-start;
-        gap: 12px 18px;
-      }
-      .header-nav {
-        order: 3;
-        width: 100%;
-        flex-wrap: wrap;
-        gap: 12px 16px;
-      }
-      .header-cta {
-        margin-left: auto;
-      }
-      .page-shell {
-        grid-template-columns: minmax(0, 1fr);
-        gap: 18px;
-      }
-      .projects-sidebar {
-        position: static;
-      }
+    .page-main section {
+      background: var(--bg-soft);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      box-shadow: var(--card-shadow);
+      padding: 26px 24px;
+      margin-bottom: 18px;
     }
-
-    @media (max-width: 640px) {
-      .container,
-      .page-shell {
-        padding: 0 14px;
-      }
-      .header-title {
-        font-size: 16px;
-      }
-      .header-subtitle {
-        font-size: 11px;
-      }
-      .header-nav {
-        font-size: 13px;
-      }
-      .header-cta {
-        width: 100%;
-        text-align: center;
-      }
-      .projects-sidebar {
-        padding: 12px;
-      }
+    .hero h1 { font-size: clamp(28px, 4vw, 40px); color: var(--accent-strong); margin-bottom: 10px; }
+    .hero p { font-size: 16px; color: var(--text-muted); max-width: 820px; }
+    .page-main h2 { font-size: 22px; color: var(--accent-strong); margin-bottom: 12px; }
+    .page-main h3 { font-size: 18px; color: var(--accent-strong); margin: 14px 0 8px; }
+    .text-muted { color: var(--text-muted); }
+    .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+    .card {
+      background: #fff;
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      padding: 16px;
     }
-
+    .img-placeholder {
+      min-height: 220px;
+      border-radius: 12px;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      border: 1px solid var(--border-subtle);
+    }
 
     .project-media-showcase {
       display: grid;
@@ -173,11 +155,26 @@
       background-repeat: no-repeat;
       border: 1px solid var(--border-subtle);
     }
-    @media (max-width: 900px) {
+
+    @media (max-width: 980px) {
+      .header-row { flex-wrap: wrap; justify-content: flex-start; gap: 12px 18px; }
+      .header-nav { order: 3; width: 100%; flex-wrap: wrap; gap: 12px 16px; }
+      .header-cta { margin-left: auto; }
+      .page-shell { grid-template-columns: minmax(0, 1fr); gap: 18px; }
+      .projects-sidebar { position: static; }
+      .grid-2, .grid-3 { grid-template-columns: minmax(0, 1fr); }
       .project-media-main .img-placeholder { min-height: 280px; }
       .project-media-ribbon { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
 
+    @media (max-width: 640px) {
+      .container, .page-shell { padding: 0 14px; }
+      .header-title { font-size: 16px; }
+      .header-subtitle { font-size: 11px; }
+      .header-nav { font-size: 13px; }
+      .header-cta { width: 100%; text-align: center; }
+      .projects-sidebar { padding: 12px; }
+    }
   </style>
 </head>
 <body>
@@ -206,92 +203,72 @@
     <aside class="projects-sidebar">
       <h3>Projects</h3>
       <a href="fleet-maintenance-analytics.html">Fleet Maintenance Analytics System</a>
-      <a href="inventory-control-dashboard.html" class="active">Inventory Control Dashboard</a>
+      <a href="inventory-control-dashboard.html">Inventory Control Dashboard</a>
       <a href="repossession-risk-monitoring.html">Repo &amp; Risk Monitoring System</a>
       <a href="gps-movement-analytics.html">GPS Tracking &amp; Movement Analysis</a>
-          <a href="techloc-fleet-service-control.html">TechLoc Fleet &amp; Service Control Platform</a>
+      <a href="techloc-fleet-service-control.html" class="active">TechLoc Fleet &amp; Service Control Platform</a>
     </aside>
 
     <main class="page-main">
       <section class="hero">
-        <h1>Inventory Control Dashboard</h1>
-        <p>Centralized dashboard tracking inventory availability, document status, yard distribution, turnover, and operational blocks to give sales, operations and management a single source of truth.</p>
+        <h1>TechLoc Fleet &amp; Service Control Platform</h1>
+        <p>TechLoc is a logistics platform designed to optimize fleet management and nationwide technical service coordination. Its core mission is to instantly connect fleet operators with the right service providers at the exact location where support is needed.</p>
       </section>
 
       <section class="project-media-showcase">
         <div class="project-media-main">
-          <div class="img-placeholder" style="background-image:url('https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=1400&q=80');"></div>
+          <div class="img-placeholder" style="background-image:url('https://images.unsplash.com/photo-1529074963764-98f45c47344b?auto=format&fit=crop&w=1400&q=80');"></div>
         </div>
         <div class="project-media-ribbon">
-          <div class="img-placeholder" style="background-image:url('https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=900&q=80');"></div>
-          <div class="img-placeholder" style="background-image:url('https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=900&q=80');"></div>
-          <div class="img-placeholder" style="background-image:url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=900&q=80');"></div>
-          <div class="img-placeholder" style="background-image:url('https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=900&q=80');"></div>
+          <div class="img-placeholder" style="background-image:url('https://images.unsplash.com/photo-1465447142348-e9952c393450?auto=format&fit=crop&w=900&q=80');"></div>
+          <div class="img-placeholder" style="background-image:url('https://images.unsplash.com/photo-1473448912268-2022ce9509d8?auto=format&fit=crop&w=900&q=80');"></div>
+          <div class="img-placeholder" style="background-image:url('https://images.unsplash.com/photo-1473968512647-3e447244af8f?auto=format&fit=crop&w=900&q=80');"></div>
+          <div class="img-placeholder" style="background-image:url('https://images.unsplash.com/photo-1494412519320-aa613dfb7738?auto=format&fit=crop&w=900&q=80');"></div>
         </div>
       </section>
 
-
       <section>
-        <h2>Project Overview</h2>
+        <h2>Platform Overview</h2>
         <div class="grid-2">
-          <p class="text-muted">This dashboard unifies inventory data from NetSuite, yard sheets, title records, inspections, and deal pipelines. It eliminates conflicting spreadsheets and manual reconciliations by providing real-time visibility of availability, blocks, aging, and documentation issues.</p>
-          <div class="img-placeholder" style="background-image:url('https://source.unsplash.com/800x600/?warehouse,inventory');"></div>
+          <p class="text-muted">TechLoc centralizes geolocation, dispatch orchestration, provider validation, and performance analytics into one operational command center. Fleet teams can request services, assign certified partners, and monitor outcomes in real time without switching between fragmented tools.</p>
+          <div class="img-placeholder" style="background-image:url('https://images.unsplash.com/photo-1616400619175-5beda3a17896?auto=format&fit=crop&w=1000&q=80');"></div>
         </div>
       </section>
 
       <section>
-        <h2>Main Features</h2>
+        <h2>Key Functionalities</h2>
         <ul class="text-muted">
-          <li>Real‑time inventory availability synced across sales, operations, and funding.</li>
-          <li>Status logic eliminating duplicates and incorrect "available" units.</li>
-          <li>Automated blocks for missing titles, inspections, paperwork, or deal conflicts.</li>
-          <li>Drill‑through pages for VIN‑level documentation and history.</li>
-          <li>Filters by yard, entity, status, model year, price range, and documentation status.</li>
-          <li>Aging analysis to surface slow‑moving units and financial exposure.</li>
-          <li>Export‑ready structured tables for sales and compliance teams.</li>
+          <li><strong>Smart Localization:</strong> Geo-intelligent search and map-based control view to locate technicians, tow trucks, and workshops in real time.</li>
+          <li><strong>Dispatch Management:</strong> Rapid coordination of roadside assistance, heavy-equipment transport, and commercial locksmith services.</li>
+          <li><strong>Analytics Panel:</strong> Live metrics for active partner status, SLA compliance, response times, and operational efficiency.</li>
+          <li><strong>Curated Network:</strong> Verified provider database that ensures speed, quality, and trusted execution in every intervention.</li>
         </ul>
       </section>
 
       <section>
-        <h2>Sample Screenshots</h2>
-        <div class="grid-2">
-          <div class="img-placeholder" style="height:320px;background-image:url('https://source.unsplash.com/900x700/?powerbi,analytics');"></div>
-          <div class="img-placeholder" style="height:320px;background-image:url('https://source.unsplash.com/900x700/?trucks,fleet');"></div>
-        </div>
-      </section>
-
-      <section>
-        <h2>Impact</h2>
-        <p class="text-muted">
-          This dashboard removed conflicting spreadsheets and manual inventory checks. It exposed hidden blocks,
-          corrected dozens of incorrect availability statuses, and reduced sales delays caused by missing titles,
-          expired inspections, or units stuck off‑yard. Managers gained accurate yard distribution, real turnover rates,
-          and visibility over financial bottlenecks. Operations now make decisions with validated, clean, real‑time data.
-        </p>
-      </section>
-
-      <section>
-        <h2>Key Components</h2>
+        <h2>Emergency Dispatch Workflows</h2>
         <div class="grid-3">
           <div class="card">
-            <div class="img-placeholder" style="background-image:url('https://source.unsplash.com/800x600/?dashboard,analytics');"></div>
-            <h3>Status Matrix</h3>
-            <p class="text-muted">Defines unit status (available, sold, in deal, blocked, missing docs, in transit) using automated business rules.</p>
+            <div class="img-placeholder" style="min-height:140px;background-image:url('https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?auto=format&fit=crop&w=900&q=80');"></div>
+            <h3>Roadside Assistance</h3>
+            <p class="text-muted">Trigger service tickets by location, assign nearest certified partner, and track ETA-to-resolution in a single timeline.</p>
           </div>
-
           <div class="card">
-            <div class="img-placeholder" style="background-image:url('https://source.unsplash.com/800x600/?paperwork,documents');"></div>
-            <h3>Title & Documentation Tracker</h3>
-            <p class="text-muted">Identifies missing titles, inspections, registrations, or compliance paperwork and tracks aging.</p>
+            <div class="img-placeholder" style="min-height:140px;background-image:url('https://images.unsplash.com/photo-1519003722824-194d4455a60c?auto=format&fit=crop&w=900&q=80');"></div>
+            <h3>Heavy Equipment Transport</h3>
+            <p class="text-muted">Coordinate towing and specialized transport with route visibility, status checkpoints, and centralized documentation.</p>
           </div>
-
           <div class="card">
-            <div class="img-placeholder" style="background-image:url('https://source.unsplash.com/800x600/?yard,logistics');"></div>
-            <h3>Yard & Location View</h3>
-            <p class="text-muted">Shows distribution of units across yards, highlighting overcrowding, bottlenecks and transit delays.</p>
-
+            <div class="img-placeholder" style="min-height:140px;background-image:url('https://images.unsplash.com/photo-1581092160607-ee22731f8b13?auto=format&fit=crop&w=900&q=80');"></div>
+            <h3>Commercial Locksmith</h3>
+            <p class="text-muted">Accelerate lockout resolution through geo-filtered provider selection and SLA-prioritized dispatch logic.</p>
           </div>
         </div>
+      </section>
+
+      <section>
+        <h2>Operational Impact</h2>
+        <p class="text-muted">By combining smart geolocation, dispatch intelligence, and curated provider quality controls, TechLoc reduces response times, improves SLA performance, and gives fleet leaders a clear nationwide operational picture. The platform turns service coordination into a measurable, data-driven workflow with stronger control and better customer outcomes.</p>
       </section>
     </main>
   </div>
