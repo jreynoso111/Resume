@@ -251,6 +251,39 @@
         font-size: 32px;
       }
     }
+
+    .project-media-showcase {
+      display: grid;
+      gap: 14px;
+      margin-top: -8px;
+    }
+    .project-media-main .img-placeholder {
+      min-height: 360px;
+      border-radius: 14px;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      border: 1px solid var(--border-subtle);
+      box-shadow: var(--card-shadow);
+    }
+    .project-media-ribbon {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .project-media-ribbon .img-placeholder {
+      min-height: 120px;
+      border-radius: 12px;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      border: 1px solid var(--border-subtle);
+    }
+    @media (max-width: 900px) {
+      .project-media-main .img-placeholder { min-height: 280px; }
+      .project-media-ribbon { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
   </style>
 </head>
 <body>
@@ -290,6 +323,19 @@
       <h1>Fleet Maintenance Analytics System</h1>
       <p>A full analytics ecosystem built to monitor, predict, and optimize maintenance operations for a commercial fleet. Includes automated data ingestion, cleaning pipelines, KPI dashboards, and anomaly tracking.</p>
     </section>
+
+      <section class="project-media-showcase">
+        <div class="project-media-main">
+          <div class="img-placeholder" style="background-image:url('https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=1400&q=80');"></div>
+        </div>
+        <div class="project-media-ribbon">
+          <div class="img-placeholder" style="background-image:url('https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=900&q=80');"></div>
+          <div class="img-placeholder" style="background-image:url('https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=900&q=80');"></div>
+          <div class="img-placeholder" style="background-image:url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=900&q=80');"></div>
+          <div class="img-placeholder" style="background-image:url('https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=900&q=80');"></div>
+        </div>
+      </section>
+
 
     <section style="margin-top:-20px;">
       <h2>Project Overview</h2>
