@@ -35,6 +35,11 @@
     .editor-area [contenteditable="true"]{min-height:52vh;border:1px solid #d1d5db;border-radius:8px;padding:14px}
     .editor-actions{display:flex;justify-content:space-between;gap:8px;padding:10px;border-top:1px solid #e5e7eb}
     .admin-status{font:500 12px Inter,system-ui;color:#6b7280;padding:8px 12px;border-bottom:1px solid #e5e7eb}
+    .admin-toast{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:10050;background:#111827;color:#fff;padding:10px 14px;border-radius:10px;font:500 12px Inter,system-ui;box-shadow:0 8px 20px rgba(0,0,0,.25);display:none;max-width:min(92vw,760px)}
+    .admin-toast.show{display:block}
+    .admin-toast.warn{background:#92400e}
+    .admin-toast.error{background:#991b1b}
+    .admin-toast.success{background:#065f46}
   `;
 
   function injectCSS() {
@@ -190,6 +195,16 @@
     });
   }
 
+  function notify(message, tone) {
+    if (!adminToast) return;
+    adminToast.textContent = message;
+    adminToast.className = `admin-toast show ${tone || ''}`.trim();
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+      adminToast.className = 'admin-toast';
+    }, 5200);
+  }
+
   async function handleImageUpload(target) {
     if (!isAdmin()) return;
     const input = document.createElement('input');
@@ -211,11 +226,17 @@
           const dataUrl = await toDataURL(reduced.blob);
           storedPath = dataUrl;
           console.warn('No se pudo guardar en carpeta del repo, se usa fallback localStorage.', repoError);
-          alert('⚠️ No se pudo escribir en assets/uploads automáticamente. Se aplicó un fallback local temporal en este navegador. Para guardarlo en el repo, abre la web en Chrome/Edge y concede acceso a la carpeta del proyecto.');
+          notify('No se pudo guardar en assets/uploads automáticamente. Se aplicó fallback local en este navegador.', 'warn');
         }
 
         const key = imageKeyFor(path, target.dataset.adminImageId);
-        localStorage.setItem(key, storedPath);
+        try {
+          localStorage.setItem(key, storedPath);
+        } catch (storageErr) {
+          console.error(storageErr);
+          notify('No se pudo guardar el fallback local (espacio del navegador lleno).', 'error');
+          return;
+        }
 
         if (target.dataset.adminImageKind === 'img') {
           target.src = storedPath;
@@ -224,9 +245,14 @@
         }
 
         applyImageFit(target, target.dataset.adminImageKind);
+        if (storedPath.startsWith('data:')) {
+          notify('Imagen aplicada con fallback local del navegador.', 'warn');
+        } else {
+          notify('Imagen guardada y aplicada correctamente.', 'success');
+        }
       } catch (err) {
         console.error(err);
-        alert('Error procesando la imagen. Intenta con otro archivo.');
+        notify('Error procesando la imagen. Intenta con otro archivo.', 'error');
       }
     });
 
@@ -266,8 +292,14 @@
 
     const backgroundCandidates = Array.from(document.querySelectorAll('*')).filter((el) => {
       if (el.closest('.admin-modal,.editor')) return false;
+      if (el.classList.contains('admin-image-wrap') || el.classList.contains('admin-image-target')) return false;
       const styleAttr = el.getAttribute('style') || '';
-      return /background-image\s*:/.test(styleAttr);
+      const inlineHasBg = /background-image\s*:/.test(styleAttr);
+      const computedBg = window.getComputedStyle(el).backgroundImage || 'none';
+      const computedHasBg = computedBg !== 'none';
+      if (!inlineHasBg && !computedHasBg) return false;
+      const rect = el.getBoundingClientRect();
+      return rect.width >= 40 && rect.height >= 40;
     });
 
     let imgIdx = 1;
@@ -309,7 +341,7 @@
   }
 
   let currentTarget = null;
-  let modal, fab, editorModal, editableArea;
+  let modal, fab, editorModal, editableArea, adminToast, toastTimer;
 
   function closeModal() { modal.classList.remove('show'); }
   function openModal() { modal.classList.add('show'); }
@@ -414,7 +446,9 @@
         </div>
       </div>`;
 
-    document.body.append(fab, modal, editorModal);
+    adminToast = document.createElement('div');
+    adminToast.className = 'admin-toast';
+    document.body.append(fab, modal, editorModal, adminToast);
     editableArea = editorModal.querySelector('#admin-editable');
 
     modal.querySelector('#admin-cancel').addEventListener('click', closeModal);
@@ -490,4 +524,6 @@
   }
 
   setAdminMode(isAdmin());
+  window.addEventListener('load', () => markEditableImages(), { once: true });
+  setTimeout(() => markEditableImages(), 900);
 })();
