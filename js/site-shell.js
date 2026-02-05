@@ -11,16 +11,36 @@
     return activeKey === key ? ` class="${className}"` : '';
   }
 
-  function renderProjectDropdown(prefix) {
-    return projectLinks
+  function renderProjectDropdown(prefix, className = '') {
+    return `<div${className ? ` class="${className}"` : ''}>${projectLinks
       .map((item) => `<a href="${prefix}${item.href}">${item.label}</a>`)
-      .join('');
+      .join('')}</div>`;
   }
 
   function renderProjectsSidebar(activeProject) {
     return `<h3>Projects</h3>${projectLinks
       .map((item) => `<a href="${item.href}"${withActiveClass(activeProject, item.key)}>${item.label}</a>`)
       .join('')}`;
+  }
+
+  function renderMainNavLinks(activePage, config) {
+    const linksClass = config.linksClass || 'nav-links';
+    const activeClass = config.activeClass || 'active';
+    const projectsWrapperClass = config.projectsWrapperClass || 'nav-item projects-menu';
+    const projectsAnchorClass = config.projectsAnchorClass || '';
+    const projectsDropdownClass = config.projectsDropdownClass || 'projects-dropdown';
+    const projectsLabel = config.projectsLabel || 'Projects ▾';
+
+    return `
+      <div class="${linksClass}">
+        <a href="${config.overviewHref}"${withActiveClass(activePage, 'overview', activeClass)}>Overview</a>
+        <a href="${config.experienceHref}"${withActiveClass(activePage, 'experience', activeClass)}>Experience</a>
+        <div class="${projectsWrapperClass}">
+          <a href="${config.projectsHref}"${projectsAnchorClass ? ` class="${projectsAnchorClass}"` : ''}${withActiveClass(activePage, 'projects', activeClass)}>${projectsLabel}</a>
+          ${renderProjectDropdown(config.projectsDropdownPrefix, projectsDropdownClass)}
+        </div>
+        <a href="${config.aboutHref}"${withActiveClass(activePage, 'about', activeClass)}>About Me</a>
+      </div>`;
   }
 
   function renderHeader(variant, activePage) {
@@ -36,15 +56,16 @@
             </div>
           </div>
 
-          <div class="nav-links">
-            <a href="index.html"${withActiveClass(activePage, 'overview', 'nav-active')}>Overview</a>
-            <a href="pages/experience.html"${withActiveClass(activePage, 'experience')}>Experience</a>
-            <div class="nav-item nav-item-projects">
-              <a href="pages/projects/"${withActiveClass(activePage, 'projects')}>Projects ▾</a>
-              <div class="nav-dropdown" id="projects-dropdown">${renderProjectDropdown('pages/projects/')}</div>
-            </div>
-            <a href="pages/about.html"${withActiveClass(activePage, 'about')}>About Me</a>
-          </div>
+          ${renderMainNavLinks(activePage, {
+            activeClass: 'nav-active',
+            overviewHref: 'index.html',
+            experienceHref: 'pages/experience.html',
+            projectsHref: 'pages/projects/',
+            projectsDropdownPrefix: 'pages/projects/',
+            projectsWrapperClass: 'nav-item nav-item-projects',
+            projectsDropdownClass: 'nav-dropdown',
+            aboutHref: 'pages/about.html'
+          })}
 
           <div class="nav-cta">
             <a href="mailto:jreynoso111@gmail.com" class="btn-primary">Send email<span class="chevron">→</span></a>
@@ -65,15 +86,16 @@
             </div>
           </div>
           <div class="nav-main">
-            <div class="nav-links">
-              <a href="../index.html"${withActiveClass(activePage, 'overview')}>Overview</a>
-              <a href="experience.html"${withActiveClass(activePage, 'experience')}>Experience</a>
-              <div class="dropdown">
-                <a href="projects/" class="dropbtn"${withActiveClass(activePage, 'projects')}>Projects ▾</a>
-                <div class="dropdown-content">${renderProjectDropdown('projects/')}</div>
-              </div>
-              <a href="about.html"${withActiveClass(activePage, 'about')}>About Me</a>
-            </div>
+            ${renderMainNavLinks(activePage, {
+              overviewHref: '../index.html',
+              experienceHref: 'experience.html',
+              projectsHref: 'projects/',
+              projectsDropdownPrefix: 'projects/',
+              projectsWrapperClass: 'dropdown',
+              projectsAnchorClass: 'dropbtn',
+              projectsDropdownClass: 'dropdown-content',
+              aboutHref: 'about.html'
+            })}
           </div>
           <a href="mailto:jreynoso111@gmail.com" class="nav-cta">Send email <span aria-hidden="true">→</span></a>
         </nav>
@@ -91,13 +113,15 @@
           </div>
         </div>
         <nav class="nav-tabs">
-          <a href="../../index.html"${withActiveClass(activePage, 'overview')}>Overview</a>
-          <a href="../experience.html"${withActiveClass(activePage, 'experience')}>Experience</a>
-          <div class="nav-item projects-menu">
-            <a href="./"${withActiveClass(activePage, 'projects')}>Projects</a>
-            <div class="projects-dropdown">${renderProjectDropdown('')}</div>
-          </div>
-          <a href="../about.html"${withActiveClass(activePage, 'about')}>About Me</a>
+          ${renderMainNavLinks(activePage, {
+            linksClass: 'nav-tabs-links',
+            overviewHref: '../../index.html',
+            experienceHref: '../experience.html',
+            projectsHref: './',
+            projectsDropdownPrefix: '',
+            aboutHref: '../about.html',
+            projectsLabel: 'Projects'
+          })}
         </nav>
         <div class="header-cta"><a href="mailto:jreynoso111@gmail.com" class="email-btn">Send email →</a></div>
       </div>`;
@@ -117,7 +141,10 @@
         <nav class="header-nav">
           <a href="../../index.html"${withActiveClass(activePage, 'overview')}>Overview</a>
           <a href="../experience.html"${withActiveClass(activePage, 'experience')}>Experience</a>
-          <a href="./"${withActiveClass(activePage, 'projects')}>Projects</a>
+          <div class="header-projects-menu">
+            <a href="./"${withActiveClass(activePage, 'projects')}>Projects ▾</a>
+            ${renderProjectDropdown('', 'header-projects-dropdown')}
+          </div>
           <a href="../about.html"${withActiveClass(activePage, 'about')}>About Me</a>
         </nav>
 
