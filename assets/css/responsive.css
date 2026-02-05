@@ -1,0 +1,134 @@
+/* Global responsive overrides for all pages */
+
+img, video, canvas { max-width: 100%; height: auto; }
+
+@media (max-width: 1024px) {
+  .hero-grid,
+  .highlights-inner,
+  .project-grid,
+  .grid-2,
+  .grid-3,
+  .mini-grid,
+  .about-grid,
+  .experience-grid,
+  .page-shell,
+  .projects-grid,
+  .cards-grid,
+  .timeline-grid,
+  .stats-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .projects-sidebar {
+    position: static !important;
+    top: auto !important;
+    width: 100%;
+  }
+
+  .hero-card-wrap { margin-top: 10px !important; }
+}
+
+@media (max-width: 768px) {
+  .shell,
+  .container,
+  .section,
+  .page-shell,
+  main,
+  .page-main {
+    padding-left: 14px !important;
+    padding-right: 14px !important;
+  }
+
+  header {
+    position: sticky;
+    top: 0;
+  }
+
+  .nav,
+  .header-row {
+    flex-wrap: wrap;
+    gap: 10px !important;
+    justify-content: flex-start !important;
+  }
+
+  .logo-wrap,
+  .profile-block,
+  .header-left {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .nav-links,
+  .nav-tabs,
+  .header-nav {
+    order: 3;
+    width: 100%;
+    overflow-x: auto;
+    white-space: nowrap;
+    gap: 14px !important;
+    padding-bottom: 4px;
+    justify-content: flex-start !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .nav-cta,
+  .header-cta {
+    margin-left: 0 !important;
+    width: auto;
+    max-width: 100%;
+  }
+
+  .btn-primary,
+  .email-btn,
+  .header-cta,
+  .admin-login-btn {
+    font-size: 12px !important;
+    padding: 8px 12px !important;
+  }
+
+  .hero-title,
+  .title,
+  h1 {
+    font-size: clamp(1.4rem, 6vw, 1.9rem) !important;
+    line-height: 1.2;
+  }
+
+  .section-title,
+  h2 {
+    font-size: clamp(1.1rem, 4.5vw, 1.4rem) !important;
+  }
+
+  .hero-meta-row,
+  .hero-card-footer {
+    grid-template-columns: 1fr !important;
+  }
+
+  .img-placeholder {
+    min-height: 180px;
+  }
+}
+
+@media (max-width: 560px) {
+  body { font-size: 14px; }
+
+  .logo-title,
+  .profile-name,
+  .header-title {
+    font-size: 15px !important;
+  }
+
+  .logo-sub,
+  .profile-subtitle,
+  .header-subtitle {
+    font-size: 11px !important;
+  }
+
+  .admin-login-btn {
+    width: 100%;
+  }
+
+  .editor-panel {
+    left: 6px !important;
+    right: 6px !important;
+  }
+}

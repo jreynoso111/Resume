@@ -611,6 +611,7 @@
       }
     }
   </style>
+  <link rel="stylesheet" href="/assets/css/responsive.css" />
 </head>
 <body>
   <canvas id="bg-canvas"></canvas>
@@ -630,18 +631,18 @@
           </div>
 
           <div class="nav-links">
-            <a href="index.html" class="nav-active">Overview</a>
-            <a href="Experience.html">Experience</a>
+            <a href="/index.html" class="nav-active">Overview</a>
+            <a href="/pages/experience.html">Experience</a>
             <div class="nav-item nav-item-projects">
-              <a href="Projects.html">Projects ▾</a>
+              <a href="/pages/projects.html">Projects ▾</a>
               <div class="nav-dropdown" id="projects-dropdown">
-                <a href="Project1 fleetanalytics.html">Fleet Maintenance Analytics System</a>
-                <a href="Project2 Inventory Control Dashboards.html">Inventory Control Dashboard</a>
-                <a href="Project4 GPS Movement Analytics.html">GPS Tracking & Movement Analysis</a>
-                <a href="Project3 - Repossession dashboard.html">Repo & Risk Monitoring System</a>
+                <a href="/pages/projects/fleet-maintenance-analytics.html">Fleet Maintenance Analytics System</a>
+                <a href="/pages/projects/inventory-control-dashboard.html">Inventory Control Dashboard</a>
+                <a href="/pages/projects/gps-movement-analytics.html">GPS Tracking & Movement Analysis</a>
+                <a href="/pages/projects/repossession-dashboard.html">Repo & Risk Monitoring System</a>
               </div>
             </div>
-            <a href="About.html">About Me</a>
+            <a href="/pages/about.html">About Me</a>
           </div>
 
           <div class="nav-cta">
@@ -975,7 +976,7 @@
   </script>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/app.js"></script>
+  <script src="/assets/js/app.js"></script>
 
   <script>
     (function() {
@@ -1069,5 +1070,7 @@
         animate();
     })();
   </script>
+
+  <script src="/assets/js/editor-auth.js"></script>
 </body>
 </html>
