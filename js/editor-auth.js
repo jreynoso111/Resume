@@ -55,12 +55,114 @@
     });
   }
 
+  function extensionFromType(type) {
+    if (type === 'image/png') return 'png';
+    if (type === 'image/webp') return 'webp';
+    return 'jpg';
+  }
+
+  function slugify(input) {
+    return String(input || 'image')
+      .toLowerCase()
+      .replace(/\.[a-z0-9]+$/i, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 48) || 'image';
+  }
+
+  function toDataURL(blob) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ''));
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  function loadImageFromFile(file) {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        resolve(img);
+      };
+      img.onerror = (err) => {
+        URL.revokeObjectURL(url);
+        reject(err);
+      };
+      img.src = url;
+    });
+  }
+
+  async function reduceImage(file) {
+    const image = await loadImageFromFile(file);
+    const maxW = 1920;
+    const maxH = 1920;
+    const ratio = Math.min(1, maxW / image.width, maxH / image.height);
+    const width = Math.max(1, Math.round(image.width * ratio));
+    const height = Math.max(1, Math.round(image.height * ratio));
+
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(image, 0, 0, width, height);
+
+    const outputType = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
+    const quality = outputType === 'image/jpeg' ? 0.84 : undefined;
+
+    const blob = await new Promise((resolve, reject) => {
+      canvas.toBlob((result) => {
+        if (!result) reject(new Error('No se pudo reducir la imagen.'));
+        else resolve(result);
+      }, outputType, quality);
+    });
+
+    return {
+      blob,
+      ext: extensionFromType(blob.type),
+      baseName: slugify(file.name)
+    };
+  }
+
+  function pathDepth(pathname) {
+    const segments = String(pathname || '/').split('/').filter(Boolean);
+    return Math.max(0, segments.length - 1);
+  }
+
+  function toCurrentPageRelative(rootPath) {
+    const depth = pathDepth(location.pathname || '/');
+    const prefix = '../'.repeat(depth);
+    return `${prefix}${rootPath}`;
+  }
+
+  async function saveReducedImageToRepo(blob, baseName, ext) {
+    if (!window.showDirectoryPicker) {
+      throw new Error('File System Access API no disponible en este navegador.');
+    }
+
+    const rootDir = await window.showDirectoryPicker({ mode: 'readwrite' });
+    const assetsDir = await rootDir.getDirectoryHandle('assets', { create: true });
+    const uploadsDir = await assetsDir.getDirectoryHandle('uploads', { create: true });
+
+    const filename = `${Date.now()}-${baseName}.${ext}`;
+    const fileHandle = await uploadsDir.getFileHandle(filename, { create: true });
+    const writable = await fileHandle.createWritable();
+    await writable.write(blob);
+    await writable.close();
+
+    return toCurrentPageRelative(`assets/uploads/${filename}`);
+  }
+
   function applyImageFit(target, kind) {
     if (kind === 'img') {
+      target.style.maxWidth = '100%';
+      target.style.width = target.style.width || '100%';
+      if (!target.style.height) target.style.height = 'auto';
       target.style.objectFit = 'cover';
       target.style.objectPosition = 'center';
-      target.style.width = '100%';
-      if (!target.style.height) target.style.height = '100%';
       return;
     }
 
@@ -85,31 +187,46 @@
     });
   }
 
-  function handleImageUpload(target) {
+  async function handleImageUpload(target) {
     if (!isAdmin()) return;
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
-    input.addEventListener('change', () => {
+
+    input.addEventListener('change', async () => {
       const [file] = input.files || [];
       if (!file) return;
 
-      const reader = new FileReader();
-      reader.onload = () => {
-        const value = String(reader.result || '');
+      try {
+        const reduced = await reduceImage(file);
         const path = location.pathname || 'index';
+        let storedPath;
+
+        try {
+          storedPath = await saveReducedImageToRepo(reduced.blob, reduced.baseName, reduced.ext);
+        } catch (repoError) {
+          const dataUrl = await toDataURL(reduced.blob);
+          storedPath = dataUrl;
+          console.warn('No se pudo guardar en carpeta del repo, se usa fallback localStorage.', repoError);
+          alert('⚠️ No se pudo escribir en assets/uploads automáticamente. Se aplicó un fallback local temporal en este navegador. Para guardarlo en el repo, abre la web en Chrome/Edge y concede acceso a la carpeta del proyecto.');
+        }
+
         const key = imageKeyFor(path, target.dataset.adminImageId);
-        localStorage.setItem(key, value);
+        localStorage.setItem(key, storedPath);
 
         if (target.dataset.adminImageKind === 'img') {
-          target.src = value;
+          target.src = storedPath;
         } else {
-          target.style.backgroundImage = `url("${value}")`;
+          target.style.backgroundImage = `url("${storedPath}")`;
         }
+
         applyImageFit(target, target.dataset.adminImageKind);
-      };
-      reader.readAsDataURL(file);
+      } catch (err) {
+        console.error(err);
+        alert('Error procesando la imagen. Intenta con otro archivo.');
+      }
     });
+
     input.click();
   }
 
