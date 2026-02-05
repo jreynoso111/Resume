@@ -127,15 +127,18 @@
     };
   }
 
-  function pathDepth(pathname) {
-    const segments = String(pathname || '/').split('/').filter(Boolean);
-    return Math.max(0, segments.length - 1);
+  function getRootRelativePrefix() {
+    const script = document.currentScript
+      || Array.from(document.scripts || []).find((s) => /(?:^|\/)js\/editor-auth\.js(?:$|[?#])/.test(String(s.src || s.getAttribute('src') || '')));
+
+    const srcAttr = script ? String(script.getAttribute('src') || script.src || '') : '';
+    const match = srcAttr.match(/^(.*?)(?:js\/editor-auth\.js)(?:[?#].*)?$/);
+    const prefix = match ? match[1] : '';
+    return prefix || '';
   }
 
-  function toCurrentPageRelative(rootPath) {
-    const depth = pathDepth(location.pathname || '/');
-    const prefix = '../'.repeat(depth);
-    return `${prefix}${rootPath}`;
+  function toUploadsPath(filename) {
+    return `${getRootRelativePrefix()}assets/uploads/${filename}`;
   }
 
   async function saveReducedImageToRepo(blob, baseName, ext) {
@@ -153,7 +156,7 @@
     await writable.write(blob);
     await writable.close();
 
-    return toCurrentPageRelative(`assets/uploads/${filename}`);
+    return toUploadsPath(filename);
   }
 
   function applyImageFit(target, kind) {
