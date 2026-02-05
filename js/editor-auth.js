@@ -3,6 +3,7 @@
   const ADMIN_PASS = 'Reynoso';
   const AUTH_KEY = 'resume_admin_auth_v1';
   const EDIT_PREFIX = 'resume_content_edit_v1';
+  const IMAGE_PREFIX = 'resume_image_edit_v1';
 
   const css = `
     .admin-fab{z-index:9999;border:1px solid #1f4f7b;background:#1f4f7b;color:#fff;border-radius:999px;padding:8px 14px;font:600 12px Inter,system-ui;cursor:pointer;box-shadow:0 6px 15px rgba(15,23,42,.2)}
@@ -21,6 +22,10 @@
     .admin-edit-target.admin-editing{outline:2px dashed rgba(31,79,123,.4);outline-offset:4px}
     .admin-pencil{position:absolute;top:6px;right:6px;z-index:50;border:none;background:#1f4f7b;color:#fff;border-radius:999px;width:30px;height:30px;cursor:pointer;font-size:14px;display:none;align-items:center;justify-content:center;box-shadow:0 6px 14px rgba(15,23,42,.25)}
     body.admin-mode .admin-pencil{display:flex}
+    .admin-image-wrap{position:relative;display:block;max-width:100%}
+    .admin-image-target{position:relative}
+    .admin-image-btn{position:absolute;top:8px;right:8px;z-index:60;border:none;background:#1f4f7b;color:#fff;border-radius:999px;width:32px;height:32px;cursor:pointer;font-size:14px;display:none;align-items:center;justify-content:center;box-shadow:0 6px 14px rgba(15,23,42,.25)}
+    body.admin-mode .admin-image-btn{display:flex}
     .editor{display:none;position:fixed;inset:0;background:rgba(17,24,39,.55);z-index:10001;align-items:center;justify-content:center;padding:14px}
     .editor.show{display:flex}
     .editor-shell{width:min(1020px,100%);height:min(86vh,860px);background:#fff;border-radius:12px;overflow:hidden;border:1px solid #d1d5db;display:grid;grid-template-rows:auto auto 1fr auto}
@@ -39,6 +44,7 @@
   }
 
   function keyFor(path, id) { return `${EDIT_PREFIX}:${path}:${id}`; }
+  function imageKeyFor(path, id) { return `${IMAGE_PREFIX}:${path}:${id}`; }
   function isAdmin() { return localStorage.getItem(AUTH_KEY) === '1'; }
 
   function applySavedContent() {
@@ -46,6 +52,118 @@
     document.querySelectorAll('[data-admin-edit-id]').forEach((el) => {
       const saved = localStorage.getItem(keyFor(path, el.dataset.adminEditId));
       if (saved) el.innerHTML = saved;
+    });
+  }
+
+  function applyImageFit(target, kind) {
+    if (kind === 'img') {
+      target.style.objectFit = 'cover';
+      target.style.objectPosition = 'center';
+      target.style.width = '100%';
+      if (!target.style.height) target.style.height = '100%';
+      return;
+    }
+
+    target.style.backgroundSize = 'cover';
+    target.style.backgroundPosition = 'center';
+    target.style.backgroundRepeat = 'no-repeat';
+  }
+
+  function applySavedImages() {
+    const path = location.pathname || 'index';
+    document.querySelectorAll('[data-admin-image-id]').forEach((el) => {
+      const saved = localStorage.getItem(imageKeyFor(path, el.dataset.adminImageId));
+      const kind = el.dataset.adminImageKind;
+      applyImageFit(el, kind);
+      if (!saved) return;
+
+      if (kind === 'img') {
+        el.src = saved;
+      } else {
+        el.style.backgroundImage = `url("${saved}")`;
+      }
+    });
+  }
+
+  function handleImageUpload(target) {
+    if (!isAdmin()) return;
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.addEventListener('change', () => {
+      const [file] = input.files || [];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        const value = String(reader.result || '');
+        const path = location.pathname || 'index';
+        const key = imageKeyFor(path, target.dataset.adminImageId);
+        localStorage.setItem(key, value);
+
+        if (target.dataset.adminImageKind === 'img') {
+          target.src = value;
+        } else {
+          target.style.backgroundImage = `url("${value}")`;
+        }
+        applyImageFit(target, target.dataset.adminImageKind);
+      };
+      reader.readAsDataURL(file);
+    });
+    input.click();
+  }
+
+  function addImageButton(target) {
+    if (target.dataset.adminImageBtn === '1') return;
+    target.dataset.adminImageBtn = '1';
+
+    let mount = target;
+    if (target.tagName === 'IMG') {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'admin-image-wrap';
+      target.parentNode.insertBefore(wrapper, target);
+      wrapper.appendChild(target);
+      mount = wrapper;
+      target.style.display = 'block';
+    }
+
+    mount.classList.add('admin-image-target');
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'admin-image-btn';
+    btn.textContent = '🖼️';
+    btn.title = 'Reemplazar imagen';
+    btn.addEventListener('click', () => handleImageUpload(target));
+    mount.appendChild(btn);
+  }
+
+  function markEditableImages() {
+    const imageCandidates = Array.from(document.querySelectorAll('img')).filter((el) => {
+      if (el.closest('.admin-modal,.editor')) return false;
+      return Boolean(el.getAttribute('src'));
+    });
+
+    const backgroundCandidates = Array.from(document.querySelectorAll('*')).filter((el) => {
+      if (el.closest('.admin-modal,.editor')) return false;
+      const styleAttr = el.getAttribute('style') || '';
+      return /background-image\s*:/.test(styleAttr);
+    });
+
+    let imgIdx = 1;
+    imageCandidates.forEach((img) => {
+      if (!img.dataset.adminImageId) img.dataset.adminImageId = `img-${imgIdx++}`;
+      img.dataset.adminImageKind = 'img';
+      applyImageFit(img, 'img');
+      addImageButton(img);
+    });
+
+    let bgIdx = 1;
+    backgroundCandidates.forEach((el) => {
+      if (!el.dataset.adminImageId) el.dataset.adminImageId = `bg-${bgIdx++}`;
+      el.dataset.adminImageKind = 'bg';
+      applyImageFit(el, 'bg');
+      addImageButton(el);
     });
   }
 
@@ -229,6 +347,7 @@
       const path = location.pathname || 'index';
       Object.keys(localStorage).forEach((k) => {
         if (k.startsWith(`${EDIT_PREFIX}:${path}:`)) localStorage.removeItem(k);
+        if (k.startsWith(`${IMAGE_PREFIX}:${path}:`)) localStorage.removeItem(k);
       });
       location.reload();
     });
@@ -236,7 +355,9 @@
 
   injectCSS();
   markEditableSections();
+  markEditableImages();
   applySavedContent();
+  applySavedImages();
   createUI();
 
   const headerMountPoint = document.querySelector('header .nav-cta, header .nav-links, header .nav, header');
