@@ -20,11 +20,11 @@
     .admin-btn.primary{background:#1f4f7b;color:#fff;border-color:#1f4f7b}
     .admin-edit-target{position:relative}
     .admin-edit-target.admin-editing{outline:2px dashed rgba(31,79,123,.4);outline-offset:4px}
-    .admin-pencil{position:absolute;top:6px;right:6px;z-index:50;border:none;background:#1f4f7b;color:#fff;border-radius:999px;width:30px;height:30px;cursor:pointer;font-size:14px;display:none;align-items:center;justify-content:center;box-shadow:0 6px 14px rgba(15,23,42,.25)}
+    .admin-pencil{position:absolute;right:10px;bottom:10px;z-index:90;border:none;background:#1f4f7b;color:#fff;border-radius:999px;width:30px;height:30px;cursor:pointer;font-size:14px;display:none;align-items:center;justify-content:center;box-shadow:0 6px 14px rgba(15,23,42,.25)}
     body.admin-mode .admin-pencil{display:flex}
     .admin-image-wrap{position:relative;display:block;max-width:100%}
     .admin-image-target{position:relative}
-    .admin-image-btn{position:absolute;top:8px;right:8px;z-index:60;border:none;background:#1f4f7b;color:#fff;border-radius:999px;width:32px;height:32px;cursor:pointer;font-size:14px;display:none;align-items:center;justify-content:center;box-shadow:0 6px 14px rgba(15,23,42,.25)}
+    .admin-image-btn{position:absolute;right:10px;bottom:10px;z-index:90;border:none;background:#1f4f7b;color:#fff;border-radius:999px;width:32px;height:32px;cursor:pointer;font-size:14px;display:none;align-items:center;justify-content:center;box-shadow:0 6px 14px rgba(15,23,42,.25)}
     body.admin-mode .admin-image-btn{display:flex}
     .editor{display:none;position:fixed;inset:0;background:rgba(17,24,39,.55);z-index:10001;align-items:center;justify-content:center;padding:14px}
     .editor.show{display:flex}
@@ -302,13 +302,16 @@
   }
 
   function markEditableSections() {
-    const candidates = document.querySelectorAll('main section, .page section, section, article, .card, .mini-card, .highlight-item');
+    const candidates = new Set(document.querySelectorAll('main section, .page section, section, article, .card, .mini-card, .highlight-item'));
+    document.querySelectorAll('.hero, .hero-grid, #top > section:first-of-type').forEach((el) => candidates.add(el));
+
     let idx = 1;
-    candidates.forEach((el) => {
-      if (el.closest('.admin-modal,.editor')) return;
+    Array.from(candidates).forEach((el) => {
+      if (!el || el.closest('.admin-modal,.editor')) return;
       if (el.dataset.adminEditId) return;
       const textLen = (el.textContent || '').trim().length;
-      if (textLen < 25) return;
+      const forced = el.matches('.hero, .hero-grid, #top > section:first-of-type');
+      if (!forced && textLen < 25) return;
       el.dataset.adminEditId = `sec-${idx++}`;
       el.classList.add('admin-edit-target');
 
