@@ -616,44 +616,7 @@
   <canvas id="bg-canvas"></canvas>
 
   <div class="page">
-    <header>
-      <div class="shell">
-        <nav class="nav">
-          <div class="logo-wrap">
-            <div class="logo-mark">
-              <div class="logo-inner">JR</div>
-            </div>
-            <div class="logo-text-block">
-              <div class="logo-title" id="profile-name">Juan R. Reynoso</div>
-              <div class="logo-sub">Data, Operations & Fleet Analytics</div>
-            </div>
-          </div>
-
-          <div class="nav-links">
-            <a href="index.html" class="nav-active">Overview</a>
-            <a href="pages/experience.html">Experience</a>
-            <div class="nav-item nav-item-projects">
-              <a href="pages/projects/">Projects ▾</a>
-              <div class="nav-dropdown" id="projects-dropdown">
-                <a href="pages/projects/fleet-maintenance-analytics.html">Fleet Maintenance Analytics System</a>
-                <a href="pages/projects/inventory-control-dashboard.html">Inventory Control Dashboard</a>
-                <a href="pages/projects/gps-movement-analytics.html">GPS Tracking & Movement Analysis</a>
-                <a href="pages/projects/repossession-risk-monitoring.html">Repo & Risk Monitoring System</a>
-                  <a href="pages/projects/techloc-fleet-service-control.html">TechLoc Fleet &amp; Service Control Platform</a>
-              </div>
-            </div>
-            <a href="pages/about.html">About Me</a>
-          </div>
-
-          <div class="nav-cta">
-            <a href="mailto:jreynoso111@gmail.com" class="btn-primary">
-              Send email
-              <span class="chevron">→</span>
-            </a>
-          </div>
-        </nav>
-      </div>
-    </header>
+    <header id="site-header" data-variant="home" data-active="overview"></header>
 
     <main id="top">
       <section class="hero">
@@ -1072,5 +1035,6 @@
   </script>
 
   <script src="js/editor-auth.js"></script>
-</body>
+
+  <script src="js/site-shell.js"></script></body>
 </html>
