@@ -5,7 +5,7 @@
   const EDIT_PREFIX = 'resume_content_edit_v1';
 
   const css = `
-    .admin-fab{position:fixed;right:18px;bottom:18px;z-index:9999;border:1px solid #1f4f7b;background:#1f4f7b;color:#fff;border-radius:999px;padding:10px 16px;font:600 13px Inter,system-ui;cursor:pointer;box-shadow:0 10px 25px rgba(15,23,42,.25)}
+    .admin-fab{z-index:9999;border:1px solid #1f4f7b;background:#1f4f7b;color:#fff;border-radius:999px;padding:8px 14px;font:600 12px Inter,system-ui;cursor:pointer;box-shadow:0 6px 15px rgba(15,23,42,.2)}
     .admin-fab[data-state="on"]{background:#153554}
     .admin-modal{position:fixed;inset:0;background:rgba(17,24,39,.55);display:none;align-items:center;justify-content:center;z-index:10000;padding:16px}
     .admin-modal.show{display:flex}
@@ -17,7 +17,8 @@
     .admin-row{display:flex;justify-content:flex-end;gap:8px;padding:0 16px 14px}
     .admin-btn{border:1px solid #d1d5db;background:#fff;color:#111827;border-radius:8px;padding:8px 12px;cursor:pointer}
     .admin-btn.primary{background:#1f4f7b;color:#fff;border-color:#1f4f7b}
-    .admin-edit-target{outline:2px dashed rgba(31,79,123,.4);outline-offset:4px;position:relative}
+    .admin-edit-target{position:relative}
+    .admin-edit-target.admin-editing{outline:2px dashed rgba(31,79,123,.4);outline-offset:4px}
     .admin-pencil{position:absolute;top:6px;right:6px;z-index:50;border:none;background:#1f4f7b;color:#fff;border-radius:999px;width:30px;height:30px;cursor:pointer;font-size:14px;display:none;align-items:center;justify-content:center;box-shadow:0 6px 14px rgba(15,23,42,.25)}
     body.admin-mode .admin-pencil{display:flex}
     .editor{display:none;position:fixed;inset:0;background:rgba(17,24,39,.55);z-index:10001;align-items:center;justify-content:center;padding:14px}
@@ -63,7 +64,7 @@
       btn.type = 'button';
       btn.className = 'admin-pencil';
       btn.textContent = '✏️';
-      btn.title = 'Editar sección';
+      btn.title = 'Edit section';
       btn.addEventListener('click', () => openEditor(el));
       el.appendChild(btn);
     });
@@ -78,24 +79,31 @@
   function setAdminMode(on) {
     if (on) {
       document.body.classList.add('admin-mode');
-      fab.textContent = 'Administrador activo';
+      fab.textContent = 'Admin mode: on';
       fab.dataset.state = 'on';
     } else {
       document.body.classList.remove('admin-mode');
-      fab.textContent = 'Acceso administrador';
+      fab.textContent = 'Admin login';
       fab.dataset.state = 'off';
     }
   }
 
   function openEditor(target) {
     if (!isAdmin()) return;
+    if (currentTarget) {
+      currentTarget.classList.remove('admin-editing');
+    }
     currentTarget = target;
+    currentTarget.classList.add('admin-editing');
     editableArea.innerHTML = target.innerHTML;
     editorModal.classList.add('show');
   }
 
   function closeEditor() {
     editorModal.classList.remove('show');
+    if (currentTarget) {
+      currentTarget.classList.remove('admin-editing');
+    }
     currentTarget = null;
   }
 
@@ -121,14 +129,14 @@
     modal.className = 'admin-modal';
     modal.innerHTML = `
       <div class="admin-card">
-        <h3>Ingreso administrador</h3>
+        <h3>Admin access</h3>
         <form class="admin-form" id="admin-login-form">
-          <div><label>Usuario</label><input name="user" autocomplete="username" required /></div>
-          <div><label>Clave</label><input name="pass" type="password" autocomplete="current-password" required /></div>
+          <div><label>Username</label><input name="user" autocomplete="username" required /></div>
+          <div><label>Password</label><input name="pass" type="password" autocomplete="current-password" required /></div>
         </form>
         <div class="admin-row">
-          <button class="admin-btn" type="button" id="admin-cancel">Cancelar</button>
-          <button class="admin-btn primary" type="button" id="admin-submit">Ingresar</button>
+          <button class="admin-btn" type="button" id="admin-cancel">Cancel</button>
+          <button class="admin-btn primary" type="button" id="admin-submit">Login</button>
         </div>
       </div>`;
 
@@ -136,34 +144,34 @@
     editorModal.className = 'editor';
     editorModal.innerHTML = `
       <div class="editor-shell">
-        <div class="admin-status">Editor de sección (solo administrador). Usa los botones para dar formato y luego guarda.</div>
+        <div class="admin-status">Section editor (admin only). Use the tools and save when done.</div>
         <div class="toolbar">
-          <button class="tool" data-cmd="bold">Negrita</button>
-          <button class="tool" data-cmd="italic">Itálica</button>
-          <button class="tool" data-cmd="underline">Subrayado</button>
-          <button class="tool" data-cmd="strikeThrough">Tachado</button>
-          <button class="tool" data-cmd="insertUnorderedList">Lista •</button>
-          <button class="tool" data-cmd="insertOrderedList">Lista 1.</button>
-          <button class="tool" data-cmd="justifyLeft">Izq</button>
-          <button class="tool" data-cmd="justifyCenter">Centro</button>
-          <button class="tool" data-cmd="justifyRight">Der</button>
-          <button class="tool" data-cmd="undo">Deshacer</button>
-          <button class="tool" data-cmd="redo">Rehacer</button>
+          <button class="tool" data-cmd="bold">Bold</button>
+          <button class="tool" data-cmd="italic">Italic</button>
+          <button class="tool" data-cmd="underline">Underline</button>
+          <button class="tool" data-cmd="strikeThrough">Strikethrough</button>
+          <button class="tool" data-cmd="insertUnorderedList">Bullets</button>
+          <button class="tool" data-cmd="insertOrderedList">Numbered list</button>
+          <button class="tool" data-cmd="justifyLeft">Left</button>
+          <button class="tool" data-cmd="justifyCenter">Center</button>
+          <button class="tool" data-cmd="justifyRight">Right</button>
+          <button class="tool" data-cmd="undo">Undo</button>
+          <button class="tool" data-cmd="redo">Redo</button>
           <button class="tool" data-action="h2">H2</button>
           <button class="tool" data-action="h3">H3</button>
-          <button class="tool" data-action="p">Párrafo</button>
+          <button class="tool" data-action="p">Paragraph</button>
           <button class="tool" data-action="link">Link</button>
-          <button class="tool" data-action="clear">Limpiar formato</button>
+          <button class="tool" data-action="clear">Clear format</button>
         </div>
         <div class="editor-area"><div id="admin-editable" contenteditable="true"></div></div>
         <div class="editor-actions">
           <div>
-            <button class="admin-btn" type="button" id="reset-section">Reset sección</button>
-            <button class="admin-btn" type="button" id="reset-page">Reset página</button>
+            <button class="admin-btn" type="button" id="reset-section">Reset section</button>
+            <button class="admin-btn" type="button" id="reset-page">Reset page</button>
           </div>
           <div>
-            <button class="admin-btn" type="button" id="editor-close">Cancelar</button>
-            <button class="admin-btn primary" type="button" id="editor-save">Guardar cambios</button>
+            <button class="admin-btn" type="button" id="editor-close">Cancel</button>
+            <button class="admin-btn primary" type="button" id="editor-save">Save changes</button>
           </div>
         </div>
       </div>`;
@@ -180,7 +188,7 @@
         setAdminMode(true);
         closeModal();
       } else {
-        alert('Credenciales inválidas.');
+        alert('Invalid credentials.');
       }
     });
 
@@ -194,7 +202,7 @@
         if (action === 'p') return exec('formatBlock', 'p');
         if (action === 'clear') return exec('removeFormat');
         if (action === 'link') {
-          const url = prompt('URL del enlace (https://...)');
+          const url = prompt('Link URL (https://...)');
           if (url) exec('createLink', url);
         }
       });
@@ -230,5 +238,15 @@
   markEditableSections();
   applySavedContent();
   createUI();
+
+  const headerMountPoint = document.querySelector('header .nav-cta, header .nav-links, header .nav, header');
+  if (headerMountPoint) {
+    headerMountPoint.appendChild(fab);
+  } else {
+    fab.style.position = 'fixed';
+    fab.style.right = '18px';
+    fab.style.top = '18px';
+  }
+
   setAdminMode(isAdmin());
 })();
