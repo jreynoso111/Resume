@@ -300,7 +300,7 @@
     .hero-grid {
       display: grid;
       grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.1fr);
-      gap: 28px;
+      gap: 40px;
       align-items: center;
     }
 
@@ -429,10 +429,14 @@
       backdrop-filter: blur(8px);
       border-radius: 14px;
       border: 1px solid var(--border-subtle);
+      border-left: 4px solid var(--accent);
       box-shadow: var(--card-shadow);
       padding: 14px;
       position: relative;
       overflow: hidden;
+    }
+    body:not([data-theme="dark"]) .hero-card {
+      background: #e9edf3;
     }
 
     .hero-chip {
@@ -521,6 +525,7 @@
     /* HIGHLIGHTS */
     .highlights {
       padding: 100px 0;
+      background: var(--bg-alt);
     }
     .highlights-inner {
       display: grid;
@@ -612,6 +617,35 @@
     .mini-meta {
       font-size: 11px;
       color: var(--text-muted);
+    }
+
+    .education {
+      width: 100%;
+      background: #ffffff;
+      border-top: 1px solid var(--border-subtle);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 100px 0;
+      margin-top: 20px;
+    }
+    .cert-grid {
+      list-style: none;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      padding: 0;
+      margin: 16px 0 0;
+    }
+    .cert-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: #f1f5f9;
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.01em;
     }
 
     .skills-strip {
@@ -964,8 +998,8 @@
         </div>
       </section>
           
-      <section class="education" id="education" style="width:100%; background:transparent; border-top:1px solid var(--border-subtle); padding:100px 0; margin-top:20px;" data-aos="fade-up">
-        <div class="shell" style="max-width:var(--max-width); margin:0 auto;">
+      <section class="education" id="education" data-aos="fade-up">
+        <div class="shell">
           <div class="section-label" style="margin-bottom:10px;">Education</div>
           <h2 class="section-title" style="font-size:20px; margin-bottom:12px;">Academic Background</h2>
           <p style="font-size:14px; color:var(--text-muted); max-width:720px;">
@@ -973,6 +1007,14 @@
             All coursework successfully completed. Internship pending for final degree issuance.<br>
             Más de 15 certificaciones técnicas en sistemas ferroviarios y analítica de datos (ver más en Experience).
           </p>
+          <ul class="cert-grid" aria-label="Thales and Siemens certifications">
+            <li><span class="cert-pill">Thales · SCADA &amp; operations monitoring</span></li>
+            <li><span class="cert-pill">Siemens · Rail communications (telephony &amp; PA)</span></li>
+            <li><span class="cert-pill">Thales · Ticketing &amp; fare collection</span></li>
+            <li><span class="cert-pill">Siemens · CCTV &amp; security systems</span></li>
+            <li><span class="cert-pill">Thales · TETRA radio &amp; dispatch</span></li>
+            <li><span class="cert-pill">Siemens · Intercom &amp; station systems</span></li>
+          </ul>
         </div>
       </section>
 
@@ -1181,10 +1223,14 @@
         const ctx = canvas.getContext('2d');
         let width, height;
         let particles = [];
+        let parallaxOffset = { x: 0, y: 0 };
+        let parallaxTarget = { x: 0, y: 0 };
         
         // CONFIGURACIÓN
         const particleCount = 70; 
         const connectionDistance = 150; 
+        const parallaxStrength = 0.08;
+        const parallaxMax = 60;
         
         function resize() {
             width = window.innerWidth;
@@ -1211,9 +1257,9 @@
                 if (this.x < 0 || this.x > width) this.vx *= -1;
                 if (this.y < 0 || this.y > height) this.vy *= -1;
             }
-            draw() {
+            draw(offsetX = 0, offsetY = 0) {
                 ctx.beginPath();
-                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.arc(this.x + offsetX, this.y + offsetY, this.size, 0, Math.PI * 2);
                 ctx.fillStyle = 'rgba(31, 79, 123, 0.4)'; 
                 ctx.fill();
             }
@@ -1225,14 +1271,19 @@
             for (let i = 0; i < particleCount; i++) {
                 particles.push(new Particle());
             }
+            parallaxTarget.y = Math.max(-parallaxMax, Math.min(parallaxMax, window.scrollY * parallaxStrength));
+            parallaxTarget.x = Math.max(-parallaxMax, Math.min(parallaxMax, window.scrollX * parallaxStrength));
         }
         
         function animate() {
             ctx.clearRect(0, 0, width, height);
             
+            parallaxOffset.x += (parallaxTarget.x - parallaxOffset.x) * 0.06;
+            parallaxOffset.y += (parallaxTarget.y - parallaxOffset.y) * 0.06;
+
             for (let i = 0; i < particles.length; i++) {
                 particles[i].update();
-                particles[i].draw();
+                particles[i].draw(parallaxOffset.x, parallaxOffset.y);
                 
                 // Dibujar líneas
                 for (let j = i; j < particles.length; j++) {
@@ -1244,8 +1295,8 @@
                         ctx.beginPath();
                         ctx.strokeStyle = `rgba(31, 79, 123, ${0.15 * (1 - distance / connectionDistance)})`;
                         ctx.lineWidth = 1;
-                        ctx.moveTo(particles[i].x, particles[i].y);
-                        ctx.lineTo(particles[j].x, particles[j].y);
+                        ctx.moveTo(particles[i].x + parallaxOffset.x, particles[i].y + parallaxOffset.y);
+                        ctx.lineTo(particles[j].x + parallaxOffset.x, particles[j].y + parallaxOffset.y);
                         ctx.stroke();
                     }
                 }
@@ -1260,6 +1311,12 @@
             init();
         });
         
+        window.addEventListener('scroll', () => {
+            const nextY = window.scrollY * parallaxStrength;
+            parallaxTarget.y = Math.max(-parallaxMax, Math.min(parallaxMax, nextY));
+            parallaxTarget.x = Math.max(-parallaxMax, Math.min(parallaxMax, window.scrollX * parallaxStrength));
+        });
+
         // Timeout para asegurar que el contenido cargó y la altura es correcta
         setTimeout(init, 100);
         animate();
