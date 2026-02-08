@@ -77,6 +77,12 @@
       max-width: 800px;
     }
 
+    .mini-card p,
+    .project-card p,
+    .section-sub {
+      max-width: none;
+    }
+
     section {
       padding: clamp(36px, 6vw, 60px) 0;
     }
@@ -421,7 +427,7 @@
 
     /* HERO RIGHT */
     .hero-card-wrap {
-      margin-top: 40px;
+      margin-top: 10px;
       position: relative;
     }
 
@@ -493,7 +499,6 @@
       position: relative;
       aspect-ratio: 16 / 9;
       max-height: 303px;
-      background: #f9fafb;
       background: #f9fafb;
     }
     .hero-img-frame img {
@@ -766,6 +771,13 @@
       }
       .hero-card-wrap {
         order: -1;
+        margin-top: 0;
+      }
+    }
+
+    @media (max-width: 1100px) {
+      .floating-nav {
+        display: none;
       }
     }
 
@@ -807,6 +819,7 @@
 
               <h1 class="hero-title" id="profile-headline">
                 <span class="typed-text"></span>
+                <span class="hero-connector"> focused on </span>
                 <span class="accent">maintenance, inventory and fleet performance</span>.
               </h1>
 
