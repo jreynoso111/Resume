@@ -179,8 +179,7 @@
     .floating-nav {
       position: fixed;
       top: 20px;
-      left: 50%;
-      transform: translateX(-50%);
+      left: 24px;
       z-index: 40;
       display: flex;
       align-items: center;
@@ -191,7 +190,8 @@
       border: 1px solid var(--glass-border);
       backdrop-filter: blur(14px);
       box-shadow: 0 16px 30px rgba(15, 23, 42, 0.12);
-      transition: transform 0.25s ease, opacity 0.25s ease;
+      opacity: 1;
+      pointer-events: auto;
     }
 
     .floating-nav a {
@@ -224,12 +224,6 @@
       border-color: var(--accent);
       color: var(--accent-strong);
       background: var(--accent-soft);
-    }
-
-    .floating-nav.is-hidden {
-      opacity: 0;
-      pointer-events: none;
-      transform: translate(-50%, -20px);
     }
 
     .nav-cta {
@@ -1124,36 +1118,6 @@
         hideTimeout = setTimeout(function () {
           dropdown.classList.remove('show');
         }, 1000); // 1 second delay
-      });
-    })();
-  </script>
-
-  <script>
-    (function () {
-      var floatingNav = document.querySelector('.floating-nav');
-      if (!floatingNav) return;
-
-      var lastScrollY = window.scrollY;
-      var ticking = false;
-
-      function updateNavVisibility() {
-        var currentScrollY = window.scrollY;
-        if (currentScrollY > lastScrollY && currentScrollY > 120) {
-          floatingNav.classList.add('is-hidden');
-        } else {
-          floatingNav.classList.remove('is-hidden');
-        }
-        lastScrollY = currentScrollY;
-      }
-
-      window.addEventListener('scroll', function () {
-        if (!ticking) {
-          window.requestAnimationFrame(function () {
-            updateNavVisibility();
-            ticking = false;
-          });
-          ticking = true;
-        }
       });
     })();
   </script>
