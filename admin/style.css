@@ -1,0 +1,273 @@
+/* --- VARIABLES Y CONFIGURACIÓN BASE --- */
+:root {
+    --primary-color: #2563eb;       /* Azul intenso */
+    --primary-hover: #1d4ed8;       /* Azul más oscuro para hover */
+    --danger-color: #dc2626;        /* Rojo para borrar/salir */
+    --danger-bg: #fee2e2;           /* Fondo rojo suave */
+    --bg-color: #f3f4f6;            /* Gris muy claro de fondo */
+    --card-bg: #ffffff;             /* Blanco para tarjetas */
+    --text-main: #111827;           /* Negro suave */
+    --text-muted: #6b7280;          /* Gris para textos secundarios */
+    --border-color: #d1d5db;        /* Gris borde */
+    --radius: 8px;                  /* Redondeo de esquinas */
+    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-main);
+    margin: 0;
+    padding: 0;
+    line-height: 1.5;
+}
+
+/* --- LAYOUT GENERAL --- */
+header {
+    background-color: #1f2937; /* Gris oscuro casi negro */
+    color: white;
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: var(--shadow);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+header h1 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+main {
+    max-width: 900px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+
+/* --- TARJETAS (CARDS) --- */
+.card {
+    background: var(--card-bg);
+    padding: 2rem;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    margin-bottom: 2rem;
+    border: 1px solid rgba(0,0,0,0.05);
+}
+
+.card h2 {
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--bg-color);
+    color: var(--text-main);
+    font-size: 1.5rem;
+}
+
+/* --- FORMULARIOS --- */
+form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+label {
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #374151;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="date"],
+textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    font-size: 1rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    font-family: inherit;
+}
+
+input:focus,
+textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+}
+
+textarea {
+    min-height: 120px;
+    resize: vertical;
+}
+
+/* Grid simple para formularios (Dos columnas) */
+.row {
+    display: flex;
+    gap: 1.5rem;
+}
+
+.col {
+    flex: 1;
+}
+
+/* Para móviles: colapsar columnas */
+@media (max-width: 600px) {
+    .row {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    header {
+        padding: 1rem;
+    }
+}
+
+/* --- BOTONES --- */
+button {
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius);
+    font-size: 1rem;
+    width: 100%; /* Botón ancho por defecto en móviles */
+    text-align: center;
+}
+
+@media (min-width: 600px) {
+    .btn-primary {
+        width: auto; /* Botón normal en escritorio */
+        align-self: flex-start;
+    }
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-hover);
+    transform: translateY(-1px);
+}
+
+.btn-primary:disabled {
+    background-color: var(--text-muted);
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Botón de Logout */
+#logout-btn {
+    background-color: transparent;
+    color: #fca5a5; /* Rojo claro */
+    border: 1px solid #fca5a5;
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius);
+    font-size: 0.9rem;
+}
+
+#logout-btn:hover {
+    background-color: var(--danger-color);
+    color: white;
+    border-color: var(--danger-color);
+}
+
+/* Botón de Eliminar (Pequeño) */
+.btn-delete {
+    background-color: white;
+    color: var(--danger-color);
+    border: 1px solid var(--border-color);
+    padding: 0.4rem 0.8rem;
+    border-radius: var(--radius);
+    font-size: 0.85rem;
+}
+
+.btn-delete:hover {
+    background-color: var(--danger-bg);
+    border-color: var(--danger-color);
+}
+
+/* --- LISTAS (EXPERIENCIA) --- */
+.item-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    overflow: hidden; /* Para que los bordes redondeados funcionen */
+}
+
+.item-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border-bottom: 1px solid var(--bg-color);
+    background-color: white;
+    transition: background-color 0.2s;
+}
+
+.item-row:last-child {
+    border-bottom: none;
+}
+
+.item-row:hover {
+    background-color: #f9fafb;
+}
+
+.item-row strong {
+    color: var(--primary-color);
+}
+
+/* --- LOGIN ESPECÍFICO --- */
+/* Estas clases son para centrar la tarjeta de login en index.html */
+body.login-page {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.login-card {
+    width: 100%;
+    max-width: 400px;
+    background: white;
+    padding: 2.5rem;
+    border-radius: var(--radius);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.login-card h1 {
+    text-align: center;
+    margin-bottom: 2rem;
+    color: var(--text-main);
+}
+
+.error-msg {
+    background-color: var(--danger-bg);
+    color: var(--danger-color);
+    padding: 0.75rem;
+    border-radius: var(--radius);
+    margin-bottom: 1rem;
+    text-align: center;
+    font-size: 0.9rem;
+    display: none;
+}
