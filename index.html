@@ -5,6 +5,7 @@
   <title>Juan R. Reynoso | Data, Operations & Fleet Analytics</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" />
   <style>
     /* ESTILOS DEL CANVAS - ORDEN CORREGIDO */
     #bg-canvas {
@@ -20,7 +21,7 @@
     :root {
       --bg: #f5f5f5;
       /* FONDO SUAVE CON TRANSPARENCIA (EFECTO CRISTAL) */
-      --bg-soft: rgba(255, 255, 255, 0.85); 
+      --bg-soft: rgba(255, 255, 255, 0.85);
       --bg-alt: #f0f2f5;
       --accent: #1f4f7b;
       --accent-soft: #e0ecf7;
@@ -34,20 +35,51 @@
       --radius-md: 10px;
       --radius-pill: 999px;
       --max-width: 1120px;
+      --glass-bg: rgba(255, 255, 255, 0.7);
+      --glass-border: rgba(209, 213, 219, 0.7);
+    }
+
+    body[data-theme="dark"] {
+      --bg: #0b1220;
+      --bg-soft: rgba(15, 23, 42, 0.82);
+      --bg-alt: #101a2b;
+      --accent: #4f83c2;
+      --accent-soft: rgba(79, 131, 194, 0.2);
+      --accent-strong: #8bb1e0;
+      --text-main: #e2e8f0;
+      --text-muted: #94a3b8;
+      --border-subtle: #273449;
+      --chip-bg: #1f2a3d;
+      --card-shadow: 0 12px 28px rgba(2, 6, 23, 0.4);
+      --glass-bg: rgba(15, 23, 42, 0.7);
+      --glass-border: rgba(148, 163, 184, 0.25);
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html {
+      scroll-behavior: smooth;
+    }
     
     body {
       position: relative;
       font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
       background: var(--bg);
       color: var(--text-main);
-      line-height: 1.5;
+      line-height: 1.6;
       -webkit-font-smoothing: antialiased;
+      transition: background 0.3s ease, color 0.3s ease;
     }
     a { text-decoration: none; color: inherit; }
     img { max-width: 100%; display: block; }
+
+    p {
+      max-width: 800px;
+    }
+
+    section {
+      padding: 100px 0;
+    }
 
     /* CAPA DE CONTENIDO SUPERIOR */
     .page {
@@ -71,8 +103,9 @@
       top: 0;
       z-index: 20;
       backdrop-filter: blur(12px);
-      background: rgba(255, 255, 255, 0.85); /* Transparencia para ver pasar partículas */
+      background: var(--bg-soft); /* Transparencia para ver pasar partículas */
       border-bottom: 1px solid var(--border-subtle);
+      transition: background 0.3s ease, border-color 0.3s ease;
     }
     .nav {
       display: flex;
@@ -143,6 +176,62 @@
       font-weight: 500;
     }
 
+    .floating-nav {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 40;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      backdrop-filter: blur(14px);
+      box-shadow: 0 16px 30px rgba(15, 23, 42, 0.12);
+      transition: transform 0.25s ease, opacity 0.25s ease;
+    }
+
+    .floating-nav a {
+      font-size: 12px;
+      color: var(--text-muted);
+      padding: 6px 10px;
+      border-radius: 999px;
+      transition: color 0.2s ease, background 0.2s ease;
+    }
+
+    .floating-nav a:hover,
+    .floating-nav a:focus {
+      color: var(--accent-strong);
+      background: rgba(224, 236, 247, 0.6);
+    }
+
+    .theme-toggle {
+      border: 1px solid var(--border-subtle);
+      background: transparent;
+      color: var(--text-main);
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      cursor: pointer;
+      transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+    }
+
+    .theme-toggle:hover,
+    .theme-toggle:focus {
+      border-color: var(--accent);
+      color: var(--accent-strong);
+      background: var(--accent-soft);
+    }
+
+    .floating-nav.is-hidden {
+      opacity: 0;
+      pointer-events: none;
+      transform: translate(-50%, -20px);
+    }
+
     .nav-cta {
       display: flex;
       align-items: center;
@@ -211,7 +300,7 @@
 
     /* HERO */
     .hero {
-      padding: 32px 0 28px;
+      padding: 100px 0;
     }
     .hero-grid {
       display: grid;
@@ -422,7 +511,7 @@
     .hero-stat {
       padding: 7px 8px;
       border-radius: 8px;
-      background: rgba(249, 250, 251, 0.7);
+      background: var(--bg-soft);
       border: 1px solid var(--border-subtle);
     }
     .hero-stat-label {
@@ -436,7 +525,7 @@
 
     /* HIGHLIGHTS */
     .highlights {
-      padding: 4px 0 28px;
+      padding: 100px 0;
     }
     .highlights-inner {
       display: grid;
@@ -544,6 +633,51 @@
       color: var(--text-muted);
     }
 
+    .recent-work {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .recent-work-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 10px;
+    }
+
+    .project-card {
+      padding: 12px;
+      border-radius: 12px;
+      background: var(--bg-soft);
+      border: 1px solid var(--border-subtle);
+      box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08);
+      overflow: hidden;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .project-card:hover {
+      transform: translateY(-10px);
+      box-shadow: 0 16px 28px rgba(15, 23, 42, 0.12);
+    }
+
+    .project-title {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .project-meta {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .project-desc {
+      font-size: 11px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
     /* FOOTER */
     footer {
       padding: 14px 0 18px;
@@ -615,11 +749,20 @@
 <body>
   <canvas id="bg-canvas"></canvas>
 
+  <nav class="floating-nav" aria-label="Main sections">
+    <a href="#top">Home</a>
+    <a href="#experience">Experience</a>
+    <a href="#education">Education</a>
+    <a href="#skills">Skills</a>
+    <a href="#contact">Contact</a>
+    <button class="theme-toggle" type="button" id="theme-toggle" aria-pressed="false">Dark mode</button>
+  </nav>
+
   <div class="page">
     <header id="site-header" data-variant="home" data-active="overview"></header>
 
     <main id="top">
-      <section class="hero">
+      <section class="hero" data-aos="fade-up">
         <div class="shell">
           <div class="hero-grid" style="margin-top:26px;">
             <div>
@@ -629,7 +772,7 @@
               </div>
 
               <h1 class="hero-title" id="profile-headline">
-                Data & operations professional focused on
+                <span class="typed-text"></span>
                 <span class="accent">maintenance, inventory and fleet performance</span>.
               </h1>
 
@@ -689,15 +832,15 @@
                 <footer class="hero-card-footer">
                   <div class="hero-stat">
                     <div class="hero-stat-label">Years in operations</div>
-                    <div class="hero-stat-value">15+ years</div>
+                  <div class="hero-stat-value" data-count="15" data-suffix="+ years">15+ years</div>
                   </div>
                   <div class="hero-stat">
                     <div class="hero-stat-label">Core focus</div>
-                    <div class="hero-stat-value">Maintenance & inventory</div>
+                  <div class="hero-stat-value">Maintenance & inventory</div>
                   </div>
                   <div class="hero-stat">
                     <div class="hero-stat-label">Tools</div>
-                    <div class="hero-stat-value">Power BI · Excel · Python</div>
+                  <div class="hero-stat-value">Power BI · Excel · Python</div>
                   </div>
                 </footer>
               </article>
@@ -706,7 +849,7 @@
         </div>
       </section>
 
-      <section class="highlights" id="experience">
+      <section class="highlights" id="experience" data-aos="fade-up">
         <div class="shell">
           <div class="highlights-inner">
             <div>
@@ -759,14 +902,35 @@
             <div>
               <div class="mini-grid">
                
-                <article class="mini-card">
+                <div class="recent-work">
                   <div class="mini-label">Recent work</div>
-                  <div class="mini-main">Fleet maintenance & GPS tracking (M&T Equipment Funding)</div>
-                  <div class="mini-meta">
-                    Consolidating vehicle, GPS and maintenance data into a consistent view to reduce blind spots on
-                    active units, repossessions and at‑risk assets.
+                  <div class="recent-work-grid">
+                    <article class="project-card">
+                      <div class="project-title">Fleet maintenance &amp; GPS tracking</div>
+                      <div class="project-meta">M&amp;T Equipment Funding</div>
+                      <div class="project-desc">
+                        Consolidating vehicle, GPS and maintenance data into a consistent view to reduce blind spots on
+                        active units, repossessions and at‑risk assets.
+                      </div>
+                    </article>
+                    <article class="project-card">
+                      <div class="project-title">Inventory control dashboard</div>
+                      <div class="project-meta">Parts &amp; stock oversight</div>
+                      <div class="project-desc">
+                        Monitoring stock levels, price movements, and reorder points to keep parts availability aligned
+                        with maintenance demand.
+                      </div>
+                    </article>
+                    <article class="project-card">
+                      <div class="project-title">Repo &amp; risk monitoring</div>
+                      <div class="project-meta">Portfolio health checks</div>
+                      <div class="project-desc">
+                        Surfacing aging accounts, late activity signals, and asset status changes to prioritize risk
+                        mitigation.
+                      </div>
+                    </article>
                   </div>
-                </article>
+                </div>
 
                 <article class="mini-card">
                   <div class="mini-label">Previous experience</div>
@@ -802,7 +966,7 @@
         </div>
       </section>
           
-      <section class="education" style="width:100%; background:rgba(255, 255, 255, 0.85); backdrop-filter: blur(8px); border-top:1px solid var(--border-subtle); padding:40px 0; margin-top:20px;">
+      <section class="education" id="education" style="width:100%; background:rgba(255, 255, 255, 0.85); backdrop-filter: blur(8px); border-top:1px solid var(--border-subtle); padding:100px 0; margin-top:20px;" data-aos="fade-up">
         <div class="shell" style="max-width:var(--max-width); margin:0 auto;">
           <div class="section-label" style="margin-bottom:10px;">Education</div>
           <h2 class="section-title" style="font-size:20px; margin-bottom:12px;">Academic Background</h2>
@@ -826,8 +990,8 @@
               <li>TETRA Radio Systems – Communications management (Thales‑Sofratesa‑Siemens)</li>
               <li>Access Control, Intrusion Detection & Ticketing Systems – Training provided by Thales‑Sofratesa‑Siemens</li>
               <li>Axle Counter Systems – Railway signaling (Thales‑Sofratesa‑Siemens)</li>
-            <li>Telephony, Intercom & Public Address (Megafonía) Systems – Thales‑Sofratesa‑Siemens</li>
-            <li>Needle Motors (Motores de Aguja) – Railway switch mechanisms (Thales‑Sofratesa‑Siemens)</li>
+            <li>Telephony, Intercom & Public Address (PA) Systems – Thales‑Sofratesa‑Siemens</li>
+            <li>Point machines (railway switch motors) – Thales‑Sofratesa‑Siemens</li>
             <li>Videowall Systems – Control room operations (Thales‑Sofratesa‑Siemens)</li>
            
             </ul>
@@ -835,7 +999,7 @@
         </div>
       </section>
 
-      <section class="skills-full" id="skills" style="margin-top:20px;">
+      <section class="skills-full" id="skills" style="margin-top:20px;" data-aos="fade-up">
         <div class="shell">
           <div class="section-label">Skills</div>
           <h2 class="section-title">Skills &amp; competencies</h2>
@@ -844,41 +1008,41 @@
             communication with non‑technical stakeholders.
           </p>
           <div class="mini-grid">
-            <article class="mini-card">
+            <article class="mini-card" data-aos="fade-up">
               <div class="mini-label">Data &amp; analytics</div>
               <div class="mini-main">Power BI, Excel &amp; Python</div>
               <div class="mini-meta">Data modeling, DAX, Power Query, advanced Excel dashboards and Python for cleaning, joining and
                 analyzing operational data.</div>
             </article>
 
-            <article class="mini-card">
+            <article class="mini-card" data-aos="fade-up">
               <div class="mini-label">Maintenance &amp; operations</div>
               <div class="mini-main">Fleet &amp; railway systems</div>
               <div class="mini-meta">Practical experience with metro systems and truck fleets, working directly with workshops, technicians
                 and operations teams.</div>
             </article>
 
-            <article class="mini-card">
+            <article class="mini-card" data-aos="fade-up">
               <div class="mini-label">Inventory &amp; asset control</div>
               <div class="mini-main">Parts, stock &amp; GPS tracking</div>
               <div class="mini-meta">Tracking units, parts usage, stock levels and cost evolution over time to reduce blind spots and
                 inconsistencies.</div>
             </article>
 
-            <article class="mini-card">
+            <article class="mini-card" data-aos="fade-up">
               <div class="mini-label">Reporting &amp; communication</div>
               <div class="mini-main">Operational reporting</div>
               <div class="mini-meta">Building clear, reliable reports for managers, mechanics and finance, and explaining results in simple,
                 direct language.</div>
             </article>
 
-            <article class="mini-card">
+            <article class="mini-card" data-aos="fade-up">
               <div class="mini-label">Languages &amp; collaboration</div>
               <div class="mini-main">Bilingual: Spanish &amp; English</div>
               <div class="mini-meta">Comfortable working with mixed teams and documenting processes in both languages.</div>
             </article>
 
-            <article class="mini-card">
+            <article class="mini-card" data-aos="fade-up">
               <div class="mini-label">Process &amp; quality</div>
               <div class="mini-main">Standardization &amp; KPIs</div>
               <div class="mini-meta">Experience setting up KPIs, quality controls and basic process standards to make recurring reporting more
@@ -917,6 +1081,32 @@
     // Set current year
     document.getElementById("year").textContent = new Date().getFullYear();
 
+    (function () {
+      var toggle = document.getElementById('theme-toggle');
+      if (!toggle) return;
+
+      var storedTheme = localStorage.getItem('theme');
+      if (storedTheme) {
+        document.body.setAttribute('data-theme', storedTheme);
+      }
+
+      function updateToggleLabel(theme) {
+        var isDark = theme === 'dark';
+        toggle.textContent = isDark ? 'Light mode' : 'Dark mode';
+        toggle.setAttribute('aria-pressed', String(isDark));
+      }
+
+      updateToggleLabel(storedTheme);
+
+      toggle.addEventListener('click', function () {
+        var currentTheme = document.body.getAttribute('data-theme');
+        var nextTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        document.body.setAttribute('data-theme', nextTheme);
+        localStorage.setItem('theme', nextTheme);
+        updateToggleLabel(nextTheme);
+      });
+    })();
+
     // Projects dropdown with 1s delay on mouse leave
     (function () {
       var navItem = document.querySelector('.nav-item-projects');
@@ -936,6 +1126,101 @@
         }, 1000); // 1 second delay
       });
     })();
+  </script>
+
+  <script>
+    (function () {
+      var floatingNav = document.querySelector('.floating-nav');
+      if (!floatingNav) return;
+
+      var lastScrollY = window.scrollY;
+      var ticking = false;
+
+      function updateNavVisibility() {
+        var currentScrollY = window.scrollY;
+        if (currentScrollY > lastScrollY && currentScrollY > 120) {
+          floatingNav.classList.add('is-hidden');
+        } else {
+          floatingNav.classList.remove('is-hidden');
+        }
+        lastScrollY = currentScrollY;
+      }
+
+      window.addEventListener('scroll', function () {
+        if (!ticking) {
+          window.requestAnimationFrame(function () {
+            updateNavVisibility();
+            ticking = false;
+          });
+          ticking = true;
+        }
+      });
+    })();
+  </script>
+
+  <script>
+    (function () {
+      var statValues = document.querySelectorAll('[data-count]');
+      if (!statValues.length || !('IntersectionObserver' in window)) return;
+
+      function animateCount(el) {
+        var target = Number(el.dataset.count || 0);
+        var suffix = el.dataset.suffix || '';
+        var duration = 1200;
+        var startTime = null;
+
+        function updateCount(timestamp) {
+          if (!startTime) startTime = timestamp;
+          var progress = Math.min((timestamp - startTime) / duration, 1);
+          var value = Math.floor(progress * target);
+          el.textContent = `${value}${suffix}`;
+          if (progress < 1) {
+            window.requestAnimationFrame(updateCount);
+          } else {
+            el.textContent = `${target}${suffix}`;
+          }
+        }
+
+        window.requestAnimationFrame(updateCount);
+      }
+
+      var observer = new IntersectionObserver(function (entries, obs) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            animateCount(entry.target);
+            obs.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.4 });
+
+      statValues.forEach(function (el) {
+        observer.observe(el);
+      });
+    })();
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/typed.js@2.1.0/dist/typed.umd.js"></script>
+  <script>
+    (function () {
+      var typedTarget = document.querySelector('.typed-text');
+      if (!typedTarget || typeof Typed === 'undefined') return;
+
+      new Typed(typedTarget, {
+        strings: ['Data Analyst', 'Fleet Management Expert', 'Operations Strategist'],
+        typeSpeed: 50,
+        backSpeed: 30,
+        loop: true
+      });
+    })();
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
+  <script>
+    AOS.init({
+      duration: 700,
+      easing: "ease-out",
+      once: true
+    });
   </script>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
