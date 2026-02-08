@@ -1,4 +1,83 @@
 (function () {
+  const FADE_DURATION_MS = 220;
+
+  function injectFadeStyles() {
+    if (document.getElementById('page-fade-styles')) {
+      return;
+    }
+    const style = document.createElement('style');
+    style.id = 'page-fade-styles';
+    style.textContent = `
+      body.page-fade {
+        opacity: 0;
+        transition: opacity ${FADE_DURATION_MS}ms ease;
+      }
+      body.page-fade.is-visible {
+        opacity: 1;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        body.page-fade {
+          transition: none;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function applyFadeIn() {
+    if (!document.body) {
+      return;
+    }
+    injectFadeStyles();
+    document.body.classList.add('page-fade');
+    document.body.classList.remove('is-visible');
+    requestAnimationFrame(() => {
+      document.body.classList.add('is-visible');
+    });
+  }
+
+  function isInternalLink(link) {
+    if (!link || !link.href) {
+      return false;
+    }
+    if (link.target && link.target !== '_self') {
+      return false;
+    }
+    if (link.hasAttribute('download')) {
+      return false;
+    }
+    const url = new URL(link.href, window.location.href);
+    if (url.origin !== window.location.origin) {
+      return false;
+    }
+    return true;
+  }
+
+  function handleLinkFadeOut(event) {
+    const link = event.target.closest('a');
+    if (!isInternalLink(link)) {
+      return;
+    }
+    const url = new URL(link.href, window.location.href);
+    if (url.hash && url.pathname === window.location.pathname) {
+      return;
+    }
+    event.preventDefault();
+    injectFadeStyles();
+    document.body.classList.add('page-fade');
+    document.body.classList.remove('is-visible');
+    window.setTimeout(() => {
+      window.location.href = link.href;
+    }, FADE_DURATION_MS);
+  }
+
+  function applyStoredTheme() {
+    const storedTheme = localStorage.getItem('theme');
+    if (storedTheme && document.body) {
+      document.body.setAttribute('data-theme', storedTheme);
+    }
+  }
+
   const projectLinks = [
     { href: 'fleet-maintenance-analytics.html', label: 'Fleet Maintenance Analytics System', key: 'fleet-maintenance-analytics' },
     { href: 'inventory-control-dashboard.html', label: 'Inventory Control Dashboard', key: 'inventory-control-dashboard' },
@@ -155,7 +234,12 @@
     return '';
   }
 
+  applyStoredTheme();
+  applyFadeIn();
+
   function init() {
+    applyStoredTheme();
+    applyFadeIn();
     const headerHost = document.getElementById('site-header');
     if (headerHost) {
       const variant = headerHost.dataset.variant || 'project-detail';
@@ -175,4 +259,6 @@
   } else {
     init();
   }
+
+  document.addEventListener('click', handleLinkFadeOut);
 })();

@@ -23,6 +23,19 @@
       --max-width: 1120px;
     }
 
+    body[data-theme="dark"] {
+      --bg: #0b1220;
+      --bg-soft: rgba(15, 23, 42, 0.82);
+      --bg-alt: #101a2b;
+      --accent: #4f83c2;
+      --accent-soft: rgba(79, 131, 194, 0.2);
+      --accent-strong: #8bb1e0;
+      --text-main: #e2e8f0;
+      --text-muted: #94a3b8;
+      --border-subtle: #273449;
+      --card-shadow: 0 12px 28px rgba(2, 6, 23, 0.4);
+    }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
     
     body {
@@ -188,24 +201,29 @@
       margin-bottom: 16px;
     }
 
-    /* Content Cards */
-    .story-grid {
+    /* Bento Grid */
+    .bento-grid {
       display: grid;
-      grid-template-columns: 2fr 1fr;
-      gap: 24px;
-    }
-    
-    .card {
-      background: rgba(255, 255, 255, 0.85); /* Slight transparency for particles */
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-lg);
-      padding: 24px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.03);
-      height: 100%;
-      backdrop-filter: blur(5px);
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-areas:
+        "passion passion nyc"
+        "metro metro metro";
+      gap: 20px;
     }
 
-    .card h3 {
+    .bento-card {
+      background: rgba(255, 255, 255, 0.85);
+      border: 1px solid var(--border-subtle);
+      border-radius: 18px;
+      padding: 24px;
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+      height: 100%;
+      backdrop-filter: blur(5px);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .bento-card h3 {
       font-size: 18px;
       color: var(--accent-strong);
       margin-bottom: 12px;
@@ -213,13 +231,40 @@
       padding-bottom: 8px;
     }
 
-    .card p {
+    .bento-card p {
       font-size: 14px;
       color: var(--text-muted);
       margin-bottom: 14px;
     }
 
-    .card p:last-child { margin-bottom: 0; }
+    .bento-card p:last-child { margin-bottom: 0; }
+
+    .bento-passion { grid-area: passion; }
+    .bento-metro { grid-area: metro; }
+    .bento-nyc {
+      grid-area: nyc;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .nyc-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 18px;
+      display: grid;
+      place-items: center;
+      background: var(--accent-soft);
+      color: var(--accent-strong);
+      font-size: 28px;
+      font-weight: 700;
+    }
+    .nyc-meta {
+      font-size: 12px;
+      color: var(--text-muted);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
 
     .tag-container {
       display: flex;
@@ -246,8 +291,14 @@
     .footer-links { display: flex; flex-wrap: wrap; gap: 12px; }
     .footer-links a { text-decoration: underline; text-underline-offset: 3px; color: var(--accent-strong); }
 
-    @media (max-width: 800px) {
-      .story-grid { grid-template-columns: 1fr; }
+    @media (max-width: 900px) {
+      .bento-grid {
+        grid-template-columns: 1fr;
+        grid-template-areas:
+          "passion"
+          "metro"
+          "nyc";
+      }
     }
     @media (max-width: 720px) {
       .nav { flex-wrap: wrap; row-gap: 8px; }
@@ -278,59 +329,46 @@
           </p>
         </section>
 
-        <div class="story-grid">
-          
-          <div style="display: flex; flex-direction: column; gap: 24px;">
-            <article class="card">
-              <h3>The Metro Era (16 Years)</h3>
-              <p>
-                My relationship with the Santo Domingo Metro began very early in the project's history. I started at the Central Control as a Technical Assistant, but my curiosity and work ethic quickly opened new doors.
-              </p>
-              <p>
-                After my first year, I was transferred to the Maintenance Department, specifically focusing on <strong>Telecommunications, Signaling, and Ticketing</strong>. Over the next decade and a half, this wasn't just a job—it was a school of life. I gained deep technical training in railway security systems, installation operations, and quality control.
-              </p>
-              <p>
-                It was here that I developed my passion for analytics. Managing maintenance control and anti-fraud systems taught me that data isn't just numbers—it's the heartbeat of an operation.
-              </p>
-            </article>
+        <div class="bento-grid">
+          <article class="bento-card bento-passion">
+            <h3>Passion for Data</h3>
+            <p>
+              Data is how I understand the world. I enjoy turning messy operational inputs into clean, actionable insights that help teams move faster and make confident decisions.
+            </p>
+            <p>
+              From dashboards to automation, I focus on clarity: the right metric, at the right time, for the right decision. It’s the craft I keep sharpening.
+            </p>
+            <div class="tag-container">
+              <span class="tag">Analytics</span>
+              <span class="tag">Automation</span>
+              <span class="tag">Operations</span>
+              <span class="tag">Storytelling</span>
+            </div>
+          </article>
 
-            <article class="card">
-              <h3>Education & Growth</h3>
-              <p>
-                I am a lifelong learner with an active mind that never stays still. I hold a degree in <strong>Higher Technology in Food Engineering</strong> from the Autonomous University of Santo Domingo (UASD).
-              </p>
-              <p>
-                While my career pivoted toward transportation and data technology, that engineering background gave me a rigorous foundation in process management, safety standards, and project structure that I apply to everything I do today.
-              </p>
-            </article>
-          </div>
+          <article class="bento-card bento-metro">
+            <h3>Metro de Santo Domingo · 16 Years</h3>
+            <p>
+              My relationship with the Santo Domingo Metro began early. I started at Central Control and quickly grew into a leader across maintenance, ticketing, and security systems.
+            </p>
+            <p>
+              Working with telecommunications, signaling, and fare collection shaped my discipline for quality control, incident response, and cross-team coordination.
+            </p>
+            <p>
+              It also sparked my love for analytics—because the best operations are driven by reliable data and clear accountability.
+            </p>
+          </article>
 
-          <div style="display: flex; flex-direction: column; gap: 24px;">
-            <article class="card">
-              <h3>Who I Am</h3>
-              <p>
-                I am a person who is always trying to learn something new. Whether it is solving a complex inventory problem or learning a new software tool, I thrive on challenges.
-              </p>
-              <p>
-                Moving back to New York has been a new chapter, bringing my experience from the Dominican Republic to new environments, blending my technical history with the fast-paced culture of NYC.
-              </p>
-            </article>
-
-            <article class="card">
-              <h3>Passions</h3>
-              <p>When I step away from the data dashboards and logistics, you can find me immersing myself in:</p>
-              <div class="tag-container">
-                <span class="tag">Photography</span>
-                <span class="tag">Nature & Camping</span>
-                <span class="tag">Animals</span>
-                <span class="tag">Computers & Tech</span>
-              </div>
-              <p style="margin-top: 15px; font-size: 13px; font-style: italic;">
-                "I believe in finding the balance between the digital world and the natural world."
-              </p>
-            </article>
-          </div>
-
+          <article class="bento-card bento-nyc">
+            <div>
+              <div class="nyc-icon" aria-hidden="true">NYC</div>
+              <div class="nyc-meta">Based in</div>
+              <h3>New York City</h3>
+            </div>
+            <p>
+              Bringing Caribbean operational experience into the energy of NYC, focused on modern analytics and fleet strategy.
+            </p>
+          </article>
         </div>
       </div>
     </main>
