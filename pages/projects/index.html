@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Juan R. Reynoso | Projects</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #f5f5f5;
+      --bg-soft: #ffffff;
+      --bg-alt: #f0f2f5;
+      --accent: #1f4f7b;
+      --accent-soft: #e0ecf7;
+      --accent-strong: #153554;
+      --text-main: #111827;
+      --text-muted: #6b7280;
+      --border-subtle: #d1d5db;
+      --chip-bg: #e5e7eb;
+      --card-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+      --radius-lg: 16px;
+      --radius-md: 10px;
+      --radius-pill: 999px;
+      --max-width: 1120px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text-main);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a {
+      text-decoration: none;
+      color: inherit;
+    }
+
+    /* HEADER */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(8px);
+      background: rgba(255, 255, 255, 0.96);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .nav {
+      max-width: var(--max-width);
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 40px;
+      padding: 12px 18px;
+    }
+
+    .profile-block {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: 0 0 auto;
+    }
+
+    .avatar-circle {
+      width: 44px;
+      height: 44px;
+      border-radius: 999px;
+      border: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 16px;
+      color: var(--accent-strong);
+      background: #f9fafb;
+    }
+
+    .profile-main {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .profile-name {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--accent-strong);
+    }
+
+    .profile-subtitle {
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+
+    .nav-tabs {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      flex: 1 1 auto;
+      justify-content: center;
+    }
+
+    .nav-tabs-links {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+    }
+
+    .nav-tabs a {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text-muted);
+      padding-bottom: 6px;
+      border-bottom: 2px solid transparent;
+      transition: color 0.2s ease, border-color 0.2s ease;
+    }
+
+    .nav-tabs a:hover {
+      color: var(--accent-strong);
+      border-bottom-color: var(--accent);
+    }
+
+    .nav-tabs a.active {
+      color: var(--accent-strong);
+      border-bottom-color: var(--accent);
+    }
+
+    .header-cta {
+      flex: 0 0 auto;
+    }
+
+    .email-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 22px;
+      border-radius: 999px;
+      background: var(--accent-strong);
+      color: #ffffff;
+      font-size: 14px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.18);
+      transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    }
+
+    .email-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.25);
+    }
+
+    .nav-tabs .nav-item {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .projects-dropdown {
+      position: absolute;
+      top: 115%;
+      left: 0;
+      min-width: 260px;
+      background: #ffffff;
+      border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.15);
+      padding: 8px 0;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(6px);
+      transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s ease;
+      z-index: 40;
+    }
+
+    .projects-dropdown a {
+      display: block;
+      padding: 8px 16px;
+      font-size: 14px;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    .projects-dropdown a:hover {
+      background: var(--accent-soft);
+      color: var(--accent-strong);
+    }
+
+    .projects-menu:hover .projects-dropdown {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+
+    /* PAGE BODY */
+    .section {
+      max-width: 1150px;
+      margin: 60px auto;
+      padding: 0 20px;
+    }
+
+    .title {
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 10px;
+    }
+
+    .subtitle {
+      font-size: 16px;
+      color: var(--text-muted);
+      margin-bottom: 35px;
+    }
+
+    .project-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 25px;
+    }
+
+    .project-card {
+      position: relative;
+      background: var(--bg-soft);
+      padding: 32px 40px 72px;
+      border-radius: 16px;
+      box-shadow: var(--shadow-soft);
+      border: 1px solid var(--border-subtle);
+      transition: 0.25s;
+      min-height: 320px;
+    }
+
+    .project-card:hover {
+      transform: translateY(-4px);
+    }
+
+    .project-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 10px;
+      color: var(--accent-strong);
+    }
+
+    .project-desc {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+      line-height: 1.6;
+    }
+
+    .tags {
+      margin-top: 8px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .tag {
+      background: var(--chip-bg);
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .see-btn {
+      position: absolute;
+      bottom: 20px;
+      right: 24px;
+      padding: 10px 18px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 600;
+      border-radius: 8px;
+      text-decoration: none;
+    }
+
+    .see-btn:hover {
+      background: var(--accent-strong);
+    }
+
+    @media (max-width: 980px) {
+      .nav {
+        flex-wrap: wrap;
+        gap: 14px;
+      }
+      .nav-tabs {
+        order: 3;
+        width: 100%;
+        justify-content: flex-start;
+        flex-wrap: wrap;
+        gap: 14px 18px;
+      }
+      .section {
+        margin: 36px auto;
+      }
+      .project-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    @media (max-width: 640px) {
+      .nav {
+        padding: 10px 14px;
+      }
+      .profile-name {
+        font-size: 17px;
+      }
+      .profile-subtitle {
+        font-size: 12px;
+      }
+      .email-btn {
+        width: 100%;
+      }
+      .header-cta {
+        width: 100%;
+      }
+      .section {
+        padding: 0 14px;
+        margin: 28px auto;
+      }
+      .project-card {
+        padding: 20px 18px 60px;
+        min-height: 0;
+      }
+      .projects-dropdown {
+        left: auto;
+        right: 0;
+        min-width: 220px;
+      }
+    }
+
+  </style>
+</head>
+
+<body>
+  <header id="site-header" data-variant="projects-index" data-active="projects"></header>
+
+  <section class="section">
+    <h1 class="title">Projects</h1>
+    <p class="subtitle">Operational dashboards, fleet analytics systems, and data automation solutions designed for real-world business impact.</p>
+
+    <div class="project-grid">
+
+      <div class="project-card">
+        <div class="project-title">Fleet Maintenance Analytics System</div>
+        <div class="project-desc">Full maintenance intelligence system including work orders, cost evolution, reliability indicators, vendor performance, and preventive compliance. Built for fast operational decision-making.</div>
+        <div class="tags">
+          <span class="tag">Power BI</span>
+          <span class="tag">Maintenance</span>
+          <span class="tag">Analytics</span>
+        </div>
+        <a href="fleet-maintenance-analytics.html" class="see-btn">See details</a>
+      </div>
+
+      <div class="project-card">
+        <div class="project-title">Inventory Control Dashboard</div>
+        <div class="project-desc">Centralized inventory system tracking parts, trucks, movements, shortages, aging, and consumption patterns. Includes automated anomaly detection and reconciliations.</div>
+        <div class="tags">
+          <span class="tag">Inventory</span>
+          <span class="tag">Power Query</span>
+          <span class="tag">Data Modeling</span>
+        </div>
+        <a href="inventory-control-dashboard.html" class="see-btn">See details</a>
+      </div>
+
+      <div class="project-card">
+        <div class="project-title">GPS Tracking & Movement Analysis</div>
+        <div class="project-desc">Advanced GPS consolidation dashboard analyzing unit movement, inactivity, tampering patterns, alerts, zone activity, and repo risk signals. Built using multi-source telemetry.</div>
+        <div class="tags">
+          <span class="tag">GPS</span>
+          <span class="tag">Telemetry</span>
+          <span class="tag">Analytics</span>
+        </div>
+        <a href="gps-movement-analytics.html" class="see-btn">See details</a>
+      </div>
+
+      <div class="project-card">
+        <div class="project-title">Repo & Risk Monitoring System</div>
+        <div class="project-desc">A risk scoring framework combining payment history, GPS movement, unit alerts, and behavior indicators to prioritize recoveries and reduce loss exposure.</div>
+        <div class="tags">
+          <span class="tag">Risk</span>
+          <span class="tag">Repo</span>
+          <span class="tag">Automation</span>
+        </div>
+        <a href="repossession-risk-monitoring.html" class="see-btn">See details</a>
+      </div>
+
+
+      <div class="project-card">
+        <div class="project-title">TechLoc Fleet & Service Control Platform</div>
+        <div class="project-desc">Nationwide logistics platform connecting fleet operators with verified technical providers in real time, with geo-intelligent dispatch, SLA tracking, and live operations analytics.</div>
+        <a href="techloc-fleet-service-control.html" class="see-btn">See details</a>
+      </div>
+    </div>
+  </section>
+<script>
+const menu = document.querySelector('.projects-menu');
+const dropdown = document.querySelector('.projects-dropdown');
+let hideTimer;
+menu.addEventListener('mouseenter', () => {
+  clearTimeout(hideTimer);
+  dropdown.style.opacity = '1';
+  dropdown.style.visibility = 'visible';
+  dropdown.style.transform = 'translateY(0)';
+});
+menu.addEventListener('mouseleave', () => {
+  hideTimer = setTimeout(() => {
+    dropdown.style.opacity = '0';
+    dropdown.style.visibility = 'hidden';
+    dropdown.style.transform = 'translateY(6px)';
+  }, 1000);
+});
+dropdown.addEventListener('mouseenter', () => {
+  clearTimeout(hideTimer);
+});
+dropdown.addEventListener('mouseleave', () => {
+  hideTimer = setTimeout(() => {
+    dropdown.style.opacity = '0';
+    dropdown.style.visibility = 'hidden';
+    dropdown.style.transform = 'translateY(6px)';
+  }, 1000);
+});
+</script>
+
+  <script src="../../js/editor-auth.js"></script>
+
+  <script src="../../js/site-shell.js"></script></body>
+</html>

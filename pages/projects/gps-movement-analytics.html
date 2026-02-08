@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>GPS Tracking & Movement Analysis | Juan R. Reynoso</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./project-detail-layout.css" />
+
+</head>
+<body>
+
+<header id="site-header" data-variant="project-detail" data-active="projects"></header>
+
+<div class="page-shell">
+  <aside class="projects-sidebar" id="projects-sidebar" data-active-project="gps-movement-analytics"></aside>
+
+  <main class="page-main">
+    <section class="hero">
+      <h1>GPS Tracking &amp; Movement Analysis</h1>
+      <p>A project that turns raw GPS pings from financed trucks and trailers into clear movement stories: where units are, how they move, when they stop reporting, and which assets need attention first.</p>
+    </section>
+
+      <section class="project-media-showcase">
+        <div class="project-media-main">
+          <div class="img-placeholder" style="background-image:url('https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=1400&q=80');"></div>
+        </div>
+      </section>
+
+
+    <section>
+      <h2>Project Overview</h2>
+      <div class="grid-2">
+        <p class="text-muted">
+          GPS data arrives as thousands of individual pings spread across vendor portals. Used this way, it is slow and painful to answer simple questions like "where is this unit now?" or "how long has it been inactive?".
+          <br><br>
+          This project centralizes GPS exports, cleans the feeds, maps devices to stock numbers and deals, and exposes movement patterns through Power BI dashboards that collections, repo and management can actually use.
+        </p>
+        <div class="img-placeholder" style="background-image:url('https://source.unsplash.com/800x600/?gps,map');"></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Key Components</h2>
+      <div class="grid-3">
+        <div class="card">
+          <div class="img-placeholder" style="background-image:url('https://source.unsplash.com/800x600/?dashboard,map');"></div>
+          <h3>Movement &amp; Status Dashboard</h3>
+          <p class="text-muted">Portfolio view of last location, last movement, city/state and non-reporting tiers (24h, 48h, 72h+).</p>
+        </div>
+
+        <div class="card">
+          <div class="img-placeholder" style="background-image:url('https://source.unsplash.com/800x600/?data,flow');"></div>
+          <h3>Device &amp; Inventory Mapping</h3>
+          <p class="text-muted">Standardizes device IDs and links them to stock numbers, VINs and active deals so internal and GPS views match.</p>
+        </div>
+
+        <div class="card">
+          <div class="img-placeholder" style="background-image:url('https://source.unsplash.com/800x600/?truck,fleet');"></div>
+          <h3>Collections Support</h3>
+          <p class="text-muted">Designed around the real questions from collections and repo: where is the unit, since when, and what changed versus last week.</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Main Features</h2>
+      <ul class="text-muted">
+        <li>Daily ingestion of GPS CSV/API exports with device ID, timestamp, coordinates and status.</li>
+        <li>Automated mapping between device IDs, inventory records, VINs and active deals.</li>
+        <li>Non-reporting bands (24h / 48h / 72h+) surfaced as a watchlist instead of raw files.</li>
+        <li>Unit-level movement timelines showing trips, stops and long inactivity periods.</li>
+        <li>Filters by region, unit type, risk level and repo status to prioritize work.</li>
+        <li>Consistent structure so the same dashboard supports collections, repo and management reviews.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Sample Screenshots</h2>
+      <div class="grid-2">
+        <div class="img-placeholder" style="height:320px;background-image:url('https://source.unsplash.com/900x700/?gps,dashboard');"></div>
+        <div class="img-placeholder" style="height:320px;background-image:url('https://source.unsplash.com/900x700/?truck,location');"></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Impact</h2>
+      <p class="text-muted">
+        Before this project, GPS data was checked manually in separate vendor portals, making it slow and inconsistent to prepare a single case. With a unified model and dashboards, the team can see location, last movement and non-reporting status for every asset in seconds, work from a ranked list of problematic units, and keep a movement history that can be revisited during disputes or negotiations.
+      </p>
+    </section>
+  </main>
+</div>
+
+
+  <script src="../../js/editor-auth.js"></script>
+
+  <script src="../../js/site-shell.js"></script></body>
+</html>
