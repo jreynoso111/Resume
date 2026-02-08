@@ -78,7 +78,7 @@
     }
 
     section {
-      padding: 60px 0;
+      padding: clamp(36px, 6vw, 60px) 0;
     }
 
     /* CAPA DE CONTENIDO SUPERIOR */
@@ -295,13 +295,14 @@
 
     /* HERO */
     .hero {
-      padding: 100px 0;
+      padding: clamp(56px, 10vw, 100px) 0;
     }
     .hero-grid {
       display: grid;
       grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.1fr);
       gap: 40px;
       align-items: center;
+      margin-top: 26px;
     }
 
     .hero-label-row {
@@ -524,7 +525,7 @@
 
     /* HIGHLIGHTS */
     .highlights {
-      padding: 100px 0;
+      padding: clamp(56px, 10vw, 100px) 0;
       background: var(--bg-alt);
     }
     .highlights-inner {
@@ -624,7 +625,7 @@
       background: #ffffff;
       border-top: 1px solid var(--border-subtle);
       border-bottom: 1px solid var(--border-subtle);
-      padding: 100px 0;
+      padding: clamp(56px, 10vw, 100px) 0;
       margin-top: 20px;
     }
     .cert-grid {
@@ -666,6 +667,7 @@
       display: flex;
       flex-direction: column;
       gap: 10px;
+      grid-column: 1 / -1;
     }
 
     .recent-work-grid {
@@ -796,7 +798,7 @@
     <main id="top">
       <section class="hero" data-aos="fade-up">
         <div class="shell">
-          <div class="hero-grid" style="margin-top:26px;">
+          <div class="hero-grid">
             <div>
               <div class="hero-label-row">
                 <div class="hero-label"><span class="hero-label-dot"></span>Available for remote roles</div>
