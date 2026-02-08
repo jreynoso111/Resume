@@ -24,6 +24,20 @@
       --max-width: 1120px;
     }
 
+    body[data-theme="dark"] {
+      --bg: #0b1220;
+      --bg-soft: rgba(15, 23, 42, 0.82);
+      --bg-alt: #101a2b;
+      --accent: #4f83c2;
+      --accent-soft: rgba(79, 131, 194, 0.2);
+      --accent-strong: #8bb1e0;
+      --text-main: #e2e8f0;
+      --text-muted: #94a3b8;
+      --border-subtle: #273449;
+      --chip-bg: #1f2a3d;
+      --card-shadow: 0 12px 28px rgba(2, 6, 23, 0.4);
+    }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
@@ -230,17 +244,75 @@
     }
 
     .experience-list {
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
+      --timeline-left: 170px;
+      display: grid;
+      gap: 18px;
+      position: relative;
+      padding-left: 0;
+    }
+    .experience-list::before {
+      content: "";
+      position: absolute;
+      top: 8px;
+      bottom: 8px;
+      left: calc(var(--timeline-left) - 22px);
+      width: 2px;
+      background: var(--border-subtle);
     }
 
-    .experience-card {
+    .experience-item {
+      display: grid;
+      grid-template-columns: var(--timeline-left) 1fr;
+      gap: 16px;
       background: var(--bg-soft);
       border-radius: var(--radius-md);
       border: 1px solid var(--border-subtle);
       padding: 14px 16px;
       box-shadow: 0 8px 18px rgba(15, 23, 42, 0.04);
+      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+      position: relative;
+    }
+    .experience-item:hover,
+    .experience-item:focus-within {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 24px rgba(15, 23, 42, 0.1);
+      border-color: var(--accent);
+    }
+    .experience-item:focus-within {
+      outline: 2px solid rgba(79, 131, 194, 0.35);
+      outline-offset: 2px;
+    }
+
+    .exp-date {
+      position: relative;
+      text-align: right;
+      font-size: 11px;
+      color: var(--text-muted);
+      padding-right: 30px;
+      line-height: 1.4;
+    }
+    .exp-date span {
+      display: block;
+    }
+    .exp-date::after {
+      content: "";
+      position: absolute;
+      right: -22px;
+      top: 8px;
+      width: 12px;
+      height: 12px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 6px var(--accent-soft);
+    }
+    .exp-date .exp-year {
+      font-weight: 600;
+      color: var(--accent-strong);
+    }
+
+    .exp-content {
+      display: flex;
+      flex-direction: column;
     }
     .exp-header {
       display: flex;
@@ -258,27 +330,74 @@
       font-size: 13px;
       color: var(--text-muted);
     }
-    .exp-meta {
-      text-align: right;
-      font-size: 11px;
-      color: var(--text-muted);
-      min-width: 130px;
-    }
-    .exp-meta span { display: block; }
-
     .exp-tags {
-      margin: 6px 0 6px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 8px 0 8px;
       font-size: 11px;
-      color: var(--text-muted);
     }
-    .exp-tags span {
-      display: inline-block;
+    .exp-tags .badge {
       border-radius: var(--radius-pill);
-      border: 1px solid var(--chip-bg);
-      padding: 2px 8px;
-      margin-right: 4px;
-      margin-bottom: 4px;
-      background: #f3f4f6;
+      border: 1px solid transparent;
+      padding: 4px 10px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+    .badge-power-bi {
+      background: #fef3c7;
+      color: #92400e;
+      border-color: #facc15;
+    }
+    .badge-sql {
+      background: #dbeafe;
+      color: #1d4ed8;
+      border-color: #3b82f6;
+    }
+    .badge-excel {
+      background: #dcfce7;
+      color: #166534;
+      border-color: #22c55e;
+    }
+    .badge-python {
+      background: #ede9fe;
+      color: #5b21b6;
+      border-color: #8b5cf6;
+    }
+    .badge-fleet {
+      background: #e0f2fe;
+      color: #0c4a6e;
+      border-color: #38bdf8;
+    }
+    .badge-inventory {
+      background: #fce7f3;
+      color: #9d174d;
+      border-color: #f472b6;
+    }
+    .badge-maintenance {
+      background: #fee2e2;
+      color: #991b1b;
+      border-color: #f87171;
+    }
+    .badge-quality {
+      background: #ede9fe;
+      color: #6d28d9;
+      border-color: #a78bfa;
+    }
+    .badge-kpi {
+      background: #fef9c3;
+      color: #854d0e;
+      border-color: #fde047;
+    }
+    .badge-public {
+      background: #cffafe;
+      color: #155e75;
+      border-color: #22d3ee;
+    }
+    .badge-field {
+      background: #f3e8ff;
+      color: #6b21a8;
+      border-color: #c084fc;
     }
 
     .exp-details {
@@ -290,6 +409,25 @@
       margin-top: 6px;
     }
     .exp-details li { margin-bottom: 4px; }
+
+    @media (max-width: 720px) {
+      .experience-list {
+        --timeline-left: 1fr;
+      }
+      .experience-list::before {
+        display: none;
+      }
+      .experience-item {
+        grid-template-columns: 1fr;
+      }
+      .exp-date {
+        text-align: left;
+        padding-right: 0;
+      }
+      .exp-date::after {
+        display: none;
+      }
+    }
 
     aside .summary-card {
       background: var(--bg-soft);
@@ -353,84 +491,90 @@
             <div class="experience-section-title">Professional Experience</div>
             <div class="experience-list">
 
-              <article class="experience-card">
-                <div class="exp-header">
-                  <div>
-                    <div class="exp-role">Data &amp; Inventory Analyst Coordinator</div>
-                    <div class="exp-company">M&amp;T Equipment Funding LLC / Tower TLC Leasing &amp; Rental</div>
-                  </div>
-                  <div class="exp-meta">
-                    <span>New York, NY</span>
-                    <span>2024 – Present</span>
-                  </div>
+              <article class="experience-item" tabindex="0">
+                <div class="exp-date">
+                  <span class="exp-year">2024 – Present</span>
+                  <span>New York, NY</span>
                 </div>
-                <div class="exp-tags">
-                  <span>Power BI</span>
-                  <span>Excel (Advanced)</span>
-                  <span>Python</span>
-                  <span>Fleet analytics</span>
-                  <span>Inventory control</span>
-                </div>
-                <div class="exp-details">
-                  <ul>
-                    <li>Builds and maintains reporting models integrating inventory, maintenance, GPS, and collections data.</li>
-                    <li>Designs custom KPIs for repair costs, downtime, and economic impact of decisions.</li>
-                    <li>Automates manual reports using Power BI and Excel.</li>
-                    <li>Supervises inventory and GPS tracking logic.</li>
-                    <li>Supports operations and management with data-driven answers.</li>
-                  </ul>
+                <div class="exp-content">
+                  <div class="exp-header">
+                    <div>
+                      <div class="exp-role">Data &amp; Inventory Analyst Coordinator</div>
+                      <div class="exp-company">M&amp;T Equipment Funding LLC / Tower TLC Leasing &amp; Rental</div>
+                    </div>
+                  </div>
+                  <div class="exp-tags">
+                    <span class="badge badge-power-bi">Power BI</span>
+                    <span class="badge badge-excel">Excel (Advanced)</span>
+                    <span class="badge badge-python">Python</span>
+                    <span class="badge badge-fleet">Fleet analytics</span>
+                    <span class="badge badge-inventory">Inventory control</span>
+                  </div>
+                  <div class="exp-details">
+                    <ul>
+                      <li>Builds and maintains reporting models integrating inventory, maintenance, GPS, and collections data.</li>
+                      <li>Designs custom KPIs for repair costs, downtime, and economic impact of decisions.</li>
+                      <li>Automates manual reports using Power BI and Excel.</li>
+                      <li>Supervises inventory and GPS tracking logic.</li>
+                      <li>Supports operations and management with data-driven answers.</li>
+                    </ul>
+                  </div>
                 </div>
               </article>
 
-              <article class="experience-card">
-                <div class="exp-header">
-                  <div>
-                    <div class="exp-role">Maintenance &amp; Fare Collection Manager</div>
-                    <div class="exp-company">Metro de Santo Domingo</div>
-                  </div>
-                  <div class="exp-meta">
-                    <span>Santo Domingo, Dominican Republic</span>
-                    <span>2009 – 2024</span>
-                  </div>
+              <article class="experience-item" tabindex="0">
+                <div class="exp-date">
+                  <span class="exp-year">2009 – 2024</span>
+                  <span>Santo Domingo, Dominican Republic</span>
                 </div>
-                <div class="exp-tags">
-                  <span>Maintenance management</span>
-                  <span>Quality control</span>
-                  <span>KPIs</span>
-                  <span>Public transport</span>
-                </div>
-                <div class="exp-details">
-                  <ul>
-                    <li>Managed maintenance and quality control for automated fare collection systems.</li>
-                    <li>Led the ticketing team directly and performed quality-control oversight (not operations) for SCADA, CCTV, access control, TETRA radio, telephony, intercom, and other metro subsystems.</li>
-                    <li>Calculated KPIs and economic impact of maintenance plans based on contractual SLAs.</li>
-                    <li>Implemented structured reporting to reduce downtime and improve response times.</li>
-                  </ul>
+                <div class="exp-content">
+                  <div class="exp-header">
+                    <div>
+                      <div class="exp-role">Maintenance &amp; Fare Collection Manager</div>
+                      <div class="exp-company">Metro de Santo Domingo</div>
+                    </div>
+                  </div>
+                  <div class="exp-tags">
+                    <span class="badge badge-maintenance">Maintenance management</span>
+                    <span class="badge badge-quality">Quality control</span>
+                    <span class="badge badge-kpi">KPIs</span>
+                    <span class="badge badge-public">Public transport</span>
+                  </div>
+                  <div class="exp-details">
+                    <ul>
+                      <li>Managed maintenance and quality control for automated fare collection systems.</li>
+                      <li>Led the ticketing team directly and performed quality-control oversight (not operations) for SCADA, CCTV, access control, TETRA radio, telephony, intercom, and other metro subsystems.</li>
+                      <li>Calculated KPIs and economic impact of maintenance plans based on contractual SLAs.</li>
+                      <li>Implemented structured reporting to reduce downtime and improve response times.</li>
+                    </ul>
+                  </div>
                 </div>
               </article>
 
-              <article class="experience-card">
-                <div class="exp-header">
-                  <div>
-                    <div class="exp-role">Technical Assistant – Citizen Observatory</div>
-                    <div class="exp-company">Ayuntamiento del Distrito Nacional</div>
-                  </div>
-                  <div class="exp-meta">
-                    <span>Santo Domingo, Dominican Republic</span>
-                    <span>2007 – 2008</span>
-                  </div>
+              <article class="experience-item" tabindex="0">
+                <div class="exp-date">
+                  <span class="exp-year">2007 – 2008</span>
+                  <span>Santo Domingo, Dominican Republic</span>
                 </div>
-                <div class="exp-tags">
-                  <span>Field data collection</span>
-                  <span>Public services monitoring</span>
-                  <span>Quality oversight</span>
-                </div>
-                <div class="exp-details">
-                  <ul>
-                    <li>Collected, verified, and documented operational data on municipal public services.</li>
-                    <li>Supported the evaluation of service quality, citizen reports, and compliance metrics.</li>
-                    <li>Provided structured summaries that informed decision-making for district administration.</li>
-                  </ul>
+                <div class="exp-content">
+                  <div class="exp-header">
+                    <div>
+                      <div class="exp-role">Technical Assistant – Citizen Observatory</div>
+                      <div class="exp-company">Ayuntamiento del Distrito Nacional</div>
+                    </div>
+                  </div>
+                  <div class="exp-tags">
+                    <span class="badge badge-field">Field data collection</span>
+                    <span class="badge badge-public">Public services monitoring</span>
+                    <span class="badge badge-quality">Quality oversight</span>
+                  </div>
+                  <div class="exp-details">
+                    <ul>
+                      <li>Collected, verified, and documented operational data on municipal public services.</li>
+                      <li>Supported the evaluation of service quality, citizen reports, and compliance metrics.</li>
+                      <li>Provided structured summaries that informed decision-making for district administration.</li>
+                    </ul>
+                  </div>
                 </div>
               </article>
 
