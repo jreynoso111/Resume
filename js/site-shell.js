@@ -7,7 +7,7 @@
   }
 
   function initBackgroundAnimation() {
-    // 1. Inject Canvas if missing
+    // 1. Inject Canvases if missing
     if (!document.getElementById('bg-canvas')) {
       const cvs = document.createElement('canvas');
       cvs.id = 'bg-canvas';
@@ -21,8 +21,20 @@
       document.body.prepend(cvs);
     }
 
+    if (!document.getElementById('particle-canvas')) {
+      const cvs = document.createElement('canvas');
+      cvs.id = 'particle-canvas';
+      cvs.style.position = 'fixed';
+      cvs.style.top = '0';
+      cvs.style.left = '0';
+      cvs.style.width = '100%';
+      cvs.style.height = '100%';
+      cvs.style.zIndex = '-1'; // Place constellation behind satellites
+      cvs.style.pointerEvents = 'none';
+      document.body.prepend(cvs);
+    }
+
     // 2. Determine base path
-    // We assume site-shell.js is in /js/ folder relative to root or relative to current page
     let basePath = '';
     const shellScript = document.querySelector('script[src*="site-shell.js"]');
     if (shellScript) {
@@ -33,31 +45,29 @@
       }
     }
 
-    // 3. Load Scripts
-    const isBgLoaded = document.querySelector('script[src*="background-animation.js"]');
-    if (!isBgLoaded) {
-      const loadBg = () => {
+    // 3. Load 3D Satellites Script
+    if (!window.BG_ANIMATION_INITIALIZED && !document.querySelector('script[src*="background-animation.js"]')) {
+      const load3D = () => {
         const s = document.createElement('script');
         s.src = basePath + 'js/background-animation.js';
         document.body.appendChild(s);
       };
 
       if (typeof THREE === 'undefined') {
-        // Check if script tag exists but maybe not loaded yet
-        const existingThree = document.querySelector('script[src*="three.min.js"]');
-        if (!existingThree) {
-          const s3 = document.createElement('script');
-          s3.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
-          s3.onload = loadBg;
-          document.body.appendChild(s3);
-        } else {
-          existingThree.addEventListener('load', loadBg);
-          // If already loaded:
-          if (typeof THREE !== 'undefined') loadBg();
-        }
+        const s3 = document.createElement('script');
+        s3.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
+        s3.onload = load3D;
+        document.body.appendChild(s3);
       } else {
-        loadBg();
+        load3D();
       }
+    }
+
+    // 4. Load 2D Constellation Script
+    if (!window.PARTICLES_INITIALIZED && !document.querySelector('script[src*="particles.js"]')) {
+      const s = document.createElement('script');
+      s.src = basePath + 'js/particles.js';
+      document.body.appendChild(s);
     }
   }
 

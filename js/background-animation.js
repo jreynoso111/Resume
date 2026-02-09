@@ -1,10 +1,14 @@
 /**
  * Global Background Animation using Three.js
- * Creates a rotating sphere of connected nodes (particles) representing a data network.
- * Applies to the entire website background.
+ * Creates a "satellite network" effect around a central globe.
+ * Optimized to prevent multiple initializations and improve performance.
  */
 (function () {
+    if (window.BG_ANIMATION_INITIALIZED) return;
+
     function init() {
+        if (window.BG_ANIMATION_INITIALIZED) return;
+
         let canvas = document.getElementById('bg-canvas');
         if (!canvas) {
             canvas = document.createElement('canvas');
@@ -12,21 +16,20 @@
             document.body.prepend(canvas);
         }
 
-        // Enhance canvas styles (forced)
+        // Enhance canvas styles
         canvas.style.position = 'fixed';
         canvas.style.top = '0';
         canvas.style.left = '0';
         canvas.style.width = '100%';
         canvas.style.height = '100%';
-        canvas.style.zIndex = '0'; // Prioritize visibility over background
+        canvas.style.zIndex = '0';
         canvas.style.pointerEvents = 'none';
 
-
-
         if (typeof THREE === 'undefined') {
-            console.error('Three.js is not loaded.');
             return;
         }
+
+        window.BG_ANIMATION_INITIALIZED = true;
 
         // State Variables
         let mouseX = 0;
@@ -36,125 +39,110 @@
         let lastMouseMoveTime = Date.now();
         let isIdle = true;
         let currentSpeedY = 0.0003;
-        let currentSpeedX = 0.0001;
+        let currentSpeedX = 0.00015;
 
         // Scene setup
         const scene = new THREE.Scene();
-
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.z = 30;
+        camera.position.z = 45;
 
         const renderer = new THREE.WebGLRenderer({
             canvas: canvas,
-            alpha: true, // Crucial for transparent background
+            alpha: true,
             antialias: true
         });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
         // --- OBJECTS ---
         const sphereGroup = new THREE.Group();
         scene.add(sphereGroup);
 
-        // 1. Dots on Sphere
-        const geometryDots = new THREE.IcosahedronGeometry(15, 2);
+        // 1. Satellite Network Geometry
+        const geometryDots = new THREE.IcosahedronGeometry(20, 1);
+
+        // Subtle randomization
+        const posAttribute = geometryDots.attributes.position;
+        for (let i = 0; i < posAttribute.count; i++) {
+            const x = posAttribute.getX(i);
+            const y = posAttribute.getY(i);
+            const z = posAttribute.getZ(i);
+            const noise = 0.3;
+            posAttribute.setXYZ(i, x + (Math.random() - 0.5) * noise, y + (Math.random() - 0.5) * noise, z + (Math.random() - 0.5) * noise);
+        }
+
         const materialDots = new THREE.PointsMaterial({
-            color: 0x1f4f7b, // Default, will update
-            size: 0.15,
+            color: 0x1f4f7b,
+            size: 0.15, // Smaller points for satellites
             transparent: true,
-            opacity: 0.8
+            opacity: 0.6
         });
         const points = new THREE.Points(geometryDots, materialDots);
         sphereGroup.add(points);
 
-        // 2. Wireframe Connections
-        // We can use a wireframe geometry derived from the icosahedron
+        // 2. Wireframe Connections (The "Network")
         const materialWire = new THREE.LineBasicMaterial({
             color: 0x1f4f7b,
             transparent: true,
-            opacity: 0.15
+            opacity: 0.06 // Very subtle lines
         });
         const wireframeGeometry = new THREE.WireframeGeometry(geometryDots);
         const lines = new THREE.LineSegments(wireframeGeometry, materialWire);
         sphereGroup.add(lines);
 
-        // 3. Floating Particles (Background stars/dust)
-        const particlesGeometry = new THREE.BufferGeometry();
-        const particlesCount = 300; // Number of background particles
-        const posArray = new Float32Array(particlesCount * 3);
-
-        for (let i = 0; i < particlesCount * 3; i++) {
-            // Random positions spread out
-            posArray[i] = (Math.random() - 0.5) * 100;
-        }
-
-        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-
-        const starsMaterial = new THREE.PointsMaterial({
-            color: 0x1f4f7b, // Default, will update
-            size: 0.1,
-            transparent: true,
-            opacity: 0.4
-        });
-
-        const starField = new THREE.Points(particlesGeometry, starsMaterial);
-        scene.add(starField);
-
-
-        // Base speeds
+        // Base speeds (Increased for more movement)
         const IDLE_ROTATION_SPEED_Y = 0.0003;
-        const ACTIVE_ROTATION_SPEED_Y = 0.001;
-        const IDLE_ROTATION_SPEED_X = 0.0001;
-        const ACTIVE_ROTATION_SPEED_X = 0.0002;
+        const ACTIVE_ROTATION_SPEED_Y = 0.0012;
+        const IDLE_ROTATION_SPEED_X = 0.00015;
+        const ACTIVE_ROTATION_SPEED_X = 0.0004;
 
         document.addEventListener('mousemove', (event) => {
-            mouseX = (event.clientX - windowHalfX) * 0.001;
-            mouseY = (event.clientY - windowHalfY) * 0.001;
+            // Increased sensitivity factor from 0.0005 to 0.0015
+            mouseX = (event.clientX - windowHalfX) * 0.0015;
+            mouseY = (event.clientY - windowHalfY) * 0.0015;
             lastMouseMoveTime = Date.now();
             isIdle = false;
         });
 
-        // Scroll Interaction
         let targetScrollY = 0;
         document.addEventListener('scroll', () => {
-            // Use scroll measure for rotation
             targetScrollY = window.scrollY * 0.0005;
             isIdle = false;
             lastMouseMoveTime = Date.now();
         });
 
         document.addEventListener('mouseleave', () => {
-            isIdle = true; // Immediately idle when leaving window
+            isIdle = true;
         });
 
         // --- THEME HANDLING ---
         function updateColors() {
-            // Read CSS variables
             const styles = getComputedStyle(document.documentElement);
             const accentHex = styles.getPropertyValue('--accent').trim();
+            const bgHex = styles.getPropertyValue('--bg').trim();
+            const isLightMode = bgHex === '#f5f5f5' || bgHex === '#ffffff' || bgHex.includes('245');
 
-            // We want the network to be the accent color mostly
             const accentColor = new THREE.Color(accentHex || '#1f4f7b');
-            // We do NOT set scene.background to allow transparency (so CSS background shows)
-            scene.background = null;
 
             materialDots.color = accentColor;
             materialWire.color = accentColor;
-            starsMaterial.color = accentColor;
+
+            if (isLightMode) {
+                // Increased opacity from 0.3 to 0.7 for dots and 0.04 to 0.15 for wire in Light Mode
+                materialDots.opacity = 0.7;
+                materialWire.opacity = 0.15;
+            } else {
+                materialDots.opacity = 0.6;
+                materialWire.opacity = 0.12;
+            }
         }
 
-        // Update on init
         updateColors();
-
-        // Update on theme change event (from site-shell.js)
         window.addEventListener('theme-changed', () => {
-            // Short delay to ensure CSS variable is applied to DOM
             setTimeout(updateColors, 50);
         });
 
-
         // --- ANIMATION LOOP ---
-        // Smooth mouse target values
         let targetX = 0;
         let targetY = 0;
 
@@ -162,48 +150,32 @@
             requestAnimationFrame(render);
 
             const timeSinceMove = Date.now() - lastMouseMoveTime;
-            // Idle detection mainly for the "speed up" effect
-            if (timeSinceMove > 500) {
-                isIdle = true;
-            }
+            if (timeSinceMove > 1000) isIdle = true;
 
-            // 1. Auto-Rotation Speed Control
-            // When active (moving mouse), spin faster. When idle, spin slow.
             const targetSpeedY = isIdle ? IDLE_ROTATION_SPEED_Y : ACTIVE_ROTATION_SPEED_Y;
             const targetSpeedX = isIdle ? IDLE_ROTATION_SPEED_X : ACTIVE_ROTATION_SPEED_X;
 
+            // Faster interpolation (0.02 -> 0.05)
             currentSpeedY += (targetSpeedY - currentSpeedY) * 0.05;
             currentSpeedX += (targetSpeedX - currentSpeedX) * 0.05;
 
-            // Apply constant spin to the GROUP (the object itself)
             sphereGroup.rotation.y += currentSpeedY;
             sphereGroup.rotation.x += currentSpeedX;
-
-            // Apply scroll rotation on Z axis for a "rolling" feeling or Y/X
             sphereGroup.rotation.x += (targetScrollY - sphereGroup.rotation.x) * 0.05;
 
-            // Background stars counter-rotate
-            starField.rotation.y -= currentSpeedY * 0.3;
-            starField.rotation.x -= (targetScrollY - starField.rotation.x) * 0.02; // Subtle parallax on stars
+            // Increased sensitivity multipliers
+            targetX = mouseX * 0.8;
+            targetY = mouseY * 0.8;
 
-            // 2. Mouse Interaction (Tilt/Look)
-            // We want the whole scene to slightly tilt towards the mouse position always.
-            // mouseX and mouseY are normative values (-1 to 1 approx) updated by event listener.
-
-            targetX = mouseX * 0.5; // Sensitivity
-            targetY = mouseY * 0.5;
-
-            // Smoothly interpolate scene rotation towards target mouse position
-            // Note: We rotate the SCENE or CAMERA group to tilt the view, while sphereGroup spins.
-            scene.rotation.y += 0.05 * (targetX - scene.rotation.y);
-            scene.rotation.x += 0.05 * (targetY - scene.rotation.x);
+            // Snappier rotation reaction (0.03 -> 0.08)
+            scene.rotation.y += 0.08 * (targetX - scene.rotation.y);
+            scene.rotation.x += 0.08 * (targetY - scene.rotation.x);
 
             renderer.render(scene, camera);
         }
 
         render();
 
-        // Resize Handler
         window.addEventListener('resize', () => {
             windowHalfX = window.innerWidth / 2;
             windowHalfY = window.innerHeight / 2;
@@ -219,3 +191,4 @@
         init();
     }
 })();
+
