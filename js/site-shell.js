@@ -16,7 +16,7 @@
       cvs.style.left = '0';
       cvs.style.width = '100%';
       cvs.style.height = '100%';
-      cvs.style.zIndex = '-1';
+      cvs.style.zIndex = '0';
       cvs.style.pointerEvents = 'none';
       document.body.prepend(cvs);
     }

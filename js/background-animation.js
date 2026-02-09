@@ -5,13 +5,38 @@
  */
 (function () {
     function init() {
-        const canvas = document.getElementById('bg-canvas');
-        if (!canvas) return;
+        let canvas = document.getElementById('bg-canvas');
+        if (!canvas) {
+            canvas = document.createElement('canvas');
+            canvas.id = 'bg-canvas';
+            document.body.prepend(canvas);
+        }
+
+        // Enhance canvas styles (forced)
+        canvas.style.position = 'fixed';
+        canvas.style.top = '0';
+        canvas.style.left = '0';
+        canvas.style.width = '100%';
+        canvas.style.height = '100%';
+        canvas.style.zIndex = '0'; // Prioritize visibility over background
+        canvas.style.pointerEvents = 'none';
+
+
 
         if (typeof THREE === 'undefined') {
             console.error('Three.js is not loaded.');
             return;
         }
+
+        // State Variables
+        let mouseX = 0;
+        let mouseY = 0;
+        let windowHalfX = window.innerWidth / 2;
+        let windowHalfY = window.innerHeight / 2;
+        let lastMouseMoveTime = Date.now();
+        let isIdle = true;
+        let currentSpeedY = 0.0003;
+        let currentSpeedX = 0.0001;
 
         // Scene setup
         const scene = new THREE.Scene();
@@ -35,29 +60,52 @@
         const geometryDots = new THREE.IcosahedronGeometry(15, 2);
         const materialDots = new THREE.PointsMaterial({
             color: 0x1f4f7b, // Default, will update
-            size: 0.12, // Reduced from 0.2
+            size: 0.15,
             transparent: true,
             opacity: 0.8
         });
+        const points = new THREE.Points(geometryDots, materialDots);
+        sphereGroup.add(points);
 
-        // ... (skipping unchanged lines) ...
+        // 2. Wireframe Connections
+        // We can use a wireframe geometry derived from the icosahedron
+        const materialWire = new THREE.LineBasicMaterial({
+            color: 0x1f4f7b,
+            transparent: true,
+            opacity: 0.15
+        });
+        const wireframeGeometry = new THREE.WireframeGeometry(geometryDots);
+        const lines = new THREE.LineSegments(wireframeGeometry, materialWire);
+        sphereGroup.add(lines);
 
         // 3. Floating Particles (Background stars/dust)
-        // ...
+        const particlesGeometry = new THREE.BufferGeometry();
+        const particlesCount = 300; // Number of background particles
+        const posArray = new Float32Array(particlesCount * 3);
+
+        for (let i = 0; i < particlesCount * 3; i++) {
+            // Random positions spread out
+            posArray[i] = (Math.random() - 0.5) * 100;
+        }
+
+        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+
         const starsMaterial = new THREE.PointsMaterial({
             color: 0x1f4f7b, // Default, will update
-            size: 0.08, // Reduced from 0.1
+            size: 0.1,
             transparent: true,
             opacity: 0.4
         });
 
-        // ...
+        const starField = new THREE.Points(particlesGeometry, starsMaterial);
+        scene.add(starField);
+
 
         // Base speeds
-        const IDLE_ROTATION_SPEED_Y = 0.0003; // Reduced from 0.0005
-        const ACTIVE_ROTATION_SPEED_Y = 0.001; // Reduced from 0.002
-        const IDLE_ROTATION_SPEED_X = 0.0001; // Reduced from 0.0002
-        const ACTIVE_ROTATION_SPEED_X = 0.0002; // Reduced from 0.0005
+        const IDLE_ROTATION_SPEED_Y = 0.0003;
+        const ACTIVE_ROTATION_SPEED_Y = 0.001;
+        const IDLE_ROTATION_SPEED_X = 0.0001;
+        const ACTIVE_ROTATION_SPEED_X = 0.0002;
 
         document.addEventListener('mousemove', (event) => {
             mouseX = (event.clientX - windowHalfX) * 0.001;
@@ -84,7 +132,6 @@
             // Read CSS variables
             const styles = getComputedStyle(document.documentElement);
             const accentHex = styles.getPropertyValue('--accent').trim();
-            const bgHex = styles.getPropertyValue('--bg').trim();
 
             // We want the network to be the accent color mostly
             const accentColor = new THREE.Color(accentHex || '#1f4f7b');
@@ -158,6 +205,8 @@
 
         // Resize Handler
         window.addEventListener('resize', () => {
+            windowHalfX = window.innerWidth / 2;
+            windowHalfY = window.innerHeight / 2;
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);

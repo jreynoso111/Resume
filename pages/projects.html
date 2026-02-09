@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Projects | Juan R. Reynoso</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="../assets/css/styles.css" />
+    <style>
+        .projects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 24px;
+            margin-top: 32px;
+        }
+
+        .project-card {
+            background: var(--bg-soft);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .project-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+        }
+
+        .project-img-frame {
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            background: var(--bg-alt);
+            border-bottom: 1px solid var(--border-subtle);
+            overflow: hidden;
+        }
+
+        .project-img-frame img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+
+        .project-card:hover .project-img-frame img {
+            transform: scale(1.03);
+        }
+
+        .project-content {
+            padding: 16px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .project-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-main);
+        }
+
+        .project-desc {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 16px;
+            flex-grow: 1;
+            line-height: 1.5;
+        }
+
+        .project-link {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--accent-strong);
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .project-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header id="site-header" data-variant="inner" data-active="projects"></header>
+
+    <main>
+        <div class="shell">
+            <div class="page-intro" style="margin-top: 40px; margin-bottom: 20px;">
+                <h1 class="page-title">Projects</h1>
+                <p class="page-subtitle" style="max-width: 700px;">
+                    A selection of work demonstrating my focus on data-driven operations, fleet maintenance analytics,
+                    and inventory control systems.
+                </p>
+            </div>
+
+            <div class="projects-grid">
+                <!-- Project 1 -->
+                <article class="project-card">
+                    <a href="projects/fleet-maintenance-analytics.html" class="project-img-frame">
+                        <img src="../assets/images/projects/fleet-maintenance-analytics/hero.jpg"
+                            alt="Fleet Maintenance Analytics System" loading="lazy">
+                    </a>
+                    <div class="project-content">
+                        <h2 class="project-title"><a href="projects/fleet-maintenance-analytics.html">Fleet Maintenance
+                                Analytics System</a></h2>
+                        <p class="project-desc">
+                            Comprehensive dashboard for tracking maintenance costs, downtime, and vendor performance to
+                            optimize fleet reliability.
+                        </p>
+                        <a href="projects/fleet-maintenance-analytics.html" class="project-link">View Case Study →</a>
+                    </div>
+                </article>
+
+                <!-- Project 2 -->
+                <article class="project-card">
+                    <a href="projects/inventory-control-dashboard.html" class="project-img-frame">
+                        <img src="../assets/images/projects/inventory-control-dashboard/hero.jpg"
+                            alt="Inventory Control Dashboard" loading="lazy">
+                    </a>
+                    <div class="project-content">
+                        <h2 class="project-title"><a href="projects/inventory-control-dashboard.html">Inventory Control
+                                Dashboard</a></h2>
+                        <p class="project-desc">
+                            Real-time tracking of spare parts inventory, stock levels, and consumption trends to prevent
+                            shortages and reduce carrying costs.
+                        </p>
+                        <a href="projects/inventory-control-dashboard.html" class="project-link">View Case Study →</a>
+                    </div>
+                </article>
+
+                <!-- Project 3 -->
+                <article class="project-card">
+                    <a href="projects/repossession-risk-monitoring.html" class="project-img-frame">
+                        <img src="../assets/images/projects/repossession-risk-monitoring/hero.jpg"
+                            alt="Repo & Risk Monitoring System" loading="lazy">
+                    </a>
+                    <div class="project-content">
+                        <h2 class="project-title"><a href="projects/repossession-risk-monitoring.html">Repo & Risk
+                                Monitoring System</a></h2>
+                        <p class="project-desc">
+                            Automated system for monitoring at-risk assets and managing the repossession workflow to
+                            minimize losses.
+                        </p>
+                        <a href="projects/repossession-risk-monitoring.html" class="project-link">View Case Study →</a>
+                    </div>
+                </article>
+
+                <!-- Project 4 -->
+                <article class="project-card">
+                    <a href="projects/gps-movement-analytics.html" class="project-img-frame">
+                        <img src="../assets/images/projects/gps-movement-analytics/hero.jpg"
+                            alt="GPS Tracking & Movement Analysis" loading="lazy">
+                    </a>
+                    <div class="project-content">
+                        <h2 class="project-title"><a href="projects/gps-movement-analytics.html">GPS Tracking & Movement
+                                Analysis</a></h2>
+                        <p class="project-desc">
+                            Geospatial analysis of fleet movement patterns to improve route efficiency and detect
+                            unauthorized usage.
+                        </p>
+                        <a href="projects/gps-movement-analytics.html" class="project-link">View Case Study →</a>
+                    </div>
+                </article>
+
+                <!-- Project 5 -->
+                <article class="project-card">
+                    <a href="projects/techloc-fleet-service-control.html" class="project-img-frame">
+                        <img src="../assets/images/projects/techloc-fleet-service-control/hero.jpg"
+                            alt="TechLoc Fleet & Service Control Platform" loading="lazy">
+                    </a>
+                    <div class="project-content">
+                        <h2 class="project-title"><a href="projects/techloc-fleet-service-control.html">TechLoc Fleet &
+                                Service Control Platform</a></h2>
+                        <p class="project-desc">
+                            Centralized platform for managing service requests, technician assignments, and repair
+                            validations.
+                        </p>
+                        <a href="projects/techloc-fleet-service-control.html" class="project-link">View Case Study →</a>
+                    </div>
+                </article>
+            </div>
+
+            <div style="height: 60px;"></div>
+        </div>
+    </main>
+
+    <script src="../js/editor-auth.js"></script>
+    <script src="../js/header.js?v=3"></script>
+    <script src="../js/site-shell.js?v=3"></script>
+</body>
+
+</html>
