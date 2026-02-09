@@ -52,6 +52,29 @@ img {
   display: block;
 }
 
+/* UTILITY */
+.grid {
+  display: grid;
+}
+
+.grid-cols-1 {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.gap-8 {
+  gap: 32px;
+}
+
+.items-start {
+  align-items: flex-start;
+}
+
+@media (min-width: 1024px) {
+  .lg\:grid-cols-2 {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
 /* LAYOUT */
 .page {
   position: relative;

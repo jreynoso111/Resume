@@ -15,152 +15,133 @@
     <header id="site-header" data-variant="inner" data-active="about"></header>
 
     <main>
-      <section class="hero" style="padding-top: 40px; padding-bottom: 20px;">
-        <div class="shell">
-          <div class="hero-grid">
-            <div>
-              <div class="hero-label-row">
-                <div class="hero-label"><span class="hero-label-dot"></span>About Me</div>
-              </div>
-              <h1 class="hero-title">
-                Driven by values and a history of <span class="accent">solving complex problems</span> through data.
-              </h1>
-              <p class="hero-subtitle">
-                An active mind, driven by values and a history of solving complex problems. I am Juan Radhamés Reynoso
-                Pérez. Born in Santo Domingo, I come from a close-knit family that instilled in me a strong sense of
-                integrity and the importance of doing good work.
-              </p>
-              <div class="hero-pills">
-                <div class="pill">Integrity</div>
-                <div class="pill">Curiosity</div>
-                <div class="pill">Adaptability</div>
-                <div class="pill">NYC Based</div>
-              </div>
+      <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10 lg:space-y-12">
+        <section class="hero py-10 lg:py-12">
+          <div class="shell grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+          <div>
+            <div class="hero-label-row">
+              <div class="hero-label"><span class="hero-label-dot"></span>About Me</div>
             </div>
-            <div class="hero-card-wrap" style="margin-top: 0;">
-              <article class="hero-card">
-                <div class="hero-img-frame" style="aspect-ratio: 1/1; max-height: 400px;">
-                  <img src="../assets/images/home/profile.jpg" alt="Juan R. Reynoso" />
-                </div>
-                <div class="hero-stat" style="margin-top: 10px; display: block; text-align: center;">
-                  <div class="hero-stat-label">Core Philosophy</div>
-                  <div class="hero-stat-value">"Finding the balance between the digital and the natural world."</div>
-                </div>
-              </article>
+            <h1 class="hero-title">
+              Driven by values and a history of <span class="accent">solving complex problems</span> through data.
+            </h1>
+            <div class="flex flex-wrap gap-2 mt-4">
+              <div class="inline-flex px-3 py-1 rounded-full" style="background: var(--chip-bg); color: var(--text-muted); border: 1px solid var(--border-subtle);">Integrity</div>
+              <div class="inline-flex px-3 py-1 rounded-full" style="background: var(--chip-bg); color: var(--text-muted); border: 1px solid var(--border-subtle);">Curiosity</div>
+              <div class="inline-flex px-3 py-1 rounded-full" style="background: var(--chip-bg); color: var(--text-muted); border: 1px solid var(--border-subtle);">Adaptability</div>
+              <div class="inline-flex px-3 py-1 rounded-full" style="background: var(--chip-bg); color: var(--text-muted); border: 1px solid var(--border-subtle);">NYC Based</div>
+            </div>
+            <p class="hero-subtitle mt-4 leading-relaxed">
+              An active mind, driven by values and a history of solving complex problems. I am Juan Radhamés Reynoso
+              Pérez. Born in Santo Domingo, I come from a close-knit family that instilled in me a strong sense of
+              integrity and the importance of doing good work.
+            </p>
+            <div class="card p-4 rounded-lg space-y-2 mt-4">
+              <h3 class="section-label">Core Philosophy</h3>
+              <p class="hero-subtitle leading-relaxed">"Finding the balance between the digital and the natural world."</p>
             </div>
           </div>
-        </div>
-      </section>
+          <div class="hero-card-wrap" style="margin-top: 0;">
+            <article class="hero-card">
+              <div class="hero-img-frame" style="aspect-ratio: 1/1; max-height: 400px;">
+                <img src="../assets/images/home/profile.jpg" alt="Juan R. Reynoso" />
+              </div>
+              <div class="hero-stat" style="margin-top: 10px; display: block; text-align: center;">
+                <div class="hero-stat-label">Core Philosophy</div>
+                <div class="hero-stat-value">"Finding the balance between the digital and the natural world."</div>
+              </div>
+            </article>
+          </div>
+          </div>
+        </section>
 
-      <section class="highlights" style="padding-top: 0;">
-        <div class="shell">
-          <div class="highlights-inner">
+        <section class="highlights py-10 lg:py-12">
+          <div class="shell">
+            <div class="highlights-inner">
             <div>
               <div class="section-label">Narrative</div>
-              <h2 class="section-title">My Journey</h2>
-              <p class="section-sub">
+              <h2 class="section-title mt-2">My Journey</h2>
+              <p class="section-sub mt-4 leading-relaxed">
                 My professional character was forged during 16 years of service at the Santo Domingo Metro. Moving back
                 to New York has been a new chapter, blending my technical history with the fast-paced culture of NYC.
               </p>
 
-              <div class="highlight-list">
-                <div class="highlight-item">
-                  <div class="highlight-badge">01</div>
-                  <div class="highlight-body">
-                    <div class="highlight-title">The Metro Era (16 Years)</div>
-                    <div class="highlight-text">
-                      I started at the Central Control as a Technical Assistant, but my curiosity quickly led me to the
-                      Maintenance Department, focusing on Telecommunications, Signaling, and Ticketing. Over 15 years, I
-                      gained deep technical training in railway security systems, installation operations, and quality
-                      control. It was here that I developed my passion for analytics, learning that data is the pulse of
-                      any operation.
-                    </div>
-                  </div>
-                </div>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+                <article class="card p-4 rounded-lg space-y-3">
+                  <div class="inline-flex px-2 py-1 rounded-full" style="background: var(--chip-bg); color: var(--text-muted); border: 1px solid var(--border-subtle);">01</div>
+                  <h3 class="highlight-title">The Metro Era (16 Years)</h3>
+                  <p class="highlight-text mt-2 leading-relaxed">
+                    I started at the Central Control as a Technical Assistant, but my curiosity quickly led me to the
+                    Maintenance Department, focusing on Telecommunications, Signaling, and Ticketing. Over 15 years, I
+                    gained deep technical training in railway security systems, installation operations, and quality
+                    control. It was here that I developed my passion for analytics, learning that data is the pulse of
+                    any operation.
+                  </p>
+                </article>
 
-                <div class="highlight-item">
-                  <div class="highlight-badge">02</div>
-                  <div class="highlight-body">
-                    <div class="highlight-title">Education & Growth</div>
-                    <div class="highlight-text">
-                      I hold a degree in Higher Technology in Food Engineering from the Universidad Autónoma de Santo
-                      Domingo (UASD). While my career pivoted toward transportation and data technology, that
-                      engineering background gave me a rigorous foundation in process management, safety standards, and
-                      project structure that I apply to everything I do today.
-                    </div>
-                  </div>
-                </div>
+                <article class="card p-4 rounded-lg space-y-3">
+                  <div class="inline-flex px-2 py-1 rounded-full" style="background: var(--chip-bg); color: var(--text-muted); border: 1px solid var(--border-subtle);">02</div>
+                  <h3 class="highlight-title">Education & Growth</h3>
+                  <p class="highlight-text mt-2 leading-relaxed">
+                    I hold a degree in Higher Technology in Food Engineering from the Universidad Autónoma de Santo
+                    Domingo (UASD). While my career pivoted toward transportation and data technology, that
+                    engineering background gave me a rigorous foundation in process management, safety standards, and
+                    project structure that I apply to everything I do today.
+                  </p>
+                </article>
 
-                <div class="highlight-item">
-                  <div class="highlight-badge">03</div>
-                  <div class="highlight-body">
-                    <div class="highlight-title">A Lifelong Learner</div>
-                    <div class="highlight-text">
-                      I thrive on challenges—from solving complex inventory problems to mastering new software tools.
-                      Moving back to NYC marks a new chapter, allowing me to bring my deep operational experience from
-                      the Dominican Republic to new, fast-paced environments.
-                    </div>
-                  </div>
-                </div>
+                <article class="card p-4 rounded-lg space-y-3">
+                  <div class="inline-flex px-2 py-1 rounded-full" style="background: var(--chip-bg); color: var(--text-muted); border: 1px solid var(--border-subtle);">03</div>
+                  <h3 class="highlight-title">A Lifelong Learner</h3>
+                  <p class="highlight-text mt-2 leading-relaxed">
+                    I thrive on challenges—from solving complex inventory problems to mastering new software tools.
+                    Moving back to NYC marks a new chapter, allowing me to bring my deep operational experience from
+                    the Dominican Republic to new, fast-paced environments.
+                  </p>
+                </article>
               </div>
             </div>
 
             <div>
-              <div class="mini-grid">
-                <article class="mini-card">
-                  <div class="mini-label">Creative</div>
-                  <div class="mini-main">Photography</div>
-                  <div class="mini-meta">Capturing the interaction between urban life and nature through my lens.</div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <article class="card p-4 rounded-lg space-y-2">
+                  <h3 class="mini-main">Photography</h3>
+                  <p class="mini-meta leading-relaxed">Capturing the interaction between urban life and nature through my lens.</p>
                 </article>
-                <article class="mini-card">
-                  <div class="mini-label">Outdoors</div>
-                  <div class="mini-main">Nature & Camping</div>
-                  <div class="mini-meta">Reconnecting with the natural world to maintain balance.</div>
+                <article class="card p-4 rounded-lg space-y-2">
+                  <h3 class="mini-main">Nature & Camping</h3>
+                  <p class="mini-meta leading-relaxed">Reconnecting with the natural world to maintain balance.</p>
                 </article>
-                <article class="mini-card">
-                  <div class="mini-label">Values</div>
-                  <div class="mini-main">Integrity & Work Ethic</div>
-                  <div class="mini-meta">Rooted in family values and a commitment to high-quality results.</div>
+                <article class="card p-4 rounded-lg space-y-2">
+                  <h3 class="mini-main">Integrity & Work Ethic</h3>
+                  <p class="mini-meta leading-relaxed">Rooted in family values and a commitment to high-quality results.</p>
                 </article>
-                <article class="mini-card">
-                  <div class="mini-label">Tech Life</div>
-                  <div class="mini-main">Computers & Tech</div>
-                  <div class="mini-meta">Always tinkering with hardware and new software solutions.</div>
-                </article>
-
-                <article class="mini-card" style="grid-column: span 2;">
-                  <div class="mini-label">Get in touch</div>
-                  <div class="mini-main">Discuss a role or project</div>
-                  <div class="mini-meta">I am always open to discussing new opportunities in fleet management, data
-                    analytics, or logistics projects.</div>
-                  <a href="mailto:jreynoso111@gmail.com" class="btn-primary"
-                    style="margin-top: 10px; width: 100%; justify-content: center;">
-                    Email Me <span class="chevron">→</span>
-                  </a>
+                <article class="card p-4 rounded-lg space-y-2">
+                  <h3 class="mini-main">Computers & Tech</h3>
+                  <p class="mini-meta leading-relaxed">Always tinkering with hardware and new software solutions.</p>
                 </article>
               </div>
             </div>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
 
+        <section class="education-section py-10 lg:py-12">
+          <div class="shell">
+            <div class="section-label">Academic</div>
+          <h2 class="section-title mt-2">Education & Certifications</h2>
 
-      <section class="education-section" style="padding-bottom: 60px;">
-        <div class="shell">
-          <div class="section-label">Academic</div>
-          <h2 class="section-title">Education & Certifications</h2>
-
-          <div class="mini-grid" style="margin-top: 12px;">
-            <article class="mini-card">
-              <div class="mini-label">University Degree</div>
-              <div class="mini-main">Technologist in Food Science</div>
-              <div class="mini-meta">Universidad Autónoma de Santo Domingo (UASD). Rigorous foundation in process
-                management and safety standards. All coursework completed.</div>
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
+            <article class="card p-4 rounded-lg space-y-2">
+              <div class="mini-label">Education</div>
+              <h3 class="mini-main">Technologist in Food Science</h3>
+              <p class="mini-meta leading-relaxed">Universidad Autónoma de Santo Domingo (UASD). Rigorous foundation in process
+                management and safety standards. All coursework completed.</p>
             </article>
 
-            <article class="mini-card">
+            <article class="card p-4 rounded-lg space-y-2">
               <div class="mini-label">Certifications</div>
-              <div class="mini-main">Technical Training</div>
+              <h3 class="mini-main">Technical Training</h3>
               <div class="mini-meta">
                 <ul style="padding-left: 14px; list-style-type: disc; font-size: 11px; margin-top: 4px;">
                   <li>Power BI / DAX / Power Query</li>
@@ -173,8 +154,25 @@
               </div>
             </article>
           </div>
-        </div>
-      </section>
+          </div>
+        </section>
+
+        <section class="py-10 lg:py-12">
+          <div class="shell">
+            <div class="card p-6 rounded-lg flex flex-col md:flex-row items-center justify-between gap-4">
+              <div>
+                <div class="section-label">Get in touch</div>
+                <h2 class="section-title mt-2">Let’s talk about your next project</h2>
+                <p class="section-sub mt-4 leading-relaxed">I am always open to discussing new opportunities in fleet management, data
+                  analytics, or logistics projects.</p>
+              </div>
+              <a href="mailto:jreynoso111@gmail.com" class="btn-primary">
+                Email Me <span class="chevron">→</span>
+              </a>
+            </div>
+          </div>
+        </section>
+      </div>
     </main>
 
     <footer style="margin-top: auto;">
