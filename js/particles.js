@@ -18,7 +18,8 @@
 
     // Theme-based colors
     let currentParticleColor = 'rgba(31, 79, 123, 0.15)';
-    let currentLineColor = 'rgba(31, 79, 123, 0.1)';
+    let lineBaseRgb = '31, 79, 123';
+    let lineBaseAlpha = 0.1;
 
     function updateTheme() {
         const styles = getComputedStyle(document.documentElement);
@@ -38,11 +39,12 @@
         if (isLight) {
             // Increased opacity from 0.2 to 0.5 for particles and 0.1 to 0.3 for lines in Light Mode
             currentParticleColor = `rgba(${r}, ${g}, ${b}, 0.5)`;
-            currentLineColor = `rgba(${r}, ${g}, ${b}, 0.3)`;
+            lineBaseAlpha = 0.3;
         } else {
             currentParticleColor = `rgba(${r}, ${g}, ${b}, 0.4)`;
-            currentLineColor = `rgba(${r}, ${g}, ${b}, 0.2)`;
+            lineBaseAlpha = 0.2;
         }
+        lineBaseRgb = `${r}, ${g}, ${b}`;
 
         if (particlesArray) {
             particlesArray.forEach(p => p.color = currentParticleColor);
@@ -118,7 +120,6 @@
     }
 
     function connect() {
-        let opacityValue = 1;
         // Even smaller distance threshold for "too close" (1/16 of width)
         const maxDistance = (canvas.width / 16) * (canvas.height / 16);
 
@@ -129,9 +130,10 @@
                 let distance = (dx * dx) + (dy * dy);
 
                 if (distance < maxDistance) {
-                    // Smoother fade out based on the new smaller distance
-                    opacityValue = 1 - (distance / maxDistance);
-                    ctx.strokeStyle = currentLineColor.replace('0.2', (opacityValue * 0.3).toString());
+                    const normalized = 1 - (distance / maxDistance);
+                    const easedOpacity = Math.pow(normalized, 2);
+                    const lineOpacity = easedOpacity * lineBaseAlpha;
+                    ctx.strokeStyle = `rgba(${lineBaseRgb}, ${lineOpacity})`;
                     ctx.lineWidth = 0.8;
                     ctx.beginPath();
                     ctx.moveTo(particlesArray[a].x, particlesArray[a].y);
