@@ -504,8 +504,62 @@
     }, 5200);
   }
 
+  function isValidHttpUrl(value) {
+    try {
+      const parsed = new URL(value);
+      return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function applyImageFromPath(target, path) {
+    if (target.dataset.adminImageKind === 'img') {
+      target.src = path;
+    } else {
+      target.style.backgroundImage = `url("${path}")`;
+    }
+    applyImageFit(target, target.dataset.adminImageKind);
+  }
+
   async function handleImageUpload(target) {
     if (!isAdmin()) return;
+
+    const mode = prompt(
+      'Selecciona cómo quieres cambiar la imagen:\n- Escribe "1" para subir un archivo.\n- Escribe "2" para usar un link (URL).',
+      '1'
+    );
+    if (!mode) return;
+
+    const path = location.pathname || 'index';
+    const key = imageKeyFor(path, target.dataset.adminImageId);
+
+    if (mode.trim() === '2') {
+      const nextUrl = prompt('Pega el link de la imagen (http:// o https://):', 'https://');
+      if (!nextUrl) return;
+      const cleanUrl = nextUrl.trim();
+
+      if (!isValidHttpUrl(cleanUrl)) {
+        notify('El link no es válido. Usa una URL completa que inicie con http:// o https://', 'warn');
+        return;
+      }
+
+      try {
+        localStorage.setItem(key, cleanUrl);
+      } catch (storageErr) {
+        console.warn('No se pudo persistir la URL en localStorage, se mantiene enlace aplicado en el DOM.', storageErr);
+      }
+
+      applyImageFromPath(target, cleanUrl);
+      notify('Imagen actualizada desde URL correctamente.', 'success');
+      return;
+    }
+
+    if (mode.trim() !== '1') {
+      notify('Opción no válida. Usa 1 (archivo) o 2 (URL).', 'warn');
+      return;
+    }
+
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
@@ -516,25 +570,17 @@
 
       try {
         const reduced = await reduceImage(file);
-        const path = location.pathname || 'index';
         const assetPath = inferTargetAssetPath(target, reduced.ext);
         const storedRelativePath = await saveReducedImageToRepo(reduced.blob, assetPath);
         const storedPath = toPageAssetPath(storedRelativePath);
 
-        const key = imageKeyFor(path, target.dataset.adminImageId);
         try {
           localStorage.setItem(key, storedPath);
         } catch (storageErr) {
           console.warn('No se pudo persistir la ruta en localStorage, se mantiene enlace aplicado en el DOM.', storageErr);
         }
 
-        if (target.dataset.adminImageKind === 'img') {
-          target.src = storedPath;
-        } else {
-          target.style.backgroundImage = `url("${storedPath}")`;
-        }
-
-        applyImageFit(target, target.dataset.adminImageKind);
+        applyImageFromPath(target, storedPath);
         notify(`Imagen reemplazada en ${storedRelativePath} y aplicada correctamente.`, 'success');
       } catch (err) {
         console.error(err);
@@ -565,7 +611,7 @@
     btn.type = 'button';
     btn.className = 'admin-image-btn';
     btn.textContent = '🖼️';
-    btn.title = 'Reemplazar imagen';
+    btn.title = 'Reemplazar imagen (archivo o URL)';
     btn.addEventListener('click', () => handleImageUpload(target));
     mount.appendChild(btn);
   }
