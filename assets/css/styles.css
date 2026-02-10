@@ -582,6 +582,10 @@ header {
   max-width: 560px;
 }
 
+.highlights .section-sub {
+  margin-bottom: 6px;
+}
+
 .highlight-list {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
