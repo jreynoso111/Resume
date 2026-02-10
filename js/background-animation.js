@@ -42,6 +42,7 @@
         const BASE_ROTATION_SPEED_X = 0.0004; // Doubled
         const DRAG_FORCE = 0.0003; // Tripled for "accelerator" feel
         const DRAG_DAMPING = 0.97; // Closer to 1 for sustained momentum
+        const MAX_POINTER_STEP = 80; // Ignore large jumps when pointer re-enters elsewhere
 
         // Scene setup
         const scene = new THREE.Scene();
@@ -116,8 +117,14 @@
 
             const deltaX = event.clientX - lastPointerPosition.x;
             const deltaY = event.clientY - lastPointerPosition.y;
-            lastPointerPosition = { x: event.clientX, y: event.clientY };
 
+            // Ignore abrupt pointer teleports (e.g. stylus lifted and re-introduced elsewhere)
+            if (Math.abs(deltaX) > MAX_POINTER_STEP || Math.abs(deltaY) > MAX_POINTER_STEP) {
+                lastPointerPosition = { x: event.clientX, y: event.clientY };
+                return;
+            }
+
+            lastPointerPosition = { x: event.clientX, y: event.clientY };
             angularVelocity.y += deltaX * DRAG_FORCE;
             angularVelocity.x += deltaY * DRAG_FORCE;
         });
@@ -126,6 +133,15 @@
             lastPointerPosition = { x: event.clientX, y: event.clientY };
             isPointerInInteractionZone = isInInteractionZone(event.clientX, event.clientY);
         });
+
+        function resetPointerTracking() {
+            isPointerInInteractionZone = false;
+        }
+
+        document.addEventListener('pointerup', resetPointerTracking);
+        document.addEventListener('pointercancel', resetPointerTracking);
+        document.addEventListener('pointerleave', resetPointerTracking);
+        window.addEventListener('blur', resetPointerTracking);
 
         let targetScrollY = 0;
         document.addEventListener('scroll', () => {
