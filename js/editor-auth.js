@@ -691,6 +691,33 @@
     });
   }
 
+  function clearAdminDecorations() {
+    document.querySelectorAll('.admin-pencil, .admin-image-actions, .admin-move-handle').forEach((el) => el.remove());
+
+    document.querySelectorAll('.admin-image-wrap').forEach((wrap) => {
+      const img = wrap.querySelector('img');
+      if (img) {
+        wrap.replaceWith(img);
+        img.style.display = '';
+      } else {
+        wrap.remove();
+      }
+    });
+
+    document.querySelectorAll('.admin-image-target').forEach((el) => el.classList.remove('admin-image-target'));
+    document.querySelectorAll('.sortable-item').forEach((el) => el.classList.remove('sortable-item'));
+    document.querySelectorAll('*').forEach((el) => {
+      if (el.dataset.adminImageBtn) delete el.dataset.adminImageBtn;
+    });
+  }
+
+  function enableAdminDecorations() {
+    enableSorting();
+    markEditableSections();
+    markEditableImages();
+    markSortableItems();
+  }
+
   let currentTarget = null;
   let modal, fab, resetFab, editorModal, editableArea, adminToast, toastTimer;
 
@@ -699,11 +726,13 @@
 
   function setAdminMode(on) {
     if (on) {
+      enableAdminDecorations();
       document.body.classList.add('admin-mode');
       fab.textContent = 'Admin mode: on';
       fab.dataset.state = 'on';
       if (resetFab) resetFab.style.display = 'block';
     } else {
+      clearAdminDecorations();
       document.body.classList.remove('admin-mode');
       fab.textContent = 'Admin login';
       fab.dataset.state = 'off';
@@ -890,28 +919,15 @@
 
   injectCSS();
 
-  // Initialize sorting BEFORE other edits to ensure DOM stability
-  enableSorting();
-
-  markEditableSections();
-  markEditableImages();
-  markSortableItems(); // Add handles
-
   applySavedContent();
   applySavedImages();
   createUI();
 
   setAdminMode(isAdmin());
   window.addEventListener('load', () => {
-    enableSorting();
-    markEditableSections();
-    markEditableImages();
-    markSortableItems();
+    if (isAdmin()) enableAdminDecorations();
   }, { once: true });
   setTimeout(() => {
-    enableSorting();
-    markEditableSections();
-    markEditableImages();
-    markSortableItems();
+    if (isAdmin()) enableAdminDecorations();
   }, 900);
 })();
