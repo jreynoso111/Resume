@@ -914,6 +914,20 @@ header {
 
 
 
+.about-info-card {
+  max-width: 400px;
+  margin-left: auto;
+}
+
+.hero-img-frame.about-info-image {
+  aspect-ratio: 4 / 3;
+  max-height: 320px;
+}
+
+.hero-img-frame.about-info-image img {
+  object-position: center top;
+}
+
 .hero-chip {
 
   font-size: 10px;
