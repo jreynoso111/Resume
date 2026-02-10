@@ -101,11 +101,11 @@
         </div>
       </section>
 
-      <section class="highlights">
+      <section class="highlights highlights-overlap">
         <div class="shell">
           <div class="highlights-inner">
-            <div>
-              <div class="section-label">Summary</div>
+            <div class="highlights-left">
+
               <h2 class="section-title">Professional profile</h2>
               <p class="section-sub">
                 My background combines hands‑on maintenance management, fraud detection, and data analytics. I
@@ -151,20 +151,14 @@
               </div>
             </div>
 
-            <div>
+            <div class="highlights-right">
               <div class="mini-grid">
-                <article class="mini-card">
-                  <div class="mini-label">Recent work</div>
-                  <div class="mini-main">Fleet & GPS tracking (M&T)</div>
-                  <div class="mini-meta">Consolidating vehicle data into a consistent view to reduce blind spots.</div>
-                </article>
-
                 <article class="mini-card">
                   <div class="mini-label">Key Strengths</div>
                   <div class="mini-meta" style="line-height: 1.5; margin-top: 4px;">
                     <ul style="padding-left: 16px; list-style-type: disc; font-size: 11px;">
                       <li>Data analysis under pressure.</li>
-                      <li>Advanced Excel & Power BI.</li>
+                      <li>Advanced data modeling.</li>
                       <li>Bilingual: Spanish & English.</li>
                     </ul>
                   </div>
@@ -188,7 +182,7 @@
 
       <section class="experience-full" id="experience">
         <div class="shell">
-          <div class="section-label">Professional</div>
+
           <h2 class="section-title">Work Experience</h2>
           <p class="section-sub">A detailed breakdown of my career path and the impact I've made in each role.</p>
 
@@ -262,7 +256,7 @@
       </section>
       <section class="skills-full" id="skills">
         <div class="shell">
-          <div class="section-label">Skills</div>
+
           <h2 class="section-title">Skills &amp; competencies</h2>
           <p class="section-sub">
             Combination of technical analytics skills, maintenance and inventory domain knowledge, and clear
@@ -323,33 +317,11 @@
 
     </main>
 
-    <footer>
-      <div class="shell">
-        <div class="footer-row">
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <span>© <span id="year"></span> Juan R. Reynoso. All rights reserved.</span>
-            <a href="admin/" class="admin-link" aria-label="Admin Dashboard" title="Admin Login">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path
-                  d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.74v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z">
-                </path>
-                <circle cx="12" cy="12" r="3"></circle>
-              </svg>
-            </a>
-          </div>
-
-          <div class="footer-links">
-            <a href="#top">Back to top</a>
-          </div>
-        </div>
-      </div>
-    </footer>
+    <footer id="site-footer" data-root-path=""></footer>
   </div>
 
   <script>
-    // Set current year
-    document.getElementById("year").textContent = new Date().getFullYear();
+
 
     // Projects dropdown with 1s delay on mouse leave
     (function () {
@@ -379,6 +351,7 @@
 
   <script src="js/editor-auth.js"></script>
   <script src="js/header.js?v=3"></script>
+  <script src="js/footer.js?v=3"></script>
   <script src="js/site-shell.js?v=3"></script>
 </body>
 

@@ -37,10 +37,10 @@
         let lastPointerPosition = { x: windowHalfX, y: windowHalfY };
         let angularVelocity = { x: 0, y: 0 };
 
-        const BASE_ROTATION_SPEED_Y = 0.0006;
-        const BASE_ROTATION_SPEED_X = 0.0002;
-        const DRAG_FORCE = 0.00009;
-        const DRAG_DAMPING = 0.92;
+        const BASE_ROTATION_SPEED_Y = 0.0012; // Doubled
+        const BASE_ROTATION_SPEED_X = 0.0004; // Doubled
+        const DRAG_FORCE = 0.0003; // Tripled for "accelerator" feel
+        const DRAG_DAMPING = 0.97; // Closer to 1 for sustained momentum
 
         // Scene setup
         const scene = new THREE.Scene();
@@ -145,7 +145,9 @@
 
             sphereGroup.rotation.y += BASE_ROTATION_SPEED_Y + angularVelocity.y;
             sphereGroup.rotation.x += BASE_ROTATION_SPEED_X + angularVelocity.x;
-            sphereGroup.rotation.x += (targetScrollY - sphereGroup.rotation.x) * 0.05;
+
+            // Removed scroll-locked rotation to allow complete rotation
+            // sphereGroup.rotation.x += (targetScrollY - sphereGroup.rotation.x) * 0.05;
 
             renderer.render(scene, camera);
         }
