@@ -32,14 +32,15 @@
         window.BG_ANIMATION_INITIALIZED = true;
 
         // State Variables
-        let mouseX = 0;
-        let mouseY = 0;
         let windowHalfX = window.innerWidth / 2;
         let windowHalfY = window.innerHeight / 2;
-        let lastMouseMoveTime = Date.now();
-        let isIdle = true;
-        let currentSpeedY = 0.0003;
-        let currentSpeedX = 0.00015;
+        let lastPointerPosition = { x: windowHalfX, y: windowHalfY };
+        let angularVelocity = { x: 0, y: 0 };
+
+        const BASE_ROTATION_SPEED_Y = 0.0006;
+        const BASE_ROTATION_SPEED_X = 0.0002;
+        const DRAG_FORCE = 0.00009;
+        const DRAG_DAMPING = 0.92;
 
         // Scene setup
         const scene = new THREE.Scene();
@@ -90,29 +91,22 @@
         const lines = new THREE.LineSegments(wireframeGeometry, materialWire);
         sphereGroup.add(lines);
 
-        // Base speeds (Increased for more movement)
-        const IDLE_ROTATION_SPEED_Y = 0.0003;
-        const ACTIVE_ROTATION_SPEED_Y = 0.0012;
-        const IDLE_ROTATION_SPEED_X = 0.00015;
-        const ACTIVE_ROTATION_SPEED_X = 0.0004;
+        document.addEventListener('pointermove', (event) => {
+            const deltaX = event.clientX - lastPointerPosition.x;
+            const deltaY = event.clientY - lastPointerPosition.y;
+            lastPointerPosition = { x: event.clientX, y: event.clientY };
 
-        document.addEventListener('mousemove', (event) => {
-            // Increased sensitivity factor from 0.0005 to 0.0015
-            mouseX = (event.clientX - windowHalfX) * 0.0015;
-            mouseY = (event.clientY - windowHalfY) * 0.0015;
-            lastMouseMoveTime = Date.now();
-            isIdle = false;
+            angularVelocity.y += deltaX * DRAG_FORCE;
+            angularVelocity.x += deltaY * DRAG_FORCE;
+        });
+
+        document.addEventListener('pointerdown', (event) => {
+            lastPointerPosition = { x: event.clientX, y: event.clientY };
         });
 
         let targetScrollY = 0;
         document.addEventListener('scroll', () => {
             targetScrollY = window.scrollY * 0.0005;
-            isIdle = false;
-            lastMouseMoveTime = Date.now();
-        });
-
-        document.addEventListener('mouseleave', () => {
-            isIdle = true;
         });
 
         // --- THEME HANDLING ---
@@ -143,33 +137,15 @@
         });
 
         // --- ANIMATION LOOP ---
-        let targetX = 0;
-        let targetY = 0;
-
         function render() {
             requestAnimationFrame(render);
 
-            const timeSinceMove = Date.now() - lastMouseMoveTime;
-            if (timeSinceMove > 1000) isIdle = true;
+            angularVelocity.x *= DRAG_DAMPING;
+            angularVelocity.y *= DRAG_DAMPING;
 
-            const targetSpeedY = isIdle ? IDLE_ROTATION_SPEED_Y : ACTIVE_ROTATION_SPEED_Y;
-            const targetSpeedX = isIdle ? IDLE_ROTATION_SPEED_X : ACTIVE_ROTATION_SPEED_X;
-
-            // Faster interpolation (0.02 -> 0.05)
-            currentSpeedY += (targetSpeedY - currentSpeedY) * 0.05;
-            currentSpeedX += (targetSpeedX - currentSpeedX) * 0.05;
-
-            sphereGroup.rotation.y += currentSpeedY;
-            sphereGroup.rotation.x += currentSpeedX;
+            sphereGroup.rotation.y += BASE_ROTATION_SPEED_Y + angularVelocity.y;
+            sphereGroup.rotation.x += BASE_ROTATION_SPEED_X + angularVelocity.x;
             sphereGroup.rotation.x += (targetScrollY - sphereGroup.rotation.x) * 0.05;
-
-            // Increased sensitivity multipliers
-            targetX = mouseX * 0.8;
-            targetY = mouseY * 0.8;
-
-            // Snappier rotation reaction (0.03 -> 0.08)
-            scene.rotation.y += 0.08 * (targetX - scene.rotation.y);
-            scene.rotation.x += 0.08 * (targetY - scene.rotation.x);
 
             renderer.render(scene, camera);
         }
