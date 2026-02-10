@@ -5,6 +5,7 @@
   const AUTH_KEY = 'resume_admin_auth_v1';
   const EDIT_PREFIX = 'resume_content_edit_v1';
   const IMAGE_PREFIX = 'resume_image_edit_v1';
+  let repoRootHandle = null;
 
   const css = `
     .admin-fab{position:fixed;right:18px;bottom:18px;z-index:9999;border:1px solid #1f4f7b;background:#1f4f7b;color:#fff;border-radius:999px;padding:8px 14px;font:600 12px Inter,system-ui;cursor:pointer;box-shadow:0 6px 15px rgba(15,23,42,.2)}
@@ -69,22 +70,14 @@
     });
   }
 
-  async function saveReducedImageToRepo(blob, baseName, ext) {
+  async function getRepoRootHandle() {
     if (!window.showDirectoryPicker) {
       throw new Error('File System Access API no disponible en este navegador.');
     }
-
-    const rootDir = await window.showDirectoryPicker({ mode: 'readwrite' });
-    const assetsDir = await rootDir.getDirectoryHandle('assets', { create: true });
-    const uploadsDir = await assetsDir.getDirectoryHandle('uploads', { create: true });
-
-    const filename = `${Date.now()}-${baseName}.${ext}`;
-    const fileHandle = await uploadsDir.getFileHandle(filename, { create: true });
-    const writable = await fileHandle.createWritable();
-    await writable.write(blob);
-    await writable.close();
-
-    return toUploadsPath(filename);
+    if (!repoRootHandle) {
+      repoRootHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+    }
+    return repoRootHandle;
   }
 
   async function savePage() {
@@ -94,7 +87,7 @@
     }
 
     try {
-      const rootDir = await window.showDirectoryPicker({ mode: 'readwrite' });
+      const rootDir = await getRepoRootHandle();
       // Determine file path based on location
       let fileName = 'index.html';
       const path = location.pathname;
@@ -399,26 +392,70 @@
     return prefix || '';
   }
 
-  function toUploadsPath(filename) {
-    return `${getRootRelativePrefix()}assets/uploads/${filename}`;
+
+  function toPageAssetPath(assetPath) {
+    return `${getRootRelativePrefix()}${assetPath}`;
   }
 
-  async function saveReducedImageToRepo(blob, baseName, ext) {
-    if (!window.showDirectoryPicker) {
-      throw new Error('File System Access API no disponible en este navegador.');
+  function cleanPath(rawPath) {
+    return String(rawPath || '').replace(/^\/+/, '').replace(/\?.*$/, '').replace(/#.*$/, '');
+  }
+
+  function resolveAssetPath(rawPath) {
+    if (!rawPath) return '';
+    const base = location.href;
+    let absolutePath = '';
+    try {
+      absolutePath = new URL(rawPath, base).pathname;
+    } catch (err) {
+      return '';
     }
 
-    const rootDir = await window.showDirectoryPicker({ mode: 'readwrite' });
-    const assetsDir = await rootDir.getDirectoryHandle('assets', { create: true });
-    const uploadsDir = await assetsDir.getDirectoryHandle('uploads', { create: true });
+    const cleaned = cleanPath(absolutePath);
+    if (cleaned.startsWith('assets/')) return cleaned;
+    return '';
+  }
 
-    const filename = `${Date.now()}-${baseName}.${ext}`;
-    const fileHandle = await uploadsDir.getFileHandle(filename, { create: true });
+  function parseBackgroundUrl(value) {
+    const match = String(value || '').match(/url\((['"]?)(.*?)\1\)/i);
+    return match ? match[2] : '';
+  }
+
+  function inferTargetAssetPath(target, ext) {
+    if (target.dataset.adminImageKind === 'img') {
+      const rawSrc = target.getAttribute('src') || target.src || '';
+      const existing = resolveAssetPath(rawSrc);
+      if (existing) return existing;
+    }
+
+    const inlineBg = parseBackgroundUrl(target.style.backgroundImage || target.getAttribute('style') || '');
+    const computedBg = parseBackgroundUrl(window.getComputedStyle(target).backgroundImage || '');
+    const existing = resolveAssetPath(inlineBg || computedBg);
+    if (existing) return existing;
+
+    const fallbackName = `${Date.now()}-${slugify(target.dataset.adminImageId || 'image')}.${ext}`;
+    return `assets/uploads/${fallbackName}`;
+  }
+
+  async function saveReducedImageToRepo(blob, relativeAssetPath) {
+    const rootDir = await getRepoRootHandle();
+    const cleanRelativePath = cleanPath(relativeAssetPath);
+    if (!cleanRelativePath.startsWith('assets/')) {
+      throw new Error('Ruta destino inválida para guardar imagen.');
+    }
+
+    const parts = cleanRelativePath.split('/');
+    const filename = parts.pop();
+    let dirHandle = rootDir;
+    for (const part of parts) {
+      dirHandle = await dirHandle.getDirectoryHandle(part, { create: true });
+    }
+    const fileHandle = await dirHandle.getFileHandle(filename, { create: true });
     const writable = await fileHandle.createWritable();
     await writable.write(blob);
     await writable.close();
 
-    return toUploadsPath(filename);
+    return cleanRelativePath;
   }
 
   function applyImageFit(target, kind) {
@@ -480,7 +517,9 @@
       try {
         const reduced = await reduceImage(file);
         const path = location.pathname || 'index';
-        const storedPath = await saveReducedImageToRepo(reduced.blob, reduced.baseName, reduced.ext);
+        const assetPath = inferTargetAssetPath(target, reduced.ext);
+        const storedRelativePath = await saveReducedImageToRepo(reduced.blob, assetPath);
+        const storedPath = toPageAssetPath(storedRelativePath);
 
         const key = imageKeyFor(path, target.dataset.adminImageId);
         try {
@@ -496,10 +535,10 @@
         }
 
         applyImageFit(target, target.dataset.adminImageKind);
-        notify('Imagen guardada en assets/uploads y aplicada correctamente.', 'success');
+        notify(`Imagen reemplazada en ${storedRelativePath} y aplicada correctamente.`, 'success');
       } catch (err) {
         console.error(err);
-        notify('No se pudo guardar la imagen en assets/uploads. Verifica permisos de carpeta y vuelve a intentar.', 'error');
+        notify('No se pudo reemplazar la imagen en el repositorio. Verifica permisos de carpeta y vuelve a intentar.', 'error');
       }
     });
 
@@ -588,7 +627,7 @@
       el.classList.add('admin-edit-target');
 
       // Check for button, add if missing
-      if (!el.querySelector('.admin-pencil')) {
+      if (!el.querySelector(':scope > .admin-pencil')) {
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'admin-pencil';
