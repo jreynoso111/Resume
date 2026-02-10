@@ -197,11 +197,33 @@
   // --- SORTING LOGIC ---
   function enableSorting() {
     const path = location.pathname || 'index';
-    const containers = document.querySelectorAll(
+    const containers = new Set(document.querySelectorAll(
       '.highlight-list, .mini-grid, .experience-list, .story-grid, .hero-grid, .experience-layout, .experience-shell, aside, .project-grid, .summary-card ul, .exp-details ul, .exp-tags, .tags'
-    );
+    ));
+    const movableSelectors = [
+      'p',
+      'article',
+      '.card',
+      '.mini-card',
+      '.highlight-item',
+      '.experience-card',
+      '.project-card',
+      '.summary-card',
+      '.hero-card',
+      '.logo-title',
+      '.logo-sub',
+      '.profile-name',
+      '.profile-subtitle',
+      '.header-title',
+      '.header-subtitle'
+    ];
 
-    containers.forEach((container, cIdx) => {
+    document.querySelectorAll(movableSelectors.join(',')).forEach((el) => {
+      if (!el || el.closest('.admin-modal,.editor')) return;
+      if (el.parentElement) containers.add(el.parentElement);
+    });
+
+    Array.from(containers).forEach((container, cIdx) => {
       if (!container.id) container.id = `sort-container-${cIdx}`;
       const cId = container.id;
 
@@ -255,10 +277,20 @@
       // simpler: use HTML5 drag on the item, but maybe only allow start if handle is grabbed?
       // easy way: handle sets draggable=true on mousedown
 
-      item.draggable = true;
+      item.draggable = false;
+      item.dataset.dragEnabled = '0';
+
+      handle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isEnabled = item.dataset.dragEnabled === '1';
+        item.dataset.dragEnabled = isEnabled ? '0' : '1';
+        item.draggable = !isEnabled;
+        handle.classList.toggle('active', !isEnabled);
+      });
 
       item.addEventListener('dragstart', e => {
         if (!isAdmin()) { e.preventDefault(); return; }
+        if (item.dataset.dragEnabled !== '1') { e.preventDefault(); return; }
         e.dataTransfer.effectAllowed = 'move';
         item.classList.add('sortable-dragging');
         window.dragSource = item;
@@ -266,6 +298,9 @@
 
       item.addEventListener('dragend', () => {
         item.classList.remove('sortable-dragging');
+        item.dataset.dragEnabled = '0';
+        item.draggable = false;
+        handle.classList.remove('active');
         window.dragSource = null;
         saveOrder(item.parentElement);
       });
@@ -780,10 +815,14 @@
 
   setAdminMode(isAdmin());
   window.addEventListener('load', () => {
+    enableSorting();
+    markEditableSections();
     markEditableImages();
     markSortableItems();
   }, { once: true });
   setTimeout(() => {
+    enableSorting();
+    markEditableSections();
     markEditableImages();
     markSortableItems();
   }, 900);
