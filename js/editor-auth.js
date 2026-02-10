@@ -197,11 +197,33 @@
   // --- SORTING LOGIC ---
   function enableSorting() {
     const path = location.pathname || 'index';
-    const containers = document.querySelectorAll(
+    const containers = new Set(document.querySelectorAll(
       '.highlight-list, .mini-grid, .experience-list, .story-grid, .hero-grid, .experience-layout, .experience-shell, aside, .project-grid, .summary-card ul, .exp-details ul, .exp-tags, .tags'
-    );
+    ));
+    const movableSelectors = [
+      'p',
+      'article',
+      '.card',
+      '.mini-card',
+      '.highlight-item',
+      '.experience-card',
+      '.project-card',
+      '.summary-card',
+      '.hero-card',
+      '.logo-title',
+      '.logo-sub',
+      '.profile-name',
+      '.profile-subtitle',
+      '.header-title',
+      '.header-subtitle'
+    ];
 
-    containers.forEach((container, cIdx) => {
+    document.querySelectorAll(movableSelectors.join(',')).forEach((el) => {
+      if (!el || el.closest('.admin-modal,.editor')) return;
+      if (el.parentElement) containers.add(el.parentElement);
+    });
+
+    Array.from(containers).forEach((container, cIdx) => {
       if (!container.id) container.id = `sort-container-${cIdx}`;
       const cId = container.id;
 
@@ -780,10 +802,14 @@
 
   setAdminMode(isAdmin());
   window.addEventListener('load', () => {
+    enableSorting();
+    markEditableSections();
     markEditableImages();
     markSortableItems();
   }, { once: true });
   setTimeout(() => {
+    enableSorting();
+    markEditableSections();
     markEditableImages();
     markSortableItems();
   }, 900);
