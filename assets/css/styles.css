@@ -299,7 +299,7 @@ header {
 
 /* HERO (Index) */
 .hero {
-  padding: 32px 0 28px;
+  padding: 24px 0 20px;
 }
 
 .hero-grid {
@@ -544,7 +544,15 @@ header {
 
 /* HIGHLIGHTS (Index) */
 .highlights {
-  padding: 4px 0 28px;
+  padding: 2px 0 20px;
+}
+
+.experience-full {
+  padding: 16px 0 28px;
+}
+
+.skills-full {
+  padding: 16px 0 32px;
 }
 
 .highlights-inner {
