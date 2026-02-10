@@ -277,10 +277,20 @@
       // simpler: use HTML5 drag on the item, but maybe only allow start if handle is grabbed?
       // easy way: handle sets draggable=true on mousedown
 
-      item.draggable = true;
+      item.draggable = false;
+      item.dataset.dragEnabled = '0';
+
+      handle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isEnabled = item.dataset.dragEnabled === '1';
+        item.dataset.dragEnabled = isEnabled ? '0' : '1';
+        item.draggable = !isEnabled;
+        handle.classList.toggle('active', !isEnabled);
+      });
 
       item.addEventListener('dragstart', e => {
         if (!isAdmin()) { e.preventDefault(); return; }
+        if (item.dataset.dragEnabled !== '1') { e.preventDefault(); return; }
         e.dataTransfer.effectAllowed = 'move';
         item.classList.add('sortable-dragging');
         window.dragSource = item;
@@ -288,6 +298,9 @@
 
       item.addEventListener('dragend', () => {
         item.classList.remove('sortable-dragging');
+        item.dataset.dragEnabled = '0';
+        item.draggable = false;
+        handle.classList.remove('active');
         window.dragSource = null;
         saveOrder(item.parentElement);
       });
