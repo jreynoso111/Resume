@@ -35,6 +35,7 @@
         let windowHalfX = window.innerWidth / 2;
         let windowHalfY = window.innerHeight / 2;
         let lastPointerPosition = { x: windowHalfX, y: windowHalfY };
+        let isPointerInInteractionZone = false;
         let angularVelocity = { x: 0, y: 0 };
 
         const BASE_ROTATION_SPEED_Y = 0.0012; // Doubled
@@ -91,7 +92,28 @@
         const lines = new THREE.LineSegments(wireframeGeometry, materialWire);
         sphereGroup.add(lines);
 
+        function isInInteractionZone(clientX, clientY) {
+            const dx = clientX - windowHalfX;
+            const dy = clientY - windowHalfY;
+            const interactionRadius = Math.min(window.innerWidth, window.innerHeight) * 0.35;
+
+            return (dx * dx + dy * dy) <= interactionRadius * interactionRadius;
+        }
+
         document.addEventListener('pointermove', (event) => {
+            const isInsideZone = isInInteractionZone(event.clientX, event.clientY);
+
+            if (!isInsideZone) {
+                isPointerInInteractionZone = false;
+                return;
+            }
+
+            if (!isPointerInInteractionZone) {
+                lastPointerPosition = { x: event.clientX, y: event.clientY };
+                isPointerInInteractionZone = true;
+                return;
+            }
+
             const deltaX = event.clientX - lastPointerPosition.x;
             const deltaY = event.clientY - lastPointerPosition.y;
             lastPointerPosition = { x: event.clientX, y: event.clientY };
@@ -102,6 +124,7 @@
 
         document.addEventListener('pointerdown', (event) => {
             lastPointerPosition = { x: event.clientX, y: event.clientY };
+            isPointerInInteractionZone = isInInteractionZone(event.clientX, event.clientY);
         });
 
         let targetScrollY = 0;
