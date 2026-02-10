@@ -26,8 +26,9 @@
     body.admin-mode .admin-pencil{display:flex}
     .admin-image-wrap{position:relative;display:block;max-width:100%}
     .admin-image-target{position:relative}
-    .admin-image-btn{position:absolute;right:10px;bottom:10px;z-index:90;border:none;background:#1f4f7b;color:#fff;border-radius:999px;width:32px;height:32px;cursor:pointer;font-size:14px;display:none;align-items:center;justify-content:center;box-shadow:0 6px 14px rgba(15,23,42,.25)}
-    body.admin-mode .admin-image-btn{display:flex}
+    .admin-image-actions{position:absolute;right:10px;bottom:10px;z-index:90;display:none;gap:8px}
+    .admin-image-btn{border:none;background:#1f4f7b;color:#fff;border-radius:999px;width:32px;height:32px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 14px rgba(15,23,42,.25)}
+    body.admin-mode .admin-image-actions{display:flex}
     
     .admin-move-handle{position:absolute;top:10px;left:10px;z-index:100;cursor:grab;background:#1f4f7b;color:#fff;border-radius:4px;width:24px;height:24px;display:none;align-items:center;justify-content:center;border:none;box-shadow:0 2px 5px rgba(0,0,0,0.2);font-size:14px}
     .admin-move-handle:active{cursor:grabbing}
@@ -504,8 +505,29 @@
     }, 5200);
   }
 
+  function isValidHttpUrl(value) {
+    try {
+      const parsed = new URL(value);
+      return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function applyImageFromPath(target, path) {
+    if (target.dataset.adminImageKind === 'img') {
+      target.src = path;
+    } else {
+      target.style.backgroundImage = `url("${path}")`;
+    }
+    applyImageFit(target, target.dataset.adminImageKind);
+  }
+
   async function handleImageUpload(target) {
     if (!isAdmin()) return;
+    const path = location.pathname || 'index';
+    const key = imageKeyFor(path, target.dataset.adminImageId);
+
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
@@ -516,25 +538,17 @@
 
       try {
         const reduced = await reduceImage(file);
-        const path = location.pathname || 'index';
         const assetPath = inferTargetAssetPath(target, reduced.ext);
         const storedRelativePath = await saveReducedImageToRepo(reduced.blob, assetPath);
         const storedPath = toPageAssetPath(storedRelativePath);
 
-        const key = imageKeyFor(path, target.dataset.adminImageId);
         try {
           localStorage.setItem(key, storedPath);
         } catch (storageErr) {
           console.warn('No se pudo persistir la ruta en localStorage, se mantiene enlace aplicado en el DOM.', storageErr);
         }
 
-        if (target.dataset.adminImageKind === 'img') {
-          target.src = storedPath;
-        } else {
-          target.style.backgroundImage = `url("${storedPath}")`;
-        }
-
-        applyImageFit(target, target.dataset.adminImageKind);
+        applyImageFromPath(target, storedPath);
         notify(`Imagen reemplazada en ${storedRelativePath} y aplicada correctamente.`, 'success');
       } catch (err) {
         console.error(err);
@@ -543,6 +557,29 @@
     });
 
     input.click();
+  }
+
+  function handleImageLink(target) {
+    if (!isAdmin()) return;
+    const path = location.pathname || 'index';
+    const key = imageKeyFor(path, target.dataset.adminImageId);
+    const nextUrl = prompt('Pega el link de la imagen (http:// o https://):', 'https://');
+    if (!nextUrl) return;
+    const cleanUrl = nextUrl.trim();
+
+    if (!isValidHttpUrl(cleanUrl)) {
+      notify('El link no es válido. Usa una URL completa que inicie con http:// o https://', 'warn');
+      return;
+    }
+
+    try {
+      localStorage.setItem(key, cleanUrl);
+    } catch (storageErr) {
+      console.warn('No se pudo persistir la URL en localStorage, se mantiene enlace aplicado en el DOM.', storageErr);
+    }
+
+    applyImageFromPath(target, cleanUrl);
+    notify('Imagen actualizada desde URL correctamente.', 'success');
   }
 
   function addImageButton(target) {
@@ -561,13 +598,25 @@
 
     mount.classList.add('admin-image-target');
 
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'admin-image-btn';
-    btn.textContent = '🖼️';
-    btn.title = 'Reemplazar imagen';
-    btn.addEventListener('click', () => handleImageUpload(target));
-    mount.appendChild(btn);
+    const actions = document.createElement('div');
+    actions.className = 'admin-image-actions';
+
+    const uploadBtn = document.createElement('button');
+    uploadBtn.type = 'button';
+    uploadBtn.className = 'admin-image-btn';
+    uploadBtn.textContent = '🖼️';
+    uploadBtn.title = 'Subir/reemplazar imagen desde archivo';
+    uploadBtn.addEventListener('click', () => handleImageUpload(target));
+
+    const linkBtn = document.createElement('button');
+    linkBtn.type = 'button';
+    linkBtn.className = 'admin-image-btn';
+    linkBtn.textContent = '🔗';
+    linkBtn.title = 'Usar link (URL) de imagen';
+    linkBtn.addEventListener('click', () => handleImageLink(target));
+
+    actions.append(uploadBtn, linkBtn);
+    mount.appendChild(actions);
   }
 
   function markEditableImages() {
