@@ -35,12 +35,14 @@
         let windowHalfX = window.innerWidth / 2;
         let windowHalfY = window.innerHeight / 2;
         let lastPointerPosition = { x: windowHalfX, y: windowHalfY };
+        let isPointerInInteractionZone = false;
         let angularVelocity = { x: 0, y: 0 };
 
         const BASE_ROTATION_SPEED_Y = 0.0012; // Doubled
         const BASE_ROTATION_SPEED_X = 0.0004; // Doubled
         const DRAG_FORCE = 0.0003; // Tripled for "accelerator" feel
         const DRAG_DAMPING = 0.97; // Closer to 1 for sustained momentum
+        const MAX_POINTER_STEP = 80; // Ignore large jumps when pointer re-enters elsewhere
 
         // Scene setup
         const scene = new THREE.Scene();
@@ -91,18 +93,55 @@
         const lines = new THREE.LineSegments(wireframeGeometry, materialWire);
         sphereGroup.add(lines);
 
+        function isInInteractionZone(clientX, clientY) {
+            const dx = clientX - windowHalfX;
+            const dy = clientY - windowHalfY;
+            const interactionRadius = Math.min(window.innerWidth, window.innerHeight) * 0.35;
+
+            return (dx * dx + dy * dy) <= interactionRadius * interactionRadius;
+        }
+
         document.addEventListener('pointermove', (event) => {
+            const isInsideZone = isInInteractionZone(event.clientX, event.clientY);
+
+            if (!isInsideZone) {
+                isPointerInInteractionZone = false;
+                return;
+            }
+
+            if (!isPointerInInteractionZone) {
+                lastPointerPosition = { x: event.clientX, y: event.clientY };
+                isPointerInInteractionZone = true;
+                return;
+            }
+
             const deltaX = event.clientX - lastPointerPosition.x;
             const deltaY = event.clientY - lastPointerPosition.y;
-            lastPointerPosition = { x: event.clientX, y: event.clientY };
 
+            // Ignore abrupt pointer teleports (e.g. stylus lifted and re-introduced elsewhere)
+            if (Math.abs(deltaX) > MAX_POINTER_STEP || Math.abs(deltaY) > MAX_POINTER_STEP) {
+                lastPointerPosition = { x: event.clientX, y: event.clientY };
+                return;
+            }
+
+            lastPointerPosition = { x: event.clientX, y: event.clientY };
             angularVelocity.y += deltaX * DRAG_FORCE;
             angularVelocity.x += deltaY * DRAG_FORCE;
         });
 
         document.addEventListener('pointerdown', (event) => {
             lastPointerPosition = { x: event.clientX, y: event.clientY };
+            isPointerInInteractionZone = isInInteractionZone(event.clientX, event.clientY);
         });
+
+        function resetPointerTracking() {
+            isPointerInInteractionZone = false;
+        }
+
+        document.addEventListener('pointerup', resetPointerTracking);
+        document.addEventListener('pointercancel', resetPointerTracking);
+        document.addEventListener('pointerleave', resetPointerTracking);
+        window.addEventListener('blur', resetPointerTracking);
 
         let targetScrollY = 0;
         document.addEventListener('scroll', () => {
