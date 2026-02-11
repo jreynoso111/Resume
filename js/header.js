@@ -54,7 +54,7 @@
             <div class="logo-mark"><div class="logo-inner">JR</div></div>
             <div class="logo-text-block">
               <div class="logo-title" id="profile-name">Juan R. Reynoso</div>
-              <div class="logo-sub">Data, Operations & Fleet Analytics</div>
+              <div class="logo-sub">Maintenance & Inventory Management</div>
             </div>
           </div>
 
@@ -84,7 +84,7 @@
             <div class="logo-mark"><div class="logo-inner">JR</div></div>
             <div class="logo-text-block">
               <div class="logo-title">Juan R. Reynoso</div>
-              <div class="logo-sub">Data, Operations &amp; Fleet Analytics</div>
+              <div class="logo-sub">Maintenance &amp; Inventory Management</div>
             </div>
           </div>
           <div class="nav-main">
@@ -111,7 +111,7 @@
           <div class="avatar-circle">JR</div>
           <div class="profile-main">
             <div class="profile-name">Juan R. Reynoso</div>
-            <div class="profile-subtitle">Data, Operations &amp; Fleet Analytics</div>
+            <div class="profile-subtitle">Maintenance &amp; Inventory Management</div>
           </div>
         </div>
         <nav class="nav-tabs">
@@ -136,7 +136,7 @@
           <div class="header-avatar">JR</div>
           <div>
             <div class="header-title">Juan R. Reynoso</div>
-            <div class="header-subtitle">Data, Operations & Fleet Analytics</div>
+            <div class="header-subtitle">Maintenance & Inventory Management</div>
           </div>
         </div>
 

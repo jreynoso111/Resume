@@ -719,25 +719,33 @@
   }
 
   let currentTarget = null;
-  let modal, fab, resetFab, editorModal, editableArea, adminToast, toastTimer;
+  let modal, resetFab, editorModal, editableArea, adminToast, toastTimer;
 
   function closeModal() { modal.classList.remove('show'); }
   function openModal() { modal.classList.add('show'); }
 
   function setAdminMode(on) {
+    updateFooterAdminLink();
+
     if (on) {
       enableAdminDecorations();
       document.body.classList.add('admin-mode');
-      fab.textContent = 'Admin mode: on';
-      fab.dataset.state = 'on';
       if (resetFab) resetFab.style.display = 'block';
     } else {
       clearAdminDecorations();
       document.body.classList.remove('admin-mode');
-      fab.textContent = 'Admin login';
-      fab.dataset.state = 'off';
       if (resetFab) resetFab.style.display = 'none';
     }
+  }
+
+  function updateFooterAdminLink() {
+    const adminLink = document.querySelector('.admin-link');
+    if (!adminLink) return;
+
+    const adminEnabled = isAdmin();
+    adminLink.dataset.state = adminEnabled ? 'on' : 'off';
+    adminLink.title = adminEnabled ? 'Admin mode active (click to sign out)' : 'Admin Login';
+    adminLink.setAttribute('aria-label', adminEnabled ? 'Admin mode active, click to sign out' : 'Admin Login');
   }
 
   function openEditor(target) {
@@ -765,19 +773,6 @@
   }
 
   function createUI() {
-    fab = document.createElement('button');
-    fab.className = 'admin-fab';
-    fab.type = 'button';
-    fab.textContent = 'Admin login';
-    fab.addEventListener('click', () => {
-      if (isAdmin()) {
-        localStorage.removeItem(AUTH_KEY);
-        setAdminMode(false);
-      } else {
-        openModal();
-      }
-    });
-
     // Reset Configuration FAB (Only shows when Admin)
     resetFab = document.createElement('button');
     resetFab.className = 'admin-reset-fab';
@@ -853,8 +848,23 @@
 
     adminToast = document.createElement('div');
     adminToast.className = 'admin-toast';
-    document.body.append(fab, resetFab, modal, editorModal, adminToast);
+    document.body.append(resetFab, modal, editorModal, adminToast);
     editableArea = editorModal.querySelector('#admin-editable');
+
+    document.addEventListener('click', (event) => {
+      const adminLink = event.target.closest('.admin-link');
+      if (!adminLink) return;
+
+      event.preventDefault();
+      if (isAdmin()) {
+        localStorage.removeItem(AUTH_KEY);
+        setAdminMode(false);
+      } else {
+        openModal();
+      }
+    });
+
+    updateFooterAdminLink();
 
     modal.querySelector('#admin-cancel').addEventListener('click', closeModal);
 
