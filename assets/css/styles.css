@@ -1132,7 +1132,7 @@ header {
 
 .highlights-overlap {
 
-  margin-top: -220px;
+  margin-top: -285px;
 
 }
 
@@ -1166,11 +1166,17 @@ header {
 
 }
 
+.highlights-left {
+
+  margin-top: -52px;
+
+}
+
 
 
 .highlights-right {
 
-  margin-top: 240px;
+  margin-top: 210px;
 
 }
 

@@ -70,7 +70,7 @@
             })}
 
           <div class="nav-cta">
-            <a href="mailto:jreynoso111@gmail.com" class="btn-primary">Send email<span class="chevron">→</span></a>
+            <a href="mailto:jreynoso111@gmail.com" class="btn-primary">Contact<span class="chevron">→</span></a>
           </div>
         </nav>
       </div>`;
@@ -99,7 +99,7 @@
                 aboutHref: 'about.html'
             })}
           </div>
-          <a href="mailto:jreynoso111@gmail.com" class="nav-cta">Send email <span aria-hidden="true">→</span></a>
+          <a href="mailto:jreynoso111@gmail.com" class="nav-cta">Contact <span aria-hidden="true">→</span></a>
         </nav>
       </div>`;
         }
@@ -125,7 +125,7 @@
                 projectsLabel: 'Projects'
             })}
         </nav>
-        <div class="header-cta"><a href="mailto:jreynoso111@gmail.com" class="email-btn">Send email →</a></div>
+        <div class="header-cta"><a href="mailto:jreynoso111@gmail.com" class="email-btn">Contact →</a></div>
       </div>`;
         }
 
@@ -150,7 +150,7 @@
           <a href="../about.html"${withActiveClass(activePage, 'about')}>About Me</a>
         </nav>
 
-        <a href="mailto:jreynoso111@gmail.com" class="header-cta">Send email →</a>
+        <a href="mailto:jreynoso111@gmail.com" class="header-cta">Contact →</a>
       </div>`;
         }
 
