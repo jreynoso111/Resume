@@ -136,13 +136,13 @@
       position: fixed; 
       bottom: 20px; 
       left: 20px; 
-      width: 44px; 
-      height: 44px; 
+      width: 34px; 
+      height: 34px; 
       border-radius: 50%; 
       background: var(--accent); 
       color: #fff; 
       border: 2px solid white; 
-      font-size: 20px; 
+      font-size: 14px; 
       cursor: pointer; 
       box-shadow: 0 4px 12px rgba(0,0,0,0.3);
       z-index: 9999;
