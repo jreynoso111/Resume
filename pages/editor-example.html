@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Editor admin-only (demo mínimo)</title>
+  <style>
+    :root {
+      font-family: "Inter", system-ui, sans-serif;
+    }
+    body {
+      margin: 0;
+      background: #f8fafc;
+      color: #0f172a;
+    }
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 18px;
+      background: #0f172a;
+      color: #fff;
+    }
+    .toolbar button {
+      border: none;
+      background: #38bdf8;
+      color: #0f172a;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .page {
+      max-width: 960px;
+      margin: 24px auto 80px;
+      padding: 0 18px;
+    }
+    .grid {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+    .card {
+      padding: 16px;
+      background: #fff;
+      border-radius: 14px;
+      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+    }
+    .hero {
+      padding: 24px;
+      background: #e2e8f0;
+      border-radius: 16px;
+      margin-bottom: 20px;
+    }
+    .editor-canvas {
+      position: relative;
+      min-height: 420px;
+      border: 2px dashed rgba(56, 189, 248, 0.4);
+      --grid-size: 1px;
+    }
+    .editor-active [data-editable="true"] {
+      cursor: grab;
+      outline: 1px dashed rgba(15, 23, 42, 0.35);
+      outline-offset: 4px;
+    }
+    .editor-controls {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+    }
+    .editor-controls label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+    .editor-controls select {
+      border-radius: 8px;
+      border: none;
+      padding: 4px 8px;
+      font-weight: 600;
+    }
+    .editor-grid {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      display: none;
+      background-image:
+        linear-gradient(to right, rgba(56, 189, 248, 0.35) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(56, 189, 248, 0.35) 1px, transparent 1px);
+      background-size: var(--grid-size) var(--grid-size);
+      background-position: 0 0;
+      opacity: 0.6;
+    }
+    .editor-active .editor-grid {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <strong>Demo editor (admin)</strong>
+    <button id="editor-toggle" type="button">Activar editor</button>
+  </div>
+
+  <div id="editor-root" class="page">
+    <section class="hero" data-editable="true">
+      <h1>Sección editable</h1>
+      <p>Arrástrame para reposicionar este bloque en modo editor.</p>
+    </section>
+
+    <div class="grid">
+      <article class="card" data-editable="true">
+        <h3>Tarjeta 1</h3>
+        <p>Contenido de ejemplo. Reubicable con drag.</p>
+      </article>
+      <article class="card" data-editable="true">
+        <h3>Tarjeta 2</h3>
+        <p>Otro bloque editable.</p>
+      </article>
+      <article class="card">
+        <h3>Tarjeta fija</h3>
+        <p>Este bloque no tiene data-editable.</p>
+      </article>
+    </div>
+  </div>
+
+  <script>
+    window.isAdmin = true;
+  </script>
+  <script src="../js/editor-mode.js"></script>
+</body>
+</html>
