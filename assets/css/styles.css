@@ -1176,7 +1176,7 @@ header {
 
 .highlights-right {
 
-  margin-top: 210px;
+  margin-top: calc(210px + 2cm);
 
 }
 
