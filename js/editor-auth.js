@@ -33,7 +33,6 @@
     autosaveTimer: null,
     saveInFlight: false,
     saveQueued: false,
-    missingHandleNotified: false,
     imageControls: new Map(),
     imageRepositionRaf: null
   };
@@ -401,8 +400,7 @@
       <div class="cms-muted">Edit content like WordPress and save directly to the project's HTML files.</div>
 
       <div class="cms-row">
-        <button type="button" class="cms-btn-secondary" id="cms-pick-root">Select folder</button>
-        <button type="button" class="cms-btn" id="cms-save-now">Save now</button>
+        <button type="button" class="cms-btn" id="cms-save-now" style="grid-column:1 / -1;">Save now</button>
       </div>
 
       <label class="cms-inline">
@@ -465,10 +463,6 @@
       state.autosaveEnabled = autosaveToggle.checked;
       saveSettings();
       notify(state.autosaveEnabled ? 'Auto-save enabled.' : 'Auto-save disabled.', 'success');
-    });
-
-    state.panel.querySelector('#cms-pick-root').addEventListener('click', () => {
-      pickProjectFolder();
     });
 
     state.panel.querySelector('#cms-save-now').addEventListener('click', () => {
@@ -894,7 +888,7 @@
         if (!rootHandle) return;
 
         const ext = extensionFromFile(file);
-        const destination = inferTargetAssetPath(target, kind, ext, file.name);
+        const destination = inferTargetAssetPath(target, kind, ext);
         await writeBlobToRepo(rootHandle, destination, file);
 
         const pageAssetPath = toPageAssetPath(destination);
@@ -1154,10 +1148,6 @@
     if (!isAdmin() || !state.autosaveEnabled) return;
 
     if (!state.rootDirHandle) {
-      if (!state.missingHandleNotified) {
-        notify('Select the project folder to enable auto-save.', 'warn');
-        state.missingHandleNotified = true;
-      }
       return;
     }
 
@@ -1165,18 +1155,6 @@
     state.autosaveTimer = setTimeout(() => {
       saveCurrentPage({ silent: true, reason, allowPicker: false });
     }, 900);
-  }
-
-  async function pickProjectFolder() {
-    if (!isAdmin()) return;
-    try {
-      const handle = await ensureProjectRootHandle(true);
-      if (!handle) return;
-      state.missingHandleNotified = false;
-      notify('Project folder connected. Saving to code is now enabled.', 'success');
-    } catch (error) {
-      notify(`Could not select folder: ${error.message}`, 'error');
-    }
   }
 
   async function ensureProjectRootHandle(allowPicker) {
@@ -1233,7 +1211,6 @@
       await writable.write(html);
       await writable.close();
 
-      state.missingHandleNotified = false;
       if (!silent) {
         notify(`Changes saved to ${relativePath}`, 'success');
       }
@@ -1315,20 +1292,25 @@
       .slice(0, 60) || 'image';
   }
 
-  function inferTargetAssetPath(target, kind, ext, originalName) {
+  function inferTargetAssetPath(target, kind, ext) {
     const existing = resolveTargetAssetPath(target, kind);
-    if (existing) {
-      const existingExt = (existing.split('.').pop() || '').toLowerCase();
-      const nextExt = String(ext || '').toLowerCase();
-      if (existingExt && nextExt && existingExt !== nextExt) {
-        return existing.replace(/\.[a-z0-9]+$/i, `.${nextExt}`);
-      }
-      return existing;
-    }
+    if (existing) return existing;
 
-    const baseName = slugify(originalName || (target && target.dataset && target.dataset.cmsImageId) || 'image');
     const safeExt = extensionFromFile({ name: `file.${ext || 'jpg'}` });
-    return `assets/uploads/${Date.now()}-${baseName}.${safeExt}`;
+    return buildDedicatedImagePath(target, kind, safeExt);
+  }
+
+  function buildDedicatedImagePath(target, kind, ext) {
+    const pagePath = getPreferredCurrentPagePath().replace(/\\/g, '/');
+    const pageSlug = pagePath
+      .replace(/\.html$/i, '')
+      .split('/')
+      .filter(Boolean)
+      .join('-') || 'home';
+
+    const slotId = slugify((target && target.dataset && target.dataset.cmsImageId) || `${kind}-slot`);
+    const fileName = `${slotId}.${ext || 'jpg'}`;
+    return `assets/images/cms/${pageSlug}/${slotId}/${fileName}`;
   }
 
   function resolveTargetAssetPath(target, kind) {
