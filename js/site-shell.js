@@ -130,7 +130,7 @@
     // 1. Create Button
     const btn = document.createElement('button');
     btn.id = 'theme-toggle';
-    btn.innerHTML = '🎨';
+    btn.innerHTML = '';
     btn.title = 'Switch Theme';
     btn.style.cssText = `
       position: fixed; 
