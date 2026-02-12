@@ -1135,6 +1135,32 @@ header {
 
 }
 
+.external-links-actions {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.social-btn {
+  gap: 8px;
+  padding: 7px 14px;
+}
+
+.social-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+}
+
+.social-icon svg {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+}
+
 
 
 .experience-full {
