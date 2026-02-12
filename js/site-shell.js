@@ -127,10 +127,13 @@
   ];
 
   function initThemeManager() {
+    // Remove any previously injected toggle to avoid stale icon buttons
+    document.querySelectorAll('#theme-toggle').forEach((el) => el.remove());
+
     // 1. Create Button
     const btn = document.createElement('button');
     btn.id = 'theme-toggle';
-    btn.innerHTML = '';
+    btn.textContent = '';
     btn.title = 'Switch Theme';
     btn.style.cssText = `
       position: fixed; 
@@ -142,7 +145,10 @@
       background: var(--accent); 
       color: #fff; 
       border: 2px solid white; 
-      font-size: 14px; 
+      font-size: 0; 
+      line-height: 0;
+      padding: 0;
+      background-image: none;
       cursor: pointer; 
       box-shadow: 0 4px 12px rgba(0,0,0,0.3);
       z-index: 9999;

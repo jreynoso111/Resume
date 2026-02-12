@@ -3,6 +3,7 @@
   const ADMIN_PASS = 'Reynoso';
   const AUTH_KEY = 'resume_admin_auth_v2';
   const SETTINGS_KEY = 'resume_admin_settings_v2';
+  const DRAFT_KEY_PREFIX = 'resume_admin_draft_v2:';
 
   const SECTION_SELECTOR = [
     'main section',
@@ -405,7 +406,7 @@
 
       <label class="cms-inline">
         <input id="cms-autosave" type="checkbox" />
-        Auto-save changes to code
+        <span id="cms-autosave-label">Auto-save changes to code</span>
       </label>
 
       <div class="cms-section-box">
@@ -456,6 +457,14 @@
     document.body.append(state.panel, state.loginModal, state.toast);
 
     state.sectionLabel = state.panel.querySelector('#cms-section-label');
+    if (!supportsFileSystemAccessApi()) {
+      const saveButton = state.panel.querySelector('#cms-save-now');
+      const muted = state.panel.querySelector('.cms-muted');
+      const autosaveLabel = state.panel.querySelector('#cms-autosave-label');
+      if (saveButton) saveButton.textContent = 'Download updated HTML';
+      if (muted) muted.textContent = 'Your browser cannot write project files directly. Save now downloads the edited HTML so changes are not lost.';
+      if (autosaveLabel) autosaveLabel.textContent = 'Auto-save local backup';
+    }
 
     const autosaveToggle = state.panel.querySelector('#cms-autosave');
     autosaveToggle.checked = state.autosaveEnabled;
@@ -495,7 +504,12 @@
         closeLoginModal();
         enableAdminMode();
         syncAdminLinkState();
-        notify('Editor enabled. You can now edit and save directly to code.', 'success');
+        notify(
+          supportsFileSystemAccessApi()
+            ? 'Editor enabled. You can now edit and save directly to code.'
+            : 'Editor enabled. Use "Download updated HTML" to keep file changes.',
+          'success'
+        );
         userInput.value = '';
         passInput.value = '';
       } else {
@@ -884,6 +898,20 @@
       if (!file) return;
 
       try {
+        if (!supportsFileSystemAccessApi()) {
+          const dataUrl = await fileToDataUrl(file);
+          applyImageValue(target, kind, dataUrl);
+          requestImageControlPositionUpdate();
+
+          if (state.autosaveEnabled) {
+            scheduleAutosave('image-upload-inline');
+            notify('Image embedded. Use "Download updated HTML" to keep this change.', 'success');
+          } else {
+            notify('Image embedded. Click "Download updated HTML" to keep this change.', 'success');
+          }
+          return;
+        }
+
         const rootHandle = await ensureProjectRootHandle(true);
         if (!rootHandle) return;
 
@@ -910,6 +938,15 @@
     input.click();
   }
 
+  function fileToDataUrl(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ''));
+      reader.onerror = () => reject(new Error('Could not read the selected image file.'));
+      reader.readAsDataURL(file);
+    });
+  }
+
   function handleImageLink(target, kind) {
     if (!isAdmin()) return;
 
@@ -929,9 +966,19 @@
 
     if (state.autosaveEnabled) {
       scheduleAutosave('image-link');
-      notify('Image URL applied and queued for save.', 'success');
+      notify(
+        supportsFileSystemAccessApi()
+          ? 'Image URL applied and queued for save.'
+          : 'Image URL applied and queued for local backup.',
+        'success'
+      );
     } else {
-      notify('Image URL applied. Click \"Save now\" to persist HTML changes.', 'success');
+      notify(
+        supportsFileSystemAccessApi()
+          ? 'Image URL applied. Click "Save now" to persist HTML changes.'
+          : 'Image URL applied. Click "Download updated HTML" to keep this change.',
+        'success'
+      );
     }
   }
 
@@ -1147,7 +1194,7 @@
   function scheduleAutosave(reason) {
     if (!isAdmin() || !state.autosaveEnabled) return;
 
-    if (!state.rootDirHandle) {
+    if (supportsFileSystemAccessApi() && !state.rootDirHandle) {
       return;
     }
 
@@ -1158,9 +1205,7 @@
   }
 
   async function ensureProjectRootHandle(allowPicker) {
-    if (!window.showDirectoryPicker) {
-      throw new Error('This browser does not support the File System Access API.');
-    }
+    if (!supportsFileSystemAccessApi()) return null;
 
     if (!state.rootDirHandle) {
       if (!allowPicker) return null;
@@ -1201,11 +1246,22 @@
     state.saveInFlight = true;
 
     try {
+      const html = buildCleanHtmlSnapshot();
+
+      if (!supportsFileSystemAccessApi()) {
+        persistLocalDraft(html, reason);
+        if (!silent) {
+          const preferredPath = getPreferredCurrentPagePath();
+          downloadHtmlSnapshot(preferredPath, html);
+          notify('Browser fallback active: downloaded updated HTML with your latest edits.', 'success');
+        }
+        return;
+      }
+
       const rootHandle = await ensureProjectRootHandle(allowPicker);
       if (!rootHandle) return;
 
       const { fileHandle, relativePath } = await resolveCurrentFileHandle(rootHandle);
-      const html = buildCleanHtmlSnapshot();
 
       const writable = await fileHandle.createWritable();
       await writable.write(html);
@@ -1262,6 +1318,44 @@
     if (body) body.classList.remove('cms-admin-mode');
 
     return `<!DOCTYPE html>\n${root.outerHTML}`;
+  }
+
+  function supportsFileSystemAccessApi() {
+    return typeof window.showDirectoryPicker === 'function';
+  }
+
+  function persistLocalDraft(html, reason) {
+    try {
+      const path = getPreferredCurrentPagePath();
+      const payload = {
+        path,
+        savedAt: new Date().toISOString(),
+        reason: reason || 'manual',
+        html: String(html || '')
+      };
+      localStorage.setItem(`${DRAFT_KEY_PREFIX}${path}`, JSON.stringify(payload));
+    } catch (error) {
+      // Ignore storage failures; manual download still preserves edits.
+    }
+  }
+
+  function downloadHtmlSnapshot(relativePath, html) {
+    const filename = String(relativePath || 'index.html').split('/').pop() || 'index.html';
+    const outputName = `${filename.replace(/\.html$/i, '')}.edited.html`;
+    const blob = new Blob([String(html || '')], { type: 'text/html;charset=utf-8' });
+    triggerBlobDownload(blob, outputName);
+  }
+
+  function triggerBlobDownload(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = filename || 'download.bin';
+    anchor.rel = 'noopener';
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1200);
   }
 
   function extensionFromFile(file) {
