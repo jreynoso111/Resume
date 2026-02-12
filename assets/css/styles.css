@@ -1131,8 +1131,12 @@ header {
 
 
 .highlights-overlap {
-  margin-top: 24px;
+  margin-top: 0;
 
+}
+
+#top .hero {
+  padding-bottom: 0;
 }
 
 .external-links-actions {
