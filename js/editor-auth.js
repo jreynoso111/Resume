@@ -52,12 +52,12 @@
       top: 16px;
       right: 16px;
       z-index: 10040;
-      width: min(340px, calc(100vw - 32px));
+      width: min(280px, calc(100vw - 32px));
       background: #ffffff;
       border: 1px solid #d1d5db;
       border-radius: 12px;
       box-shadow: 0 18px 40px rgba(15, 23, 42, 0.2);
-      padding: 12px;
+      padding: 10px;
       display: none;
       color: #111827;
     }
@@ -68,13 +68,13 @@
 
     .cms-panel h3 {
       margin: 0 0 8px;
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 700;
       color: #0f172a;
     }
 
     .cms-panel .cms-muted {
-      font-size: 12px;
+      font-size: 11px;
       color: #4b5563;
       margin-bottom: 10px;
       line-height: 1.45;
@@ -95,8 +95,8 @@
       background: #fff;
       color: #111827;
       cursor: pointer;
-      padding: 8px 10px;
-      font-size: 12px;
+      padding: 7px 9px;
+      font-size: 11px;
       font-weight: 600;
     }
 
@@ -121,7 +121,7 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      font-size: 12px;
+      font-size: 11px;
       margin-bottom: 10px;
       color: #374151;
     }
@@ -137,6 +137,26 @@
       padding: 10px;
       margin-bottom: 10px;
       background: #f8fafc;
+    }
+
+    .cms-details {
+      border-top: 1px solid #e5e7eb;
+      padding-top: 8px;
+      margin-top: 6px;
+    }
+
+    .cms-details summary {
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 700;
+      color: #334155;
+      user-select: none;
+      list-style: none;
+      margin-bottom: 8px;
+    }
+
+    .cms-details summary::-webkit-details-marker {
+      display: none;
     }
 
     .cms-section-title {
@@ -326,26 +346,16 @@
   init();
 
   function init() {
-    setAdminFlag(true);
+    // Always start anonymous. Editor can be enabled via the admin (gear) link.
+    setAdminFlag(false);
     loadSettings();
     injectCSS();
     createUI();
+    disableAdminMode();
     lockEditingForNonAdmin();
     bindGlobalEvents();
     watchForAdminLink();
     syncAdminLinkState();
-
-    if (isAdmin()) {
-      enableAdminMode();
-    }
-
-    window.addEventListener('load', () => {
-      if (isAdmin()) refreshEditorTargets();
-    }, { once: true });
-
-    setTimeout(() => {
-      if (isAdmin()) refreshEditorTargets();
-    }, 900);
   }
 
   function injectCSS() {
@@ -396,11 +406,12 @@
     state.panel.className = 'cms-panel cms-ui';
     state.panel.setAttribute('data-cms-ui', '1');
     state.panel.innerHTML = `
-      <h3>Visual CMS Editor</h3>
-      <div class="cms-muted">Edit content like WordPress and save directly to the project's HTML files.</div>
+      <h3>Editor</h3>
+      <div class="cms-muted">Edita el texto y guarda los cambios en el HTML.</div>
 
       <div class="cms-row">
-        <button type="button" class="cms-btn" id="cms-save-now" style="grid-column:1 / -1;">Save now</button>
+        <button type="button" class="cms-btn" id="cms-save-now">Save</button>
+        <button type="button" class="cms-btn-secondary" id="cms-exit">Close</button>
       </div>
 
       <label class="cms-inline">
@@ -408,24 +419,25 @@
         <span id="cms-autosave-label">Auto-save changes to code</span>
       </label>
 
-      <div class="cms-section-box">
-        <div class="cms-section-title">Selected section</div>
-        <div class="cms-section-label" id="cms-section-label">Click a section to edit structure</div>
+      <details class="cms-details">
+        <summary>Section tools</summary>
+        <div class="cms-section-box">
+          <div class="cms-section-title">Selected</div>
+          <div class="cms-section-label" id="cms-section-label">Click a section to edit structure</div>
 
-        <div class="cms-row">
-          <button type="button" class="cms-btn-secondary" id="cms-move-up">Move up</button>
-          <button type="button" class="cms-btn-secondary" id="cms-move-down">Move down</button>
+          <div class="cms-row">
+            <button type="button" class="cms-btn-secondary" id="cms-move-up">Up</button>
+            <button type="button" class="cms-btn-secondary" id="cms-move-down">Down</button>
+          </div>
+
+          <div class="cms-row">
+            <button type="button" class="cms-btn-secondary" id="cms-duplicate">Duplicate</button>
+            <button type="button" class="cms-btn-danger" id="cms-delete">Delete</button>
+          </div>
+
+          <button type="button" class="cms-btn-secondary" id="cms-add-section" style="width:100%;">Add section</button>
         </div>
-
-        <div class="cms-row">
-          <button type="button" class="cms-btn-secondary" id="cms-duplicate">Duplicate</button>
-          <button type="button" class="cms-btn-danger" id="cms-delete">Delete</button>
-        </div>
-
-        <button type="button" class="cms-btn-secondary" id="cms-add-section" style="width:100%;">Add new section</button>
-      </div>
-
-      <button type="button" class="cms-btn-danger" id="cms-logout" style="width:100%;">Sign out editor</button>
+      </details>
     `;
 
     state.toast = document.createElement('div');
@@ -453,7 +465,19 @@
     });
 
     state.panel.querySelector('#cms-save-now').addEventListener('click', () => {
+      if (!isAdmin()) {
+        setAdminFlag(true);
+        enableAdminMode();
+        syncAdminLinkState();
+      }
       saveCurrentPage({ silent: false, reason: 'manual' });
+    });
+
+    state.panel.querySelector('#cms-exit').addEventListener('click', () => {
+      setAdminFlag(false);
+      disableAdminMode();
+      syncAdminLinkState();
+      notify('Editor disabled.', 'success');
     });
 
     state.panel.querySelector('#cms-move-up').addEventListener('click', () => moveSelectedSection('up'));
@@ -461,14 +485,6 @@
     state.panel.querySelector('#cms-duplicate').addEventListener('click', duplicateSelectedSection);
     state.panel.querySelector('#cms-delete').addEventListener('click', deleteSelectedSection);
     state.panel.querySelector('#cms-add-section').addEventListener('click', addNewSection);
-
-    state.panel.querySelector('#cms-logout').addEventListener('click', () => {
-      setAdminFlag(false);
-      disableAdminMode();
-      syncAdminLinkState();
-      notify('Editor disabled.', 'success');
-    });
-
   }
 
   function openLoginModal() {
