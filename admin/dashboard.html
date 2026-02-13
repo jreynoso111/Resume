@@ -204,13 +204,8 @@
             });
         }
 
-        // --- AUTH & SEGURIDAD ---
-        async function checkAuth() {
-            const { data: { session } } = await sb.auth.getSession();
-            if (!session) window.location.href = 'index.html';
-        }
-        checkAuth();
-        document.getElementById('logout-btn').onclick = async () => { await sb.auth.signOut(); window.location.href = 'index.html'; };
+        // --- ACCESO DIRECTO ---
+        document.getElementById('logout-btn').onclick = () => { window.location.href = 'index.html'; };
 
         // --- FUNCIONES DE BORRADO GENÉRICO ---
         window.deleteItem = async (table, id) => {

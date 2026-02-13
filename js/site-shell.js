@@ -129,6 +129,7 @@
   function initThemeManager() {
     // Remove any previously injected toggle to avoid stale icon buttons
     document.querySelectorAll('#theme-toggle').forEach((el) => el.remove());
+    document.querySelectorAll('#theme-toggle-label').forEach((el) => el.remove());
 
     // 1. Create Button
     const btn = document.createElement('button');
@@ -163,6 +164,31 @@
     btn.onmouseout = () => { btn.style.transform = 'scale(1.0)'; };
 
     document.body.appendChild(btn);
+
+    // 1b. Create helper label with arrow pointing to the theme button
+    const label = document.createElement('div');
+    label.id = 'theme-toggle-label';
+    label.setAttribute('aria-hidden', 'true');
+    label.textContent = '↙ Color';
+    label.style.cssText = `
+      position: fixed;
+      bottom: 66px;
+      left: 28px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: var(--bg-soft);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-main);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      z-index: 9998;
+      pointer-events: none;
+      user-select: none;
+      backdrop-filter: blur(6px);
+    `;
+    document.body.appendChild(label);
 
     // 2. Load saved theme or default
     let currentThemeIndex = parseInt(localStorage.getItem('themeIndex')) || 0;

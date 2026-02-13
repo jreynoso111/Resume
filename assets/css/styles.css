@@ -794,6 +794,80 @@ header {
 
 }
 
+.external-links-actions {
+
+  flex-direction: row;
+
+  flex-wrap: wrap;
+
+  gap: 10px;
+
+}
+
+.social-link-btn {
+
+  position: relative;
+
+  overflow: hidden;
+
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+}
+
+.social-link-btn::after {
+
+  content: "";
+
+  position: absolute;
+
+  inset: 0;
+
+  background: linear-gradient(120deg, transparent 0%, rgba(255, 255, 255, 0.28) 50%, transparent 100%);
+
+  transform: translateX(-120%);
+
+  transition: transform 0.45s ease;
+
+}
+
+.social-link-btn:hover {
+
+  transform: translateY(-2px);
+
+  box-shadow: 0 8px 22px rgba(34, 95, 190, 0.28);
+
+}
+
+.social-link-btn:hover::after {
+
+  transform: translateX(120%);
+
+}
+
+.social-link-icon {
+
+  width: 16px;
+
+  height: 16px;
+
+  display: inline-flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+}
+
+.social-link-icon svg {
+
+  width: 100%;
+
+  height: 100%;
+
+  fill: currentColor;
+
+}
+
 
 
 .hero-cta-row {
@@ -1131,38 +1205,9 @@ header {
 
 
 .highlights-overlap {
-  margin-top: 0;
 
-}
+  margin-top: -260px;
 
-#top .hero {
-  padding-bottom: 0;
-}
-
-.external-links-actions {
-  flex-direction: row;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-}
-
-.social-btn {
-  gap: 8px;
-  padding: 7px 14px;
-}
-
-.social-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
-}
-
-.social-icon svg {
-  width: 14px;
-  height: 14px;
-  fill: currentColor;
 }
 
 
@@ -1205,7 +1250,7 @@ header {
 
 .highlights-right {
 
-  margin-top: 0;
+  margin-top: calc(210px + 2cm);
 
 }
 

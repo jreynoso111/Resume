@@ -28,8 +28,11 @@
     function initFooter() {
         const footerHost = document.getElementById('site-footer');
         if (footerHost) {
-            const rootPath = footerHost.dataset.rootPath || '';
-            footerHost.innerHTML = renderFooter(rootPath);
+            const hasContent = (footerHost.innerHTML || '').trim().length > 0;
+            if (!hasContent) {
+                const rootPath = footerHost.dataset.rootPath || '';
+                footerHost.innerHTML = renderFooter(rootPath);
+            }
         }
     }
 

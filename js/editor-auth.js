@@ -1,6 +1,4 @@
 (function () {
-  const ADMIN_USER = 'jreynoso111';
-  const ADMIN_PASS = 'Reynoso';
   const AUTH_KEY = 'resume_admin_auth_v2';
   const SETTINGS_KEY = 'resume_admin_settings_v2';
   const DRAFT_KEY_PREFIX = 'resume_admin_draft_v2:';
@@ -328,6 +326,7 @@
   init();
 
   function init() {
+    setAdminFlag(true);
     loadSettings();
     injectCSS();
     createUI();
@@ -488,38 +487,35 @@
       setAdminFlag(false);
       disableAdminMode();
       syncAdminLinkState();
-      notify('Editor session closed.', 'success');
+      notify('Editor disabled.', 'success');
     });
 
     state.loginModal.querySelector('#cms-login-cancel').addEventListener('click', closeLoginModal);
 
     state.loginModal.querySelector('#cms-login-submit').addEventListener('click', () => {
-      const userInput = state.loginModal.querySelector('input[name="user"]');
-      const passInput = state.loginModal.querySelector('input[name="pass"]');
-      const user = (userInput.value || '').trim();
-      const pass = passInput.value || '';
-
-      if (user === ADMIN_USER && pass === ADMIN_PASS) {
-        setAdminFlag(true);
-        closeLoginModal();
-        enableAdminMode();
-        syncAdminLinkState();
-        notify(
-          supportsFileSystemAccessApi()
-            ? 'Editor enabled. You can now edit and save directly to code.'
-            : 'Editor enabled. Use "Download updated HTML" to keep file changes.',
-          'success'
-        );
-        userInput.value = '';
-        passInput.value = '';
-      } else {
-        notify('Invalid credentials.', 'error');
-      }
+      setAdminFlag(true);
+      closeLoginModal();
+      enableAdminMode();
+      syncAdminLinkState();
+      notify(
+        supportsFileSystemAccessApi()
+          ? 'Editor enabled. You can now edit and save directly to code.'
+          : 'Editor enabled. Use "Download updated HTML" to keep file changes.',
+        'success'
+      );
     });
   }
 
   function openLoginModal() {
-    state.loginModal.classList.add('show');
+    setAdminFlag(true);
+    enableAdminMode();
+    syncAdminLinkState();
+    notify(
+      supportsFileSystemAccessApi()
+        ? 'Editor enabled. You can now edit and save directly to code.'
+        : 'Editor enabled. Use "Download updated HTML" to keep file changes.',
+      'success'
+    );
   }
 
   function closeLoginModal() {
@@ -534,13 +530,16 @@
       const adminLink = target.closest('.admin-link');
       if (adminLink) {
         event.preventDefault();
-        if (isAdmin()) {
+        if (document.body.classList.contains('cms-admin-mode')) {
           setAdminFlag(false);
           disableAdminMode();
           syncAdminLinkState();
-          notify('Editor session closed.', 'success');
+          notify('Editor disabled.', 'success');
         } else {
-          openLoginModal();
+          setAdminFlag(true);
+          enableAdminMode();
+          syncAdminLinkState();
+          notify('Editor enabled.', 'success');
         }
         return;
       }
@@ -629,10 +628,10 @@
   function syncAdminLinkState() {
     const link = document.querySelector('.admin-link');
     if (!link) return;
-    const on = isAdmin();
+    const on = document.body.classList.contains('cms-admin-mode');
     link.dataset.state = on ? 'on' : 'off';
-    link.title = on ? 'Editor active (click to sign out)' : 'Admin Login';
-    link.setAttribute('aria-label', on ? 'Editor active, click to sign out' : 'Admin Login');
+    link.title = on ? 'Editor active (click to disable)' : 'Enable editor';
+    link.setAttribute('aria-label', on ? 'Editor active, click to disable' : 'Enable editor');
   }
 
   function enableAdminMode() {
@@ -701,7 +700,7 @@
       el.classList.remove('cms-section-selected');
     });
 
-    const rawEditable = Array.from(document.querySelectorAll('main *')).filter(isEditableTextElement);
+    const rawEditable = Array.from(document.querySelectorAll('body *')).filter(isEditableTextElement);
     const picked = [];
 
     rawEditable.forEach((element) => {
@@ -1234,7 +1233,7 @@
   async function saveCurrentPage(options) {
     const { silent = false, reason = 'manual', allowPicker = true } = options || {};
     if (!isAdmin()) {
-      if (!silent) notify('Administrator login required to edit and save.', 'warn');
+      if (!silent) notify('Enable editor mode to edit and save.', 'warn');
       return;
     }
 
@@ -1287,15 +1286,6 @@
 
     root.querySelectorAll('#cms-admin-style, .cms-ui, [data-cms-ui="1"]').forEach((el) => el.remove());
     root.querySelectorAll('#bg-canvas, #particle-canvas, #theme-toggle').forEach((el) => el.remove());
-
-    const header = root.querySelector('#site-header');
-    if (header) header.innerHTML = '';
-
-    const footer = root.querySelector('#site-footer');
-    if (footer) footer.innerHTML = '';
-
-    const sidebar = root.querySelector('#projects-sidebar');
-    if (sidebar) sidebar.innerHTML = '';
 
     root.querySelectorAll('*').forEach((el) => {
       el.removeAttribute('contenteditable');
