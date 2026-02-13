@@ -33,7 +33,9 @@
     saveInFlight: false,
     saveQueued: false,
     imageControls: new Map(),
-    imageRepositionRaf: null
+    imageRepositionRaf: null,
+    serverMode: false,
+    serverModeChecked: false
   };
 
   const css = `
@@ -358,6 +360,22 @@
     syncAdminLinkState();
   }
 
+  async function detectServerMode() {
+    if (state.serverModeChecked) return state.serverMode;
+    state.serverModeChecked = true;
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 1200);
+      const res = await fetch('/__cms/ping', { method: 'GET', signal: controller.signal });
+      clearTimeout(timer);
+      state.serverMode = Boolean(res && res.ok);
+      return state.serverMode;
+    } catch (e) {
+      state.serverMode = false;
+      return false;
+    }
+  }
+
   function injectCSS() {
     const style = document.createElement('style');
     style.id = 'cms-admin-style';
@@ -621,6 +639,7 @@
       return;
     }
     document.body.classList.add('cms-admin-mode');
+    detectServerMode();
     refreshEditorTargets();
   }
 
@@ -780,15 +799,20 @@
     if (!isAdmin()) return;
 
     let imgIdx = 1;
-    const images = Array.from(document.querySelectorAll('img[src]')).filter((el) => {
+    const images = Array.from(document.querySelectorAll('img')).filter((el) => {
       if (!(el instanceof HTMLImageElement)) return false;
       if (el.closest('[data-cms-ui="1"]')) return false;
       return true;
     });
 
     images.forEach((img) => {
+      if (!img.getAttribute('src')) {
+        img.setAttribute('src', getDefaultPlaceholderPagePath());
+      }
+
       img.dataset.cmsImageId = `img-${imgIdx++}`;
       img.dataset.cmsImageKind = 'img';
+      ensureAssetSlot(img, 'img');
       createImageControlsForTarget(img, 'img');
       if (!img.complete) {
         img.addEventListener('load', () => requestImageControlPositionUpdate(), { once: true });
@@ -811,8 +835,58 @@
     backgroundTargets.forEach((el) => {
       el.dataset.cmsImageId = `bg-${bgIdx++}`;
       el.dataset.cmsImageKind = 'bg';
+      ensureAssetSlot(el, 'bg');
       createImageControlsForTarget(el, 'bg');
     });
+  }
+
+  function getDefaultPlaceholderPagePath() {
+    return toPageAssetPath('assets/images/placeholders/placeholder.png');
+  }
+
+  function ensureAssetSlot(target, kind) {
+    if (!(target instanceof HTMLElement)) return '';
+    if (target.dataset.assetSlot) return target.dataset.assetSlot;
+
+    const fingerprint = computeDomFingerprint(target);
+    const short = hashString(fingerprint).slice(0, 10);
+    const slot = `${kind}-${short}`;
+    target.dataset.assetSlot = slot;
+    return slot;
+  }
+
+  function computeDomFingerprint(element) {
+    const parts = [];
+    let node = element;
+    while (node && node.nodeType === 1 && node !== document.body && parts.length < 10) {
+      const el = node;
+      const tag = (el.tagName || '').toLowerCase();
+      if (!tag) break;
+      if (el.id) {
+        parts.push(`${tag}#${el.id}`);
+      } else {
+        let idx = 1;
+        let sib = el;
+        while ((sib = sib.previousElementSibling)) {
+          if (sib.tagName === el.tagName) idx++;
+        }
+        parts.push(`${tag}:nth-of-type(${idx})`);
+      }
+      node = el.parentElement;
+    }
+    parts.push('body');
+    return parts.reverse().join('>');
+  }
+
+  function hashString(value) {
+    // FNV-1a 32-bit
+    let h = 0x811c9dc5;
+    const str = String(value || '');
+    for (let i = 0; i < str.length; i++) {
+      h ^= str.charCodeAt(i);
+      h = Math.imul(h, 0x01000193);
+    }
+    return (h >>> 0).toString(16).padStart(8, '0');
   }
 
   function createImageControlsForTarget(target, kind) {
@@ -878,6 +952,35 @@
       if (!file) return;
 
       try {
+        if (await detectServerMode()) {
+          const ext = extensionFromFile(file);
+          let destination = inferTargetAssetPath(target, kind, ext);
+          destination = normalizeDestinationExtension(destination, ext);
+          target.dataset.assetPath = destination;
+
+          const form = new FormData();
+          form.append('path', destination);
+          form.append('file', file, file.name || `upload.${ext || 'jpg'}`);
+
+          const res = await fetch('/__cms/upload', { method: 'POST', body: form });
+          const payload = await res.json().catch(() => ({}));
+          if (!res.ok || !payload || payload.ok !== true) {
+            throw new Error(payload && payload.error ? payload.error : 'Upload failed');
+          }
+
+          const pageAssetPath = toPageAssetPath(destination);
+          applyImageValue(target, kind, pageAssetPath);
+          requestImageControlPositionUpdate();
+
+          if (state.autosaveEnabled) {
+            scheduleAutosave('image-upload');
+            notify(`Image saved to ${destination}.`, 'success');
+          } else {
+            notify(`Image saved to ${destination}. Click "Save" to persist HTML changes.`, 'success');
+          }
+          return;
+        }
+
         if (!supportsFileSystemAccessApi()) {
           const dataUrl = await fileToDataUrl(file);
           applyImageValue(target, kind, dataUrl);
@@ -896,7 +999,9 @@
         if (!rootHandle) return;
 
         const ext = extensionFromFile(file);
-        const destination = inferTargetAssetPath(target, kind, ext);
+        let destination = inferTargetAssetPath(target, kind, ext);
+        destination = normalizeDestinationExtension(destination, ext);
+        target.dataset.assetPath = destination;
         await writeBlobToRepo(rootHandle, destination, file);
 
         const pageAssetPath = toPageAssetPath(destination);
@@ -943,6 +1048,9 @@
 
     applyImageValue(target, kind, url);
     requestImageControlPositionUpdate();
+    if (target instanceof HTMLElement) {
+      delete target.dataset.assetPath;
+    }
 
     if (state.autosaveEnabled) {
       scheduleAutosave('image-link');
@@ -1174,10 +1282,6 @@
   function scheduleAutosave(reason) {
     if (!isAdmin() || !state.autosaveEnabled) return;
 
-    if (supportsFileSystemAccessApi() && !state.rootDirHandle) {
-      return;
-    }
-
     if (state.autosaveTimer) clearTimeout(state.autosaveTimer);
     state.autosaveTimer = setTimeout(() => {
       saveCurrentPage({ silent: true, reason, allowPicker: false });
@@ -1227,6 +1331,21 @@
 
     try {
       const html = buildCleanHtmlSnapshot();
+
+      if (await detectServerMode()) {
+        const relativePath = getPreferredCurrentPagePath();
+        const res = await fetch('/__cms/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ path: relativePath, html })
+        });
+        const payload = await res.json().catch(() => ({}));
+        if (!res.ok || !payload || payload.ok !== true) {
+          throw new Error(payload && payload.error ? payload.error : 'Save failed');
+        }
+        if (!silent) notify(`Changes saved to ${relativePath}`, 'success');
+        return;
+      }
 
       if (!supportsFileSystemAccessApi()) {
         persistLocalDraft(html, reason);
@@ -1358,14 +1477,23 @@
   }
 
   function inferTargetAssetPath(target, kind, ext) {
+    if (target instanceof HTMLElement) {
+      const preset = String(target.dataset.assetPath || '').trim();
+      if (preset && preset.startsWith('assets/')) return preset;
+    }
+
     const existing = resolveTargetAssetPath(target, kind);
-    if (existing) return existing;
+    if (existing) {
+      if (target instanceof HTMLElement) target.dataset.assetPath = existing;
+      return existing;
+    }
 
     const safeExt = extensionFromFile({ name: `file.${ext || 'jpg'}` });
-    return buildDedicatedImagePath(target, kind, safeExt);
+    const slot = target instanceof HTMLElement ? ensureAssetSlot(target, kind) : slugify(`${kind}-slot`);
+    return buildDedicatedImagePath(target, kind, safeExt, slot);
   }
 
-  function buildDedicatedImagePath(target, kind, ext) {
+  function buildDedicatedImagePath(target, kind, ext, slotOverride) {
     const pagePath = getPreferredCurrentPagePath().replace(/\\/g, '/');
     const pageSlug = pagePath
       .replace(/\.html$/i, '')
@@ -1373,9 +1501,9 @@
       .filter(Boolean)
       .join('-') || 'home';
 
-    const slotId = slugify((target && target.dataset && target.dataset.cmsImageId) || `${kind}-slot`);
+    const slotId = slugify(String(slotOverride || (target && target.dataset && target.dataset.assetSlot) || `${kind}-slot`));
     const fileName = `${slotId}.${ext || 'jpg'}`;
-    return `assets/images/cms/${pageSlug}/${slotId}/${fileName}`;
+    return `assets/images/cms/${pageSlug}/${fileName}`;
   }
 
   function resolveTargetAssetPath(target, kind) {
@@ -1384,6 +1512,17 @@
       return resolveAssetPath(target.getAttribute('src') || target.src || '');
     }
     return resolveAssetPath(getBackgroundImageUrl(target));
+  }
+
+  function normalizeDestinationExtension(destination, ext) {
+    const safeDest = String(destination || '').replace(/^\/+/, '');
+    const safeExt = extensionFromFile({ name: `file.${ext || 'jpg'}` });
+    if (!safeDest.startsWith('assets/')) return safeDest;
+    const m = safeDest.match(/\.([a-z0-9]+)$/i);
+    const currentExt = m ? m[1].toLowerCase() : '';
+    if (!currentExt) return `${safeDest}.${safeExt}`;
+    if (currentExt === safeExt) return safeDest;
+    return safeDest.replace(/\.[a-z0-9]+$/i, `.${safeExt}`);
   }
 
   function resolveAssetPath(rawPath) {
