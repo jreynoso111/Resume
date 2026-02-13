@@ -428,32 +428,11 @@
       <button type="button" class="cms-btn-danger" id="cms-logout" style="width:100%;">Sign out editor</button>
     `;
 
-    state.loginModal = document.createElement('div');
-    state.loginModal.className = 'cms-login-modal cms-ui';
-    state.loginModal.setAttribute('data-cms-ui', '1');
-    state.loginModal.innerHTML = `
-      <div class="cms-login-card">
-        <h4>Administrator access</h4>
-        <div class="cms-login-body">
-          <label>Username
-            <input type="text" name="user" autocomplete="username" />
-          </label>
-          <label>Password
-            <input type="password" name="pass" autocomplete="current-password" />
-          </label>
-        </div>
-        <div class="cms-login-actions">
-          <button type="button" class="cms-btn-secondary" id="cms-login-cancel">Cancel</button>
-          <button type="button" class="cms-btn" id="cms-login-submit">Sign in</button>
-        </div>
-      </div>
-    `;
-
     state.toast = document.createElement('div');
     state.toast.className = 'cms-toast cms-ui';
     state.toast.setAttribute('data-cms-ui', '1');
 
-    document.body.append(state.panel, state.loginModal, state.toast);
+    document.body.append(state.panel, state.toast);
 
     state.sectionLabel = state.panel.querySelector('#cms-section-label');
     if (!supportsFileSystemAccessApi()) {
@@ -490,20 +469,6 @@
       notify('Editor disabled.', 'success');
     });
 
-    state.loginModal.querySelector('#cms-login-cancel').addEventListener('click', closeLoginModal);
-
-    state.loginModal.querySelector('#cms-login-submit').addEventListener('click', () => {
-      setAdminFlag(true);
-      closeLoginModal();
-      enableAdminMode();
-      syncAdminLinkState();
-      notify(
-        supportsFileSystemAccessApi()
-          ? 'Editor enabled. You can now edit and save directly to code.'
-          : 'Editor enabled. Use "Download updated HTML" to keep file changes.',
-        'success'
-      );
-    });
   }
 
   function openLoginModal() {
@@ -519,7 +484,7 @@
   }
 
   function closeLoginModal() {
-    state.loginModal.classList.remove('show');
+    return;
   }
 
   function bindGlobalEvents() {
@@ -584,7 +549,7 @@
       }
 
       if (key === 'escape') {
-        closeLoginModal();
+        return;
       }
     });
 
