@@ -1,15 +1,15 @@
-/* --- VARIABLES Y CONFIGURACIÓN BASE --- */
+/* --- Base Variables --- */
 :root {
-    --primary-color: #2563eb;       /* Azul intenso */
-    --primary-hover: #1d4ed8;       /* Azul más oscuro para hover */
-    --danger-color: #dc2626;        /* Rojo para borrar/salir */
-    --danger-bg: #fee2e2;           /* Fondo rojo suave */
-    --bg-color: #f3f4f6;            /* Gris muy claro de fondo */
-    --card-bg: #ffffff;             /* Blanco para tarjetas */
-    --text-main: #111827;           /* Negro suave */
-    --text-muted: #6b7280;          /* Gris para textos secundarios */
-    --border-color: #d1d5db;        /* Gris borde */
-    --radius: 8px;                  /* Redondeo de esquinas */
+    --primary-color: #2563eb;       /* Strong blue */
+    --primary-hover: #1d4ed8;       /* Darker blue on hover */
+    --danger-color: #dc2626;        /* Red (delete/sign out) */
+    --danger-bg: #fee2e2;           /* Soft red background */
+    --bg-color: #f3f4f6;            /* Light gray background */
+    --card-bg: #ffffff;             /* Card background */
+    --text-main: #111827;           /* Primary text */
+    --text-muted: #6b7280;          /* Muted text */
+    --border-color: #d1d5db;        /* Border */
+    --radius: 8px;                  /* Border radius */
     --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
@@ -26,9 +26,9 @@ body {
     line-height: 1.5;
 }
 
-/* --- LAYOUT GENERAL --- */
+/* --- Layout --- */
 header {
-    background-color: #1f2937; /* Gris oscuro casi negro */
+    background-color: #1f2937; /* Dark gray */
     color: white;
     padding: 1rem 2rem;
     display: flex;
@@ -52,7 +52,7 @@ main {
     padding: 0 1rem;
 }
 
-/* --- TARJETAS (CARDS) --- */
+/* --- Cards --- */
 .card {
     background: var(--card-bg);
     padding: 2rem;
@@ -71,7 +71,7 @@ main {
     font-size: 1.5rem;
 }
 
-/* --- FORMULARIOS --- */
+/* --- Forms --- */
 form {
     display: flex;
     flex-direction: column;
@@ -116,7 +116,7 @@ textarea {
     resize: vertical;
 }
 
-/* Grid simple para formularios (Dos columnas) */
+/* Simple two-column grid for forms */
 .row {
     display: flex;
     gap: 1.5rem;
@@ -126,7 +126,7 @@ textarea {
     flex: 1;
 }
 
-/* Para móviles: colapsar columnas */
+/* Mobile: stack columns */
 @media (max-width: 600px) {
     .row {
         flex-direction: column;
@@ -137,7 +137,7 @@ textarea {
     }
 }
 
-/* --- BOTONES --- */
+/* --- Buttons --- */
 button {
     cursor: pointer;
     font-family: inherit;
@@ -152,13 +152,13 @@ button {
     padding: 0.75rem 1.5rem;
     border-radius: var(--radius);
     font-size: 1rem;
-    width: 100%; /* Botón ancho por defecto en móviles */
+    width: 100%; /* Full-width button on mobile */
     text-align: center;
 }
 
 @media (min-width: 600px) {
     .btn-primary {
-        width: auto; /* Botón normal en escritorio */
+        width: auto; /* Normal width on desktop */
         align-self: flex-start;
     }
 }
@@ -174,10 +174,10 @@ button {
     transform: none;
 }
 
-/* Botón de Logout */
+/* Sign out button */
 #logout-btn {
     background-color: transparent;
-    color: #fca5a5; /* Rojo claro */
+    color: #fca5a5; /* Light red */
     border: 1px solid #fca5a5;
     padding: 0.5rem 1rem;
     border-radius: var(--radius);
@@ -190,7 +190,7 @@ button {
     border-color: var(--danger-color);
 }
 
-/* Botón de Eliminar (Pequeño) */
+/* Delete button (small) */
 .btn-delete {
     background-color: white;
     color: var(--danger-color);
@@ -205,14 +205,14 @@ button {
     border-color: var(--danger-color);
 }
 
-/* --- LISTAS (EXPERIENCIA) --- */
+/* --- Lists --- */
 .item-list {
     list-style: none;
     padding: 0;
     margin: 0;
     border: 1px solid var(--border-color);
     border-radius: var(--radius);
-    overflow: hidden; /* Para que los bordes redondeados funcionen */
+    overflow: hidden; /* Keep rounded corners */
 }
 
 .item-row {
@@ -237,8 +237,8 @@ button {
     color: var(--primary-color);
 }
 
-/* --- LOGIN ESPECÍFICO --- */
-/* Estas clases son para centrar la tarjeta de login en index.html */
+/* --- Login --- */
+/* These classes center the login card on index.html */
 body.login-page {
     display: flex;
     justify-content: center;

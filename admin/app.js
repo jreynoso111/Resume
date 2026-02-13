@@ -1,18 +1,22 @@
-// --- CONFIGURACIÓN SUPABASE ---
-const SUPABASE_URL = 'https://nqoyljwjmsscbiukeiqb.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5xb3lsandqbXNzY2JpdWtlaXFiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyNDA5NDcsImV4cCI6MjA4MDgxNjk0N30.cjvblSPvkT6goAhjt-eHHjnl9VEcpDCpCBcohXeAxAU';
+// --- SUPABASE CONFIG ---
+// Loaded from ../js/supabase-config.js (never ship the service_role key to the browser).
+const SUPABASE_URL = (window.__SUPABASE_CONFIG__ && window.__SUPABASE_CONFIG__.url) || '';
+const SUPABASE_KEY = (window.__SUPABASE_CONFIG__ && window.__SUPABASE_CONFIG__.anonKey) || '';
+if (!SUPABASE_URL || !SUPABASE_KEY) {
+    console.error('Missing Supabase configuration (check js/supabase-config.js).');
+}
 
-// Inicializamos el cliente (usamos 'sb' para evitar conflictos globales)
+// Initialize the client (use "sb" to avoid global name conflicts).
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// --- FUNCIONES PRINCIPALES ---
+// --- MAIN FUNCTIONS ---
 
 /**
- * 1. Cargar y mostrar el PERFIL (Nombre, Bio, Título)
+ * 1) Load and render profile fields.
  */
 async function loadProfile() {
     try {
-        // Buscamos el primer registro de la tabla profile
+        // Fetch the single profile row.
         let { data, error } = await sb
             .from('profile')
             .select('*')
@@ -22,29 +26,29 @@ async function loadProfile() {
         if (error) throw error;
 
         if (data) {
-            // Asignamos los datos a los elementos HTML si existen
+            // Assign values into the DOM if the elements exist.
             setText('profile-name', data.full_name);
             setText('profile-headline', data.headline);
             setText('profile-bio', data.bio);
             
-            // Si tuvieras ubicación o email en el HTML:
+            // If you had location or email fields in HTML:
             // setText('profile-location', data.location);
             // setText('profile-email', data.email);
         }
     } catch (err) {
-        console.error('Error cargando perfil:', err.message);
+        console.error('Error loading profile:', err.message);
     }
 }
 
 /**
- * 2. Cargar y mostrar la EXPERIENCIA LABORAL
+ * 2) Load and render work experience.
  */
 async function loadExperience() {
     try {
         const container = document.getElementById('experience-container');
-        if (!container) return; // Si no existe el contenedor en el HTML, salimos
+        if (!container) return; // No container on this page.
 
-        // Buscamos experiencias ordenadas por fecha de inicio (más reciente primero)
+        // Fetch experiences ordered by start date (most recent first).
         let { data, error } = await sb
             .from('experience')
             .select('*')
@@ -52,22 +56,22 @@ async function loadExperience() {
 
         if (error) throw error;
 
-        // Limpiamos el contenedor (quitamos el texto de "Cargando...")
+        // Clear the container (remove "Loading..." placeholder).
         container.innerHTML = '';
 
         if (data.length === 0) {
-            container.innerHTML = '<p>No hay experiencia registrada aún.</p>';
+            container.innerHTML = '<p>No experience yet.</p>';
             return;
         }
 
-        // Generamos el HTML para cada trabajo
+        // Render each experience entry.
         data.forEach(job => {
             const card = document.createElement('div');
-            card.className = 'resume-item'; // Clase para darle estilo en tu CSS si quieres
+            card.className = 'resume-item';
             
-            // Formatear fechas (Ej: "2023-01-01" -> "Ene 2023")
+            // Format dates (e.g. "2023-01-01" -> "Jan 2023").
             const startStr = formatDate(job.start_date);
-            const endStr = job.is_current ? 'Presente' : formatDate(job.end_date);
+            const endStr = job.is_current ? 'Present' : formatDate(job.end_date);
 
             card.innerHTML = `
                 <div style="margin-bottom: 25px;">
@@ -87,30 +91,30 @@ async function loadExperience() {
         });
 
     } catch (err) {
-        console.error('Error cargando experiencia:', err.message);
+        console.error('Error loading experience:', err.message);
         const container = document.getElementById('experience-container');
-        if(container) container.innerHTML = '<p>Error cargando datos.</p>';
+        if(container) container.innerHTML = '<p>Error loading data.</p>';
     }
 }
 
-// --- UTILIDADES ---
+// --- UTILS ---
 
-// Función auxiliar para cambiar texto de forma segura (evita errores si el ID no existe)
+// Safe helper to set text content when the element exists.
 function setText(id, text) {
     const el = document.getElementById(id);
     if (el) el.innerText = text || '';
 }
 
-// Formateador de fechas simple (YYYY-MM-DD -> Mes Año)
+// Simple date formatter (YYYY-MM-DD -> Mon YYYY).
 function formatDate(dateString) {
     if (!dateString) return '';
-    const date = new Date(dateString + 'T00:00:00'); // T00:00:00 evita problemas de zona horaria
-    return date.toLocaleDateString('es-ES', { year: 'numeric', month: 'short' });
+    const date = new Date(dateString + 'T00:00:00'); // Avoid timezone drift.
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
 }
 
-// --- INICIALIZACIÓN ---
+// --- INIT ---
 
-// Escuchamos cuando el HTML termine de cargar
+// Run once the page is ready.
 document.addEventListener('DOMContentLoaded', () => {
     loadProfile();
     loadExperience();

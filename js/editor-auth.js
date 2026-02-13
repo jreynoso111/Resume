@@ -1,5 +1,5 @@
 (function () {
-  const AUTH_KEY = 'resume_admin_auth_v2';
+  const EDITOR_ENABLED_KEY = 'resume_cms_editor_enabled_v1';
   const SETTINGS_KEY = 'resume_admin_settings_v2';
   const DRAFT_KEY_PREFIX = 'resume_admin_draft_v2:';
 
@@ -35,7 +35,13 @@
     imageControls: new Map(),
     imageRepositionRaf: null,
     serverMode: false,
-    serverModeChecked: false
+    serverModeChecked: false,
+    supabaseClient: null,
+    supabaseInitPromise: null,
+    authSession: null,
+    authEmail: '',
+    authIsAdmin: false,
+    cmsHydrated: false
   };
 
   const css = `
@@ -345,11 +351,17 @@
     }
   `;
 
-  init();
+  void init();
 
-  function init() {
-    // Always start anonymous. Editor can be enabled via the admin (gear) link.
-    setAdminFlag(false);
+  async function init() {
+    // If a CMS snapshot exists for this page, render it and stop.
+    try {
+      const hydrated = await maybeHydrateFromSupabase();
+      if (hydrated) return;
+    } catch (error) {
+      // Ignore hydration failures; the page can still load normally.
+    }
+
     loadSettings();
     injectCSS();
     createUI();
@@ -357,6 +369,17 @@
     lockEditingForNonAdmin();
     bindGlobalEvents();
     watchForAdminLink();
+
+    await initSupabase();
+    updateStatusLine();
+
+    // Re-enable editor if the user previously toggled it on and is still signed in.
+    if (isEditorEnabledFlag() && isAdmin()) {
+      enableAdminMode();
+    } else {
+      setEditorEnabledFlag(false);
+    }
+
     syncAdminLinkState();
   }
 
@@ -374,6 +397,225 @@
       state.serverMode = false;
       return false;
     }
+  }
+
+  function loadScript(src) {
+    return new Promise((resolve, reject) => {
+      const existing = Array.from(document.scripts || []).find((s) => (s.getAttribute('src') || s.src || '') === src);
+      if (existing) {
+        if (existing.dataset.loaded === '1') return resolve();
+        existing.addEventListener('load', () => resolve(), { once: true });
+        existing.addEventListener('error', () => reject(new Error(`Failed to load script: ${src}`)), { once: true });
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.src = src;
+      script.async = true;
+      script.addEventListener('load', () => {
+        script.dataset.loaded = '1';
+        resolve();
+      }, { once: true });
+      script.addEventListener('error', () => reject(new Error(`Failed to load script: ${src}`)), { once: true });
+      document.head.appendChild(script);
+    });
+  }
+
+  async function getSupabaseConfig() {
+    if (window.__SUPABASE_CONFIG__ && window.__SUPABASE_CONFIG__.url && window.__SUPABASE_CONFIG__.anonKey) {
+      return window.__SUPABASE_CONFIG__;
+    }
+
+    // Try loading config from the site root based on current page depth.
+    try {
+      await loadScript(toPageAssetPath('js/supabase-config.js'));
+    } catch (error) {
+      return null;
+    }
+
+    if (window.__SUPABASE_CONFIG__ && window.__SUPABASE_CONFIG__.url && window.__SUPABASE_CONFIG__.anonKey) {
+      return window.__SUPABASE_CONFIG__;
+    }
+    return null;
+  }
+
+  async function ensureSupabaseLibrary() {
+    if (window.supabase && typeof window.supabase.createClient === 'function') return;
+    await loadScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2');
+  }
+
+  async function getSupabaseClient() {
+    if (state.supabaseClient) return state.supabaseClient;
+    const cfg = await getSupabaseConfig();
+    if (!cfg) return null;
+    await ensureSupabaseLibrary();
+    if (!window.supabase || typeof window.supabase.createClient !== 'function') return null;
+    state.supabaseClient = window.supabase.createClient(cfg.url, cfg.anonKey);
+    return state.supabaseClient;
+  }
+
+  async function initSupabase() {
+    if (state.supabaseInitPromise) return state.supabaseInitPromise;
+    state.supabaseInitPromise = (async () => {
+      const sb = await getSupabaseClient();
+      if (!sb) return;
+
+      sb.auth.onAuthStateChange((_event, session) => {
+        state.authSession = session || null;
+        state.authEmail = (session && session.user && session.user.email) ? String(session.user.email) : '';
+        void refreshAdminFlag();
+        updateStatusLine();
+      });
+
+      const { data } = await sb.auth.getSession();
+      state.authSession = (data && data.session) ? data.session : null;
+      state.authEmail = (state.authSession && state.authSession.user && state.authSession.user.email)
+        ? String(state.authSession.user.email)
+        : '';
+      await refreshAdminFlag();
+    })();
+    return state.supabaseInitPromise;
+  }
+
+  async function refreshAdminFlag() {
+    const cfg = await getSupabaseConfig();
+    const adminEmail = cfg && cfg.adminEmail ? String(cfg.adminEmail).trim().toLowerCase() : '';
+    const currentEmail = String(state.authEmail || '').trim().toLowerCase();
+    state.authIsAdmin = Boolean(adminEmail && currentEmail && adminEmail === currentEmail);
+  }
+
+  function updateStatusLine() {
+    const statusLine = state.panel ? state.panel.querySelector('#cms-status-line') : null;
+    if (!statusLine) return;
+
+    const email = String(state.authEmail || '');
+    if (!email) {
+      statusLine.textContent = 'Not signed in. Sign in to edit and publish changes.';
+    } else if (state.authIsAdmin) {
+      statusLine.textContent = `Signed in as ${email}.`;
+    } else {
+      statusLine.textContent = `Signed in as ${email} (no edit access).`;
+    }
+
+    const publishBtn = state.panel.querySelector('#cms-save-now');
+    const signOutBtn = state.panel.querySelector('#cms-sign-out');
+    const autosaveToggle = state.panel.querySelector('#cms-autosave');
+
+    if (publishBtn) publishBtn.disabled = !state.authIsAdmin;
+    if (autosaveToggle) autosaveToggle.disabled = !state.authIsAdmin;
+    if (signOutBtn) signOutBtn.disabled = !email;
+  }
+
+  async function handleLoginSubmit() {
+    const sb = await getSupabaseClient();
+    if (!sb) {
+      showLoginError('Supabase is not configured. Check js/supabase-config.js.');
+      return;
+    }
+
+    const emailInput = state.loginModal.querySelector('#cms-login-email');
+    const passInput = state.loginModal.querySelector('#cms-login-password');
+    const submitBtn = state.loginModal.querySelector('#cms-login-submit');
+    const email = String(emailInput.value || '').trim();
+    const password = String(passInput.value || '');
+
+    if (!email || !password) {
+      showLoginError('Email and password are required.');
+      return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Signing in...';
+
+    try {
+      const { error } = await sb.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+
+      await initSupabase();
+      await refreshAdminFlag();
+      updateStatusLine();
+
+      if (!state.authIsAdmin) {
+        showLoginError('Signed in, but this user does not have admin access.');
+        return;
+      }
+
+      closeLoginModal();
+      setEditorEnabledFlag(true);
+      enableAdminMode();
+      syncAdminLinkState();
+      notify('Editor enabled.', 'success');
+    } catch (error) {
+      showLoginError(error && error.message ? error.message : 'Sign-in failed.');
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Sign in';
+    }
+  }
+
+  function showLoginError(message) {
+    if (!state.loginModal) return;
+    const errBox = state.loginModal.querySelector('#cms-login-error');
+    if (!errBox) return;
+    errBox.textContent = String(message || 'Sign-in failed.');
+    errBox.style.display = 'block';
+  }
+
+  async function signOut() {
+    try {
+      const sb = await getSupabaseClient();
+      if (sb) await sb.auth.signOut();
+    } catch (error) {
+      // Ignore sign-out failures; still lock the editor.
+    }
+
+    state.authSession = null;
+    state.authEmail = '';
+    state.authIsAdmin = false;
+    setEditorEnabledFlag(false);
+    disableAdminMode();
+    syncAdminLinkState();
+    updateStatusLine();
+    notify('Signed out.', 'success');
+  }
+
+  async function maybeHydrateFromSupabase() {
+    if (state.cmsHydrated) return false;
+
+    // If we already rendered a snapshot for this path in this tab, do not re-render.
+    const path = getPreferredCurrentPagePath();
+    const storageKey = `cms:hydrated:${path}`;
+    if (sessionStorage.getItem(storageKey) === '1') return false;
+
+    const cfg = await getSupabaseConfig();
+    if (!cfg || !cfg.cms || !cfg.cms.pagesTable) return false;
+
+    const sb = await getSupabaseClient();
+    if (!sb) return false;
+
+    const table = String(cfg.cms.pagesTable || 'cms_pages');
+    const { data, error, status } = await sb
+      .from(table)
+      .select('html')
+      .eq('path', path)
+      .limit(1)
+      .single();
+
+    // PostgREST returns 406 for "no rows" when using single().
+    if (error) {
+      if (status === 406) return false;
+      return false;
+    }
+
+    const html = data && data.html ? String(data.html) : '';
+    if (!html) return false;
+
+    sessionStorage.setItem(storageKey, '1');
+    state.cmsHydrated = true;
+    document.open();
+    document.write(html);
+    document.close();
+    return true;
   }
 
   function injectCSS() {
@@ -400,12 +642,16 @@
   }
 
   function isAdmin() {
-    return localStorage.getItem(AUTH_KEY) === '1';
+    return state.authIsAdmin === true;
   }
 
-  function setAdminFlag(value) {
-    if (value) localStorage.setItem(AUTH_KEY, '1');
-    else localStorage.removeItem(AUTH_KEY);
+  function isEditorEnabledFlag() {
+    return localStorage.getItem(EDITOR_ENABLED_KEY) === '1';
+  }
+
+  function setEditorEnabledFlag(value) {
+    if (value) localStorage.setItem(EDITOR_ENABLED_KEY, '1');
+    else localStorage.removeItem(EDITOR_ENABLED_KEY);
   }
 
   let toastTimer = null;
@@ -425,16 +671,21 @@
     state.panel.setAttribute('data-cms-ui', '1');
     state.panel.innerHTML = `
       <h3>Editor</h3>
-      <div class="cms-muted">Edita el texto y guarda los cambios en el HTML.</div>
+      <div class="cms-muted" id="cms-status-line">Sign in to edit and publish changes.</div>
 
       <div class="cms-row">
-        <button type="button" class="cms-btn" id="cms-save-now">Save</button>
+        <button type="button" class="cms-btn" id="cms-save-now">Publish</button>
+        <button type="button" class="cms-btn-secondary" id="cms-open-dashboard">Dashboard</button>
+      </div>
+
+      <div class="cms-row">
+        <button type="button" class="cms-btn-secondary" id="cms-sign-out">Sign out</button>
         <button type="button" class="cms-btn-secondary" id="cms-exit">Close</button>
       </div>
 
       <label class="cms-inline">
         <input id="cms-autosave" type="checkbox" />
-        <span id="cms-autosave-label">Auto-save changes to code</span>
+        <span id="cms-autosave-label">Auto-publish changes</span>
       </label>
 
       <details class="cms-details">
@@ -463,36 +714,36 @@
     state.toast.setAttribute('data-cms-ui', '1');
 
     document.body.append(state.panel, state.toast);
+    createLoginModal();
 
     state.sectionLabel = state.panel.querySelector('#cms-section-label');
-    if (!supportsFileSystemAccessApi()) {
-      const saveButton = state.panel.querySelector('#cms-save-now');
-      const muted = state.panel.querySelector('.cms-muted');
-      const autosaveLabel = state.panel.querySelector('#cms-autosave-label');
-      if (saveButton) saveButton.textContent = 'Download updated HTML';
-      if (muted) muted.textContent = 'Your browser cannot write project files directly. Save now downloads the edited HTML so changes are not lost.';
-      if (autosaveLabel) autosaveLabel.textContent = 'Auto-save local backup';
-    }
 
     const autosaveToggle = state.panel.querySelector('#cms-autosave');
     autosaveToggle.checked = state.autosaveEnabled;
     autosaveToggle.addEventListener('change', () => {
       state.autosaveEnabled = autosaveToggle.checked;
       saveSettings();
-      notify(state.autosaveEnabled ? 'Auto-save enabled.' : 'Auto-save disabled.', 'success');
+      notify(state.autosaveEnabled ? 'Auto-publish enabled.' : 'Auto-publish disabled.', 'success');
     });
 
     state.panel.querySelector('#cms-save-now').addEventListener('click', () => {
       if (!isAdmin()) {
-        setAdminFlag(true);
-        enableAdminMode();
-        syncAdminLinkState();
+        void openLoginModal();
+        return;
       }
       saveCurrentPage({ silent: false, reason: 'manual' });
     });
 
+    state.panel.querySelector('#cms-open-dashboard').addEventListener('click', () => {
+      window.location.href = toPageAssetPath('admin/dashboard.html');
+    });
+
+    state.panel.querySelector('#cms-sign-out').addEventListener('click', () => {
+      void signOut();
+    });
+
     state.panel.querySelector('#cms-exit').addEventListener('click', () => {
-      setAdminFlag(false);
+      setEditorEnabledFlag(false);
       disableAdminMode();
       syncAdminLinkState();
       notify('Editor disabled.', 'success');
@@ -505,20 +756,66 @@
     state.panel.querySelector('#cms-add-section').addEventListener('click', addNewSection);
   }
 
-  function openLoginModal() {
-    setAdminFlag(true);
-    enableAdminMode();
-    syncAdminLinkState();
-    notify(
-      supportsFileSystemAccessApi()
-        ? 'Editor enabled. You can now edit and save directly to code.'
-        : 'Editor enabled. Use "Download updated HTML" to keep file changes.',
-      'success'
-    );
+  function createLoginModal() {
+    if (state.loginModal) return;
+
+    state.loginModal = document.createElement('div');
+    state.loginModal.className = 'cms-login-modal cms-ui';
+    state.loginModal.setAttribute('data-cms-ui', '1');
+    state.loginModal.innerHTML = `
+      <div class="cms-login-card" role="dialog" aria-modal="true" aria-label="Sign in to edit">
+        <h4>Sign in</h4>
+        <form class="cms-login-body" id="cms-login-form">
+          <label>
+            Email
+            <input type="email" id="cms-login-email" autocomplete="email" required />
+          </label>
+          <label>
+            Password
+            <input type="password" id="cms-login-password" autocomplete="current-password" required />
+          </label>
+          <div id="cms-login-error" style="display:none; color:#991b1b; font-size:12px; line-height:1.35;"></div>
+        </form>
+        <div class="cms-login-actions">
+          <button type="button" class="cms-btn-secondary" id="cms-login-cancel">Cancel</button>
+          <button type="submit" form="cms-login-form" class="cms-btn" id="cms-login-submit">Sign in</button>
+        </div>
+      </div>
+    `;
+
+    state.loginModal.addEventListener('click', (event) => {
+      if (event.target === state.loginModal) closeLoginModal();
+    });
+
+    document.body.appendChild(state.loginModal);
+
+    const cancelBtn = state.loginModal.querySelector('#cms-login-cancel');
+    cancelBtn.addEventListener('click', () => closeLoginModal());
+
+    const form = state.loginModal.querySelector('#cms-login-form');
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      void handleLoginSubmit();
+    });
+  }
+
+  async function openLoginModal() {
+    createLoginModal();
+    const cfg = await getSupabaseConfig();
+    const emailInput = state.loginModal.querySelector('#cms-login-email');
+    if (cfg && cfg.adminEmail && !emailInput.value) emailInput.value = cfg.adminEmail;
+
+    const errBox = state.loginModal.querySelector('#cms-login-error');
+    errBox.style.display = 'none';
+    errBox.textContent = '';
+
+    state.loginModal.classList.add('show');
+    setTimeout(() => emailInput.focus(), 0);
   }
 
   function closeLoginModal() {
-    return;
+    if (!state.loginModal) return;
+    state.loginModal.classList.remove('show');
   }
 
   function bindGlobalEvents() {
@@ -528,18 +825,29 @@
 
       const adminLink = target.closest('.admin-link');
       if (adminLink) {
+        // Allow normal navigation when using modifier keys (open in new tab, etc.).
+        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button === 1) return;
+
         event.preventDefault();
-        if (document.body.classList.contains('cms-admin-mode')) {
-          setAdminFlag(false);
-          disableAdminMode();
-          syncAdminLinkState();
-          notify('Editor disabled.', 'success');
-        } else {
-          setAdminFlag(true);
-          enableAdminMode();
-          syncAdminLinkState();
-          notify('Editor enabled.', 'success');
-        }
+        void (async () => {
+          if (document.body.classList.contains('cms-admin-mode')) {
+            setEditorEnabledFlag(false);
+            disableAdminMode();
+            syncAdminLinkState();
+            notify('Editor disabled.', 'success');
+            return;
+          }
+
+          setEditorEnabledFlag(true);
+          if (isAdmin()) {
+            enableAdminMode();
+            syncAdminLinkState();
+            notify('Editor enabled.', 'success');
+            return;
+          }
+
+          await openLoginModal();
+        })();
         return;
       }
 
@@ -598,12 +906,10 @@
     });
 
     window.addEventListener('storage', (event) => {
-      if (event.key !== AUTH_KEY) return;
-      if (isAdmin()) {
-        enableAdminMode();
-      } else {
-        disableAdminMode();
-      }
+      if (event.key !== EDITOR_ENABLED_KEY) return;
+      const shouldEnable = event.newValue === '1';
+      if (shouldEnable && isAdmin()) enableAdminMode();
+      else disableAdminMode();
       syncAdminLinkState();
     });
 
@@ -952,6 +1258,38 @@
       if (!file) return;
 
       try {
+        // Preferred path: Supabase Storage (works on static hosting).
+        const cfg = await getSupabaseConfig();
+        const sb = await getSupabaseClient();
+        if (sb && cfg && cfg.cms && cfg.cms.assetsBucket) {
+          const bucket = String(cfg.cms.assetsBucket || 'resume-cms');
+          const ext = extensionFromFile(file);
+          let destination = inferTargetAssetPath(target, kind, ext);
+          destination = normalizeDestinationExtension(destination, ext);
+          const objectPath = destination.replace(/^assets\\//, '');
+
+          const uploadRes = await sb.storage.from(bucket).upload(objectPath, file, {
+            upsert: true,
+            contentType: file.type || undefined
+          });
+          if (uploadRes && uploadRes.error) throw uploadRes.error;
+
+          const publicUrlRes = sb.storage.from(bucket).getPublicUrl(objectPath);
+          const publicUrl = publicUrlRes && publicUrlRes.data && publicUrlRes.data.publicUrl ? publicUrlRes.data.publicUrl : '';
+          if (!publicUrl) throw new Error('Could not resolve public URL for the uploaded image.');
+
+          applyImageValue(target, kind, publicUrl);
+          requestImageControlPositionUpdate();
+
+          if (state.autosaveEnabled) {
+            scheduleAutosave('image-upload');
+            notify('Image uploaded and queued for publish.', 'success');
+          } else {
+            notify('Image uploaded. Click "Publish" to save page changes.', 'success');
+          }
+          return;
+        }
+
         if (await detectServerMode()) {
           const ext = extensionFromFile(file);
           let destination = inferTargetAssetPath(target, kind, ext);
@@ -976,7 +1314,7 @@
             scheduleAutosave('image-upload');
             notify(`Image saved to ${destination}.`, 'success');
           } else {
-            notify(`Image saved to ${destination}. Click "Save" to persist HTML changes.`, 'success');
+            notify(`Image saved to ${destination}. Click "Publish" to persist HTML changes.`, 'success');
           }
           return;
         }
@@ -988,9 +1326,9 @@
 
           if (state.autosaveEnabled) {
             scheduleAutosave('image-upload-inline');
-            notify('Image embedded. Use "Download updated HTML" to keep this change.', 'success');
+            notify('Image embedded and queued for local backup.', 'success');
           } else {
-            notify('Image embedded. Click "Download updated HTML" to keep this change.', 'success');
+            notify('Image embedded. Click "Publish" to keep this change.', 'success');
           }
           return;
         }
@@ -1012,7 +1350,7 @@
           scheduleAutosave('image-upload');
           notify(`Image uploaded and applied from ${destination}.`, 'success');
         } else {
-          notify(`Image uploaded from ${destination}. Click \"Save now\" to persist HTML changes.`, 'success');
+          notify(`Image uploaded from ${destination}. Click \"Publish\" to persist HTML changes.`, 'success');
         }
       } catch (error) {
         console.error(error);
@@ -1055,16 +1393,12 @@
     if (state.autosaveEnabled) {
       scheduleAutosave('image-link');
       notify(
-        supportsFileSystemAccessApi()
-          ? 'Image URL applied and queued for save.'
-          : 'Image URL applied and queued for local backup.',
+        'Image URL applied and queued for publish.',
         'success'
       );
     } else {
       notify(
-        supportsFileSystemAccessApi()
-          ? 'Image URL applied. Click "Save now" to persist HTML changes.'
-          : 'Image URL applied. Click "Download updated HTML" to keep this change.',
+        'Image URL applied. Click "Publish" to persist page changes.',
         'success'
       );
     }
@@ -1318,7 +1652,7 @@
   async function saveCurrentPage(options) {
     const { silent = false, reason = 'manual', allowPicker = true } = options || {};
     if (!isAdmin()) {
-      if (!silent) notify('Enable editor mode to edit and save.', 'warn');
+      if (!silent) notify('Sign in to edit and publish changes.', 'warn');
       return;
     }
 
@@ -1331,6 +1665,19 @@
 
     try {
       const html = buildCleanHtmlSnapshot();
+
+      // Primary: publish to Supabase (CMS snapshots).
+      const cfg = await getSupabaseConfig();
+      const sb = await getSupabaseClient();
+      if (sb && cfg && cfg.cms && cfg.cms.pagesTable) {
+        const table = String(cfg.cms.pagesTable || 'cms_pages');
+        const path = getPreferredCurrentPagePath();
+        const { error } = await sb.from(table).upsert({ path, html }, { onConflict: 'path' });
+        if (error) throw error;
+        persistLocalDraft(html, reason);
+        if (!silent) notify(`Published: ${path}`, 'success');
+        return;
+      }
 
       if (await detectServerMode()) {
         const relativePath = getPreferredCurrentPagePath();
@@ -1383,6 +1730,14 @@
 
   function buildCleanHtmlSnapshot() {
     const root = document.documentElement.cloneNode(true);
+
+    const head = root.querySelector('head');
+    if (head && !head.querySelector('meta[name="cms-snapshot"]')) {
+      const meta = document.createElement('meta');
+      meta.setAttribute('name', 'cms-snapshot');
+      meta.setAttribute('content', '1');
+      head.appendChild(meta);
+    }
 
     root.querySelectorAll('#cms-admin-style, .cms-ui, [data-cms-ui="1"]').forEach((el) => el.remove());
     root.querySelectorAll('#bg-canvas, #particle-canvas, #theme-toggle').forEach((el) => el.remove());
