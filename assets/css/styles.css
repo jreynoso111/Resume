@@ -794,6 +794,80 @@ header {
 
 }
 
+.external-links-actions {
+
+  flex-direction: row;
+
+  flex-wrap: wrap;
+
+  gap: 10px;
+
+}
+
+.social-link-btn {
+
+  position: relative;
+
+  overflow: hidden;
+
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+}
+
+.social-link-btn::after {
+
+  content: "";
+
+  position: absolute;
+
+  inset: 0;
+
+  background: linear-gradient(120deg, transparent 0%, rgba(255, 255, 255, 0.28) 50%, transparent 100%);
+
+  transform: translateX(-120%);
+
+  transition: transform 0.45s ease;
+
+}
+
+.social-link-btn:hover {
+
+  transform: translateY(-2px);
+
+  box-shadow: 0 8px 22px rgba(34, 95, 190, 0.28);
+
+}
+
+.social-link-btn:hover::after {
+
+  transform: translateX(120%);
+
+}
+
+.social-link-icon {
+
+  width: 16px;
+
+  height: 16px;
+
+  display: inline-flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+}
+
+.social-link-icon svg {
+
+  width: 100%;
+
+  height: 100%;
+
+  fill: currentColor;
+
+}
+
 
 
 .hero-cta-row {
