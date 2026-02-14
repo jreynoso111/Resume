@@ -90,7 +90,7 @@
 
     <header id="site-header" data-variant="inner" data-active="projects"></header>
 
-    <main>
+    <main id="top">
         <div class="shell">
             <div class="page-intro" style="margin-top: 40px; margin-bottom: 20px;">
                 <h1 class="page-title">Projects</h1>
@@ -100,91 +100,8 @@
                 </p>
             </div>
 
-            <div class="projects-grid">
-                <!-- Project 1 -->
-                <article class="project-card">
-                    <a href="projects/fleet-maintenance-analytics.html" class="project-img-frame">
-                        <img src="../assets/images/projects/fleet-maintenance-analytics/hero.jpg"
-                            alt="Fleet Maintenance Analytics System" loading="lazy">
-                    </a>
-                    <div class="project-content">
-                        <h2 class="project-title"><a href="projects/fleet-maintenance-analytics.html">Fleet Maintenance
-                                Analytics System</a></h2>
-                        <p class="project-desc">
-                            Comprehensive dashboard for tracking maintenance costs, downtime, and vendor performance to
-                            optimize fleet reliability.
-                        </p>
-                        <a href="projects/fleet-maintenance-analytics.html" class="project-link">View Case Study →</a>
-                    </div>
-                </article>
-
-                <!-- Project 2 -->
-                <article class="project-card">
-                    <a href="projects/inventory-control-dashboard.html" class="project-img-frame">
-                        <img src="../assets/images/projects/inventory-control-dashboard/hero.jpg"
-                            alt="Inventory Control Dashboard" loading="lazy">
-                    </a>
-                    <div class="project-content">
-                        <h2 class="project-title"><a href="projects/inventory-control-dashboard.html">Inventory Control
-                                Dashboard</a></h2>
-                        <p class="project-desc">
-                            Real-time tracking of spare parts inventory, stock levels, and consumption trends to prevent
-                            shortages and reduce carrying costs.
-                        </p>
-                        <a href="projects/inventory-control-dashboard.html" class="project-link">View Case Study →</a>
-                    </div>
-                </article>
-
-                <!-- Project 3 -->
-                <article class="project-card">
-                    <a href="projects/repossession-risk-monitoring.html" class="project-img-frame">
-                        <img src="../assets/images/projects/repossession-risk-monitoring/hero.jpg"
-                            alt="Repo & Risk Monitoring System" loading="lazy">
-                    </a>
-                    <div class="project-content">
-                        <h2 class="project-title"><a href="projects/repossession-risk-monitoring.html">Repo & Risk
-                                Monitoring System</a></h2>
-                        <p class="project-desc">
-                            Automated system for monitoring at-risk assets and managing the repossession workflow to
-                            minimize losses.
-                        </p>
-                        <a href="projects/repossession-risk-monitoring.html" class="project-link">View Case Study →</a>
-                    </div>
-                </article>
-
-                <!-- Project 4 -->
-                <article class="project-card">
-                    <a href="projects/gps-movement-analytics.html" class="project-img-frame">
-                        <img src="../assets/images/projects/gps-movement-analytics/hero.jpg"
-                            alt="GPS Tracking & Movement Analysis" loading="lazy">
-                    </a>
-                    <div class="project-content">
-                        <h2 class="project-title"><a href="projects/gps-movement-analytics.html">GPS Tracking & Movement
-                                Analysis</a></h2>
-                        <p class="project-desc">
-                            Geospatial analysis of fleet movement patterns to improve route efficiency and detect
-                            unauthorized usage.
-                        </p>
-                        <a href="projects/gps-movement-analytics.html" class="project-link">View Case Study →</a>
-                    </div>
-                </article>
-
-                <!-- Project 5 -->
-                <article class="project-card">
-                    <a href="projects/techloc-fleet-service-control.html" class="project-img-frame">
-                        <img src="../assets/images/projects/techloc-fleet-service-control/hero.jpg"
-                            alt="TechLoc Fleet & Service Control Platform" loading="lazy">
-                    </a>
-                    <div class="project-content">
-                        <h2 class="project-title"><a href="projects/techloc-fleet-service-control.html">TechLoc Fleet &
-                                Service Control Platform</a></h2>
-                        <p class="project-desc">
-                            Centralized platform for managing service requests, technician assignments, and repair
-                            validations.
-                        </p>
-                        <a href="projects/techloc-fleet-service-control.html" class="project-link">View Case Study →</a>
-                    </div>
-                </article>
+            <div class="projects-grid" id="projects-grid">
+                <div style="color: var(--text-muted); font-size: 13px;">Loading projects...</div>
             </div>
 
             <div style="height: 60px;"></div>
@@ -214,9 +131,12 @@
   </div>
 </footer>
 
-    <script src="../js/editor-auth.js?v=10"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../js/supabase-config.js"></script>
+    <script src="../js/projects-page.js?v=2"></script>
+    <script src="../js/editor-auth.js?v=15"></script>
     <script src="../js/header.js?v=3"></script>
-    <script src="../js/footer.js?v=12"></script>
+    <script src="../js/footer.js?v=16"></script>
     <script src="../js/site-shell.js?v=3"></script>
 </body>
 

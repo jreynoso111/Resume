@@ -78,6 +78,25 @@
       })();
     </script>
 
+    <div id="auth-overlay" class="auth-overlay" style="display:none;">
+      <div class="auth-card">
+        <h2 style="margin:0 0 10px;">Sign in</h2>
+        <p style="margin:0 0 14px; color:#4b5563; font-size:0.9rem;">Use your Supabase admin email and password.</p>
+        <form id="auth-form">
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="auth-email" autocomplete="email" required />
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="auth-password" autocomplete="current-password" required />
+          </div>
+          <div id="auth-error" style="display:none; color:#b91c1c; font-size:0.9rem;"></div>
+          <button type="submit" class="btn-primary" id="auth-submit">Sign in</button>
+        </form>
+      </div>
+    </div>
+
     <div id="app-shell">
     <header>
         <h1>Admin Dashboard</h1>
@@ -89,6 +108,8 @@
             <a href="../index.html" class="btn-secondary">
                 <span>Back</span>
             </a>
+            <span id="auth-status" style="color:#e5e7eb; font-size:0.85rem;"></span>
+            <button id="logout-btn" type="button" title="Sign out">Sign out</button>
         </div>
     </header>
 
@@ -98,6 +119,7 @@
             <button class="tab-btn" onclick="openTab('tab-experience')">Experience</button>
             <button class="tab-btn" onclick="openTab('tab-education')">Education</button>
             <button class="tab-btn" onclick="openTab('tab-skills')">Skills</button>
+            <button class="tab-btn" onclick="openTab('tab-projects')">Projects</button>
         </div>
 
         <div id="tab-general" class="tab-content active">
@@ -219,6 +241,57 @@
             </section>
         </div>
 
+        <div id="tab-projects" class="tab-content">
+            <section class="card">
+                <h2>Projects (cards)</h2>
+                <p style="font-size:0.85rem; color:#666;">These power the cards on <code>/pages/projects.html</code>.</p>
+                <ul class="item-list" id="projects-list"></ul>
+
+                <hr style="margin: 2rem 0; border: 0; border-top: 1px dashed #ccc;">
+
+                <h3 id="projects-form-title">Add new project</h3>
+                <form id="projects-form">
+                    <input type="hidden" id="proj-id" />
+                    <div class="row">
+                        <div class="col form-group"><label>Title</label><input type="text" id="proj-title" required></div>
+                        <div class="col form-group"><label>Href (link)</label><input type="text" id="proj-href" placeholder="projects/my-case-study.html" required></div>
+                    </div>
+                    <div class="form-group"><label>Description</label><textarea id="proj-desc" style="height:90px"></textarea></div>
+
+                    <div class="row">
+                        <div class="col form-group"><label>Sort order</label><input type="number" id="proj-sort" value="0"></div>
+                        <div class="col form-group">
+                            <label>Published</label>
+                            <select id="proj-published">
+                                <option value="true" selected>Yes</option>
+                                <option value="false">No</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Image</label>
+                        <div style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
+                            <div style="flex:1; min-width:220px;">
+                                <input type="file" id="proj-image-file" accept="image/*" />
+                                <small style="color:#666; display:block; margin-top:6px;">Uploads go to the <code>resume-cms</code> bucket (public URL).</small>
+                            </div>
+                            <button type="button" class="btn-secondary" id="proj-upload-btn">Upload</button>
+                        </div>
+                        <input type="text" id="proj-image-url" placeholder="Image URL (or relative path like assets/images/...)" style="margin-top:10px;" />
+                        <div id="proj-image-preview" style="display:none; margin-top:10px;">
+                            <img id="proj-image-preview-img" alt="Preview" style="width:100%; max-width:520px; border-radius:10px; border:1px solid #e5e7eb;" />
+                        </div>
+                    </div>
+
+                    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                        <button type="submit" class="btn-primary" id="proj-submit-btn">Add project</button>
+                        <button type="button" class="btn-secondary" id="proj-cancel-edit" style="display:none;">Cancel</button>
+                    </div>
+                </form>
+            </section>
+        </div>
+ 
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -227,13 +300,74 @@
     <script>
         // --- CONFIG ---
         // Loaded from ../js/supabase-config.js (never ship the service_role key to the browser).
-        const SUPABASE_URL = (window.__SUPABASE_CONFIG__ && window.__SUPABASE_CONFIG__.url) || '';
-        const SUPABASE_KEY = (window.__SUPABASE_CONFIG__ && window.__SUPABASE_CONFIG__.anonKey) || '';
+        const cfg = window.__SUPABASE_CONFIG__ || {};
+        const SUPABASE_URL = cfg.url || '';
+        const SUPABASE_KEY = cfg.anonKey || '';
         if (!SUPABASE_URL || !SUPABASE_KEY) {
             alert('Missing Supabase configuration (check js/supabase-config.js).');
             throw new Error('Missing Supabase config');
         }
         const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        const authOverlay = document.getElementById('auth-overlay');
+        const appShell = document.getElementById('app-shell');
+        const authForm = document.getElementById('auth-form');
+        const authEmail = document.getElementById('auth-email');
+        const authPassword = document.getElementById('auth-password');
+        const authError = document.getElementById('auth-error');
+        const authSubmit = document.getElementById('auth-submit');
+        const authStatus = document.getElementById('auth-status');
+        const logoutBtn = document.getElementById('logout-btn');
+
+        let booted = false;
+        let projectsById = new Map();
+
+        function getAdminEmail() {
+            return String((cfg && cfg.adminEmail) || '').trim().toLowerCase();
+        }
+
+        function isUnsafeMode() {
+            return cfg && cfg.unsafeNoAuth === true;
+        }
+
+        function isAdminEmail(email) {
+            const a = getAdminEmail();
+            const e = String(email || '').trim().toLowerCase();
+            return Boolean(a && e && a === e);
+        }
+
+        function setAuthOverlayVisible(visible) {
+            if (authOverlay) authOverlay.style.display = visible ? 'flex' : 'none';
+            if (appShell) appShell.style.display = visible ? 'none' : '';
+        }
+
+        function setAuthStatus(text) {
+            if (!authStatus) return;
+            authStatus.textContent = String(text || '');
+        }
+
+        function showAuthError(message) {
+            if (!authError) return;
+            const msg = String(message || '').trim();
+            if (!msg) {
+                authError.style.display = 'none';
+                authError.textContent = '';
+                return;
+            }
+            authError.style.display = 'block';
+            authError.textContent = msg;
+        }
+
+        async function requireAdmin() {
+            if (isUnsafeMode()) return true;
+            const { data } = await sb.auth.getSession();
+            const email = data && data.session && data.session.user && data.session.user.email ? data.session.user.email : '';
+            const ok = Boolean(data && data.session && isAdminEmail(email));
+            if (!ok) {
+                await refreshAuthUi();
+            }
+            return ok;
+        }
 
         // --- TABS ---
         function openTab(tabId) {
@@ -255,6 +389,7 @@
 
         // --- DELETE HELPERS ---
         window.deleteItem = async (table, id) => {
+            if(!(await requireAdmin())) return;
             if(!confirm('Are you sure you want to delete this item?')) return;
             const { error } = await sb.from(table).delete().eq('id', id);
             if(error) alert('Error: ' + error.message);
@@ -264,11 +399,12 @@
                 if(table === 'education') loadEdu();
                 if(table === 'certifications') loadCerts();
                 if(table === 'skills') loadSkills();
+                if(table === 'projects') loadProjects();
             }
         };
 
         function escapeHtml(value) {
-            return String(value ?? '').replace(/[&<>"']/g, (ch) => ({
+            return String(value == null ? '' : value).replace(/[&<>"']/g, (ch) => ({
                 '&': '&amp;',
                 '<': '&lt;',
                 '>': '&gt;',
@@ -305,6 +441,7 @@
         }
         document.getElementById('general-form').onsubmit = async (e) => {
             e.preventDefault();
+            if(!(await requireAdmin())) return;
             const updates = {
                 full_name: document.getElementById('prof-name').value,
                 headline: document.getElementById('prof-headline').value,
@@ -353,6 +490,7 @@
         }
         document.getElementById('experience-form').onsubmit = async (e) => {
             e.preventDefault();
+            if(!(await requireAdmin())) return;
             try {
                 const { error } = await sb.from('experience').insert([{
                     company: document.getElementById('exp-company').value,
@@ -399,6 +537,7 @@
         }
         document.getElementById('edu-form').onsubmit = async (e) => {
             e.preventDefault();
+            if(!(await requireAdmin())) return;
             try {
                 const { error } = await sb.from('education').insert([{
                     degree: document.getElementById('edu-degree').value,
@@ -438,6 +577,7 @@
         }
         document.getElementById('certs-form').onsubmit = async (e) => {
             e.preventDefault();
+            if(!(await requireAdmin())) return;
             try {
                 const { error } = await sb.from('certifications').insert([{ name: document.getElementById('cert-name').value }]);
                 if (error) {
@@ -492,6 +632,7 @@
 
         document.getElementById('skills-hero-form').onsubmit = async (e) => {
             e.preventDefault();
+            if(!(await requireAdmin())) return;
             try {
                 const { error } = await sb.from('skills').insert([{ name: document.getElementById('skill-hero-name').value, category: 'hero' }]);
                 if (error) {
@@ -507,6 +648,7 @@
 
         document.getElementById('skills-main-form').onsubmit = async (e) => {
             e.preventDefault();
+            if(!(await requireAdmin())) return;
             try {
                 const { error } = await sb.from('skills').insert([{ 
                     name: document.getElementById('skill-main-name').value, 
@@ -524,16 +666,411 @@
             }
         }
 
+        // ==========================================
+        // 5) PROJECTS
+        // ==========================================
+        function slugify(value) {
+            return String(value || '')
+                .trim()
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/(^-|-$)/g, '')
+                .slice(0, 60) || 'project';
+        }
+
+	        function extFromFile(file) {
+	            const name = String((file && file.name) || '');
+	            const match = name.match(/\.([a-z0-9]+)$/i);
+	            if (match) return String(match[1]).toLowerCase();
+	            const type = String((file && file.type) || '').toLowerCase();
+	            if (type === 'image/png') return 'png';
+	            if (type === 'image/webp') return 'webp';
+	            return 'jpg';
+	        }
+
+	        function withAssetVersion(rawUrl) {
+	            const value = String(rawUrl || '').trim();
+	            if (!value) return value;
+	            if (/^(data:|blob:)/i.test(value)) return value;
+
+	            const hashIndex = value.indexOf('#');
+	            const base = hashIndex === -1 ? value : value.slice(0, hashIndex);
+	            const hash = hashIndex === -1 ? '' : value.slice(hashIndex);
+
+	            const qIndex = base.indexOf('?');
+	            const path = qIndex === -1 ? base : base.slice(0, qIndex);
+	            const query = qIndex === -1 ? '' : base.slice(qIndex + 1);
+
+	            const kept = query
+	                ? query
+	                    .split('&')
+	                    .filter(Boolean)
+	                    .filter((part) => {
+	                        const key = part.split('=', 1)[0];
+	                        return key !== 'v' && key !== 'cb';
+	                    })
+	                : [];
+
+	            kept.push(`v=${Date.now()}`);
+	            return `${path}?${kept.join('&')}${hash}`;
+	        }
+
+	        function resolveSupabasePublicObjectPath(rawUrl) {
+	            const expectedBucket = cfg && cfg.cms && cfg.cms.assetsBucket ? String(cfg.cms.assetsBucket) : 'resume-cms';
+	            const value = String(rawUrl || '').trim();
+	            if (!value) return '';
+	            try {
+	                const parsed = new URL(value, location.href);
+	                const pathname = String(parsed.pathname || '');
+	                const marker = '/storage/v1/object/public/';
+	                const idx = pathname.indexOf(marker);
+	                if (idx === -1) return '';
+	                const remainder = pathname.slice(idx + marker.length).replace(/^\/+/, '');
+	                const slash = remainder.indexOf('/');
+	                if (slash === -1) return '';
+	                const bucket = remainder.slice(0, slash);
+	                if (!bucket || bucket !== expectedBucket) return '';
+	                const objectPath = remainder.slice(slash + 1).replace(/^\/+/, '');
+	                return objectPath || '';
+	            } catch (_e) {
+	                return '';
+	            }
+	        }
+
+	        async function uploadViaEdgeFunction({ file, objectPath }) {
+	            const bucket = cfg && cfg.cms && cfg.cms.assetsBucket ? String(cfg.cms.assetsBucket) : 'resume-cms';
+	            const fn = cfg && cfg.cms && cfg.cms.uploadFunction ? String(cfg.cms.uploadFunction) : 'cms-upload';
+	            const { data } = await sb.auth.getSession();
+	            const token = data && data.session && data.session.access_token ? String(data.session.access_token) : '';
+            if (!token) throw new Error('Not signed in.');
+            // Trim a trailing slash from the Supabase URL so the Functions endpoint is well-formed.
+            const endpoint = `${String(cfg.url || '').replace(/\/$/, '')}/functions/v1/${encodeURIComponent(fn)}`;
+
+            const form = new FormData();
+            form.append('bucket', bucket);
+            form.append('path', objectPath);
+            form.append('file', file, file && file.name ? file.name : 'upload');
+
+            const res = await fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    apikey: String(cfg.anonKey || ''),
+                    Authorization: `Bearer ${token}`
+                },
+                body: form
+            });
+            const payload = await res.json().catch(() => ({}));
+            if (!res.ok || !payload || payload.ok !== true) {
+                const msg = payload && payload.error ? payload.error : `Upload failed (HTTP ${res.status})`;
+                throw new Error(msg);
+            }
+            const publicUrl = payload && payload.publicUrl ? String(payload.publicUrl) : '';
+            if (!publicUrl) throw new Error('Upload succeeded but no URL was returned.');
+            return publicUrl;
+        }
+
+        function updateProjectPreview() {
+            const wrap = document.getElementById('proj-image-preview');
+            const img = document.getElementById('proj-image-preview-img');
+            const url = String(document.getElementById('proj-image-url').value || '').trim();
+            if (!wrap || !img) return;
+            if (!url) {
+                wrap.style.display = 'none';
+                img.removeAttribute('src');
+                return;
+            }
+            wrap.style.display = 'block';
+            let src = url;
+            if (!/^(https?:|data:|blob:)/i.test(src) && !src.startsWith('/')) {
+                const cleaned = src.replace(/^\.\//, '').replace(/^(?:\.\.\/)+/, '');
+                const bucket = cfg && cfg.cms && cfg.cms.assetsBucket ? String(cfg.cms.assetsBucket) : '';
+                const sbUrl = cfg && cfg.url ? String(cfg.url) : '';
+                const storageBase = (bucket && sbUrl)
+                    ? `${sbUrl.replace(/\/$/, '')}/storage/v1/object/public/${bucket}/`
+                    : '';
+                if (storageBase) {
+                    if (cleaned.startsWith('assets/')) {
+                        src = `${storageBase}${cleaned.slice('assets/'.length)}`;
+                    } else if (cleaned.startsWith('images/') || cleaned.startsWith('projects/')) {
+                        src = `${storageBase}${cleaned}`;
+                    } else {
+                        src = `../${cleaned}`;
+                    }
+                } else {
+                    // Normalize relative paths like "./assets/..." to "../assets/..." for the admin UI preview.
+                    src = `../${cleaned}`;
+                }
+            }
+            img.src = src;
+        }
+
+        function setProjectFormMode(mode, project) {
+            const idEl = document.getElementById('proj-id');
+            const titleEl = document.getElementById('proj-title');
+            const hrefEl = document.getElementById('proj-href');
+            const descEl = document.getElementById('proj-desc');
+            const sortEl = document.getElementById('proj-sort');
+            const pubEl = document.getElementById('proj-published');
+            const imgEl = document.getElementById('proj-image-url');
+            const heading = document.getElementById('projects-form-title');
+            const submitBtn = document.getElementById('proj-submit-btn');
+            const cancelBtn = document.getElementById('proj-cancel-edit');
+
+            if (mode === 'edit' && project) {
+                idEl.value = project.id;
+                titleEl.value = project.title || '';
+                hrefEl.value = project.href || '';
+                descEl.value = project.description || '';
+                sortEl.value = String(project.sort_order == null ? 0 : project.sort_order);
+                pubEl.value = String(Boolean(project.is_published));
+                imgEl.value = project.image_url || '';
+                if (heading) heading.textContent = 'Edit project';
+                if (submitBtn) submitBtn.textContent = 'Save project';
+                if (cancelBtn) cancelBtn.style.display = '';
+            } else {
+                idEl.value = '';
+                document.getElementById('projects-form').reset();
+                // Restore defaults that reset() won't keep.
+                sortEl.value = '0';
+                pubEl.value = 'true';
+                if (heading) heading.textContent = 'Add new project';
+                if (submitBtn) submitBtn.textContent = 'Add project';
+                if (cancelBtn) cancelBtn.style.display = 'none';
+            }
+
+            updateProjectPreview();
+        }
+
+        window.editProject = (id) => {
+            const project = projectsById.get(id);
+            if (!project) return;
+            setProjectFormMode('edit', project);
+            openTab('tab-projects');
+        };
+
+        async function loadProjects() {
+            const list = document.getElementById('projects-list');
+            if (!list) return;
+            list.innerHTML = 'Loading...';
+            try {
+                const { data, error } = await sb.from('projects').select('*').order('sort_order', { ascending: true }).order('id', { ascending: true });
+                if (error) {
+                    console.error('Supabase loadProjects error:', error);
+                    list.innerHTML = renderLoadError('projects', error);
+                    return;
+                }
+                projectsById = new Map();
+                list.innerHTML = '';
+                if (!data || data.length === 0) {
+                    list.innerHTML = '<li class="item-row"><div>No projects yet.</div></li>';
+                    return;
+                }
+                data.forEach(p => {
+                    projectsById.set(p.id, p);
+                    list.innerHTML += `
+                    <li class="item-row">
+                        <div>
+                            <b>${escapeHtml(p.title)}</b><br>
+                            <small>${escapeHtml(p.href)} · order ${escapeHtml(p.sort_order)} · ${p.is_published ? 'published' : 'hidden'}</small>
+                        </div>
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            <button class="btn-secondary" onclick="editProject(${p.id})">Edit</button>
+                            <button class="btn-delete" onclick="deleteItem('projects',${p.id})">Delete</button>
+                        </div>
+                    </li>`;
+                });
+            } catch (err) {
+                console.error('Supabase loadProjects exception:', err);
+                list.innerHTML = renderLoadError('projects', err);
+            }
+        }
+
+	        document.getElementById('proj-image-url').addEventListener('input', updateProjectPreview);
+	        document.getElementById('proj-cancel-edit').addEventListener('click', () => setProjectFormMode('add'));
+	        document.getElementById('proj-upload-btn').addEventListener('click', async () => {
+	            try {
+	                if(!(await requireAdmin())) return;
+	                const fileInput = document.getElementById('proj-image-file');
+	                const file = (fileInput.files || [])[0];
+	                if (!file) {
+	                    alert('Choose an image first.');
+	                    return;
+	                }
+	                const ext = extFromFile(file);
+	                const current = String(document.getElementById('proj-image-url').value || '').trim();
+
+	                // If an image is already set (and is a Supabase public URL / object path),
+	                // overwrite it in-place so users can "replace image" reliably.
+	                let objectPath = resolveSupabasePublicObjectPath(current);
+	                if (!objectPath && current && !/^(https?:|data:|blob:)/i.test(current)) {
+	                    const cleaned = current.replace(/^\.\//, '').replace(/^(?:\.\.\/)+/, '').replace(/^\/+/, '');
+	                    if (cleaned.startsWith('assets/')) {
+	                        objectPath = cleaned.slice('assets/'.length);
+	                    } else if (cleaned.startsWith('images/') || cleaned.startsWith('projects/')) {
+	                        objectPath = cleaned;
+	                    }
+	                }
+
+	                if (!objectPath) {
+	                    const title = String(document.getElementById('proj-title').value || '').trim();
+	                    objectPath = `projects/${slugify(title)}-${Date.now()}.${ext}`;
+	                } else {
+	                    // Keep path stable but make sure extension matches the file type.
+	                    if (/\.[a-z0-9]+$/i.test(objectPath)) {
+	                        objectPath = objectPath.replace(/\.[a-z0-9]+$/i, `.${ext}`);
+	                    } else {
+	                        objectPath = `${objectPath}.${ext}`;
+	                    }
+	                }
+
+	                const publicUrl = await uploadViaEdgeFunction({ file, objectPath });
+	                document.getElementById('proj-image-url').value = withAssetVersion(publicUrl);
+	                updateProjectPreview();
+	                alert('Image uploaded.');
+	            } catch (err) {
+	                alert('Upload failed: ' + (err && err.message ? err.message : String(err)));
+	            }
+	        });
+
+        document.getElementById('projects-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if(!(await requireAdmin())) return;
+
+            const idRaw = String(document.getElementById('proj-id').value || '').trim();
+            const payload = {
+                title: String(document.getElementById('proj-title').value || '').trim(),
+                href: String(document.getElementById('proj-href').value || '').trim(),
+                description: String(document.getElementById('proj-desc').value || '').trim() || null,
+                image_url: String(document.getElementById('proj-image-url').value || '').trim() || null,
+                sort_order: parseInt(String(document.getElementById('proj-sort').value || '0'), 10) || 0,
+                is_published: String(document.getElementById('proj-published').value || 'true') === 'true'
+            };
+
+            try {
+                if (idRaw) {
+                    const id = Number(idRaw);
+                    const { error } = await sb.from('projects').update(payload).eq('id', id);
+                    if (error) throw error;
+                    alert('Project updated.');
+                } else {
+                    const { error } = await sb.from('projects').insert([payload]);
+                    if (error) throw error;
+                    alert('Project added.');
+                }
+                setProjectFormMode('add');
+                loadProjects();
+            } catch (err) {
+                alert('Error: ' + (err && err.message ? err.message : String(err)));
+            }
+        });
+
         function bootData() {
             loadGeneral();
             loadExp();
             loadEdu();
             loadCerts();
             loadSkills();
+            loadProjects();
+        }
+
+        async function refreshAuthUi() {
+            if (isUnsafeMode()) {
+                setAuthStatus('UNSAFE mode');
+                if (logoutBtn) logoutBtn.style.display = 'none';
+                setAuthOverlayVisible(false);
+                if (!booted) {
+                    booted = true;
+                    bootData();
+                }
+                return;
+            }
+
+            const { data } = await sb.auth.getSession();
+            const session = data && data.session ? data.session : null;
+            const email = session && session.user && session.user.email ? String(session.user.email) : '';
+
+            if (!session) {
+                setAuthStatus('');
+                if (logoutBtn) logoutBtn.style.display = 'none';
+                setAuthOverlayVisible(true);
+                if (authEmail && !authEmail.value && getAdminEmail()) authEmail.value = getAdminEmail();
+                showAuthError('');
+                return;
+            }
+
+            if (!isAdminEmail(email)) {
+                setAuthStatus('');
+                if (logoutBtn) logoutBtn.style.display = '';
+                setAuthOverlayVisible(true);
+                showAuthError(`Signed in as ${email} (no admin access).`);
+                return;
+            }
+
+            setAuthStatus(`Signed in as ${email}`);
+            if (logoutBtn) logoutBtn.style.display = '';
+            setAuthOverlayVisible(false);
+            showAuthError('');
+
+            if (!booted) {
+                booted = true;
+                bootData();
+            }
+        }
+
+        async function initAuth() {
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', async () => {
+                    try {
+                        await sb.auth.signOut();
+                    } catch (e) {
+                        // ignore
+                    } finally {
+                        booted = false;
+                        await refreshAuthUi();
+                    }
+                });
+            }
+
+            if (authForm) {
+                authForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    showAuthError('');
+                    if (!authSubmit) return;
+
+                    const email = String(authEmail.value || '').trim();
+                    const password = String(authPassword.value || '');
+                    if (!email || !password) {
+                        showAuthError('Email and password are required.');
+                        return;
+                    }
+
+                    authSubmit.disabled = true;
+                    const prev = authSubmit.textContent;
+                    authSubmit.textContent = 'Signing in...';
+
+                    try {
+                        const { error } = await sb.auth.signInWithPassword({ email, password });
+                        if (error) throw error;
+                        authPassword.value = '';
+                    } catch (err) {
+                        showAuthError(err && err.message ? err.message : String(err));
+                    } finally {
+                        authSubmit.disabled = false;
+                        authSubmit.textContent = prev || 'Sign in';
+                        await refreshAuthUi();
+                    }
+                });
+            }
+
+            sb.auth.onAuthStateChange(() => {
+                refreshAuthUi();
+            });
+
+            await refreshAuthUi();
         }
 
         // Initial load
-        bootData();
+        initAuth();
 
     </script>
 </body>
