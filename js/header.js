@@ -158,20 +158,23 @@
     }
 
     function initHeader() {
-        // Clear existing content to avoid duplication if running twice
         const headerHost = document.getElementById('site-header');
         if (headerHost) {
-            headerHost.innerHTML = '';
-            const variant = headerHost.dataset.variant || 'project-detail';
-            const activePage = headerHost.dataset.active || '';
-            headerHost.innerHTML = renderHeader(variant, activePage);
+            const hasContent = (headerHost.innerHTML || '').trim().length > 0;
+            if (!hasContent) {
+                const variant = headerHost.dataset.variant || 'project-detail';
+                const activePage = headerHost.dataset.active || '';
+                headerHost.innerHTML = renderHeader(variant, activePage);
+            }
         }
 
         const sidebarHost = document.getElementById('projects-sidebar');
         if (sidebarHost) {
-            sidebarHost.innerHTML = '';
-            const activeProject = sidebarHost.dataset.activeProject || '';
-            sidebarHost.innerHTML = renderProjectsSidebar(activeProject);
+            const hasContent = (sidebarHost.innerHTML || '').trim().length > 0;
+            if (!hasContent) {
+                const activeProject = sidebarHost.dataset.activeProject || '';
+                sidebarHost.innerHTML = renderProjectsSidebar(activeProject);
+            }
         }
     }
 

@@ -366,7 +366,7 @@
     importButton.type = 'button';
     importButton.textContent = 'Import JSON';
     importButton.addEventListener('click', () => {
-      const raw = window.prompt('Pega el JSON del layout');
+      const raw = window.prompt('Paste the layout JSON');
       if (!raw) return;
       try {
         const parsed = JSON.parse(raw);
@@ -375,7 +375,7 @@
           applySavedLayout();
         }
       } catch (error) {
-        window.alert('JSON inválido');
+        window.alert('Invalid JSON');
       }
     });
 
