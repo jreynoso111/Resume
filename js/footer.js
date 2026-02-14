@@ -8,7 +8,7 @@
           <div style="display: flex; align-items: center; gap: 8px;">
             <span>© ${year} Juan R. Reynoso. All rights reserved.</span>
             <a href="${rootPath}admin/" class="dashboard-link" aria-label="Admin Dashboard" title="Open dashboard">Dashboard</a>
-            <a href="#" class="admin-link" aria-label="Edit page" title="Edit page">
+            <a href="javascript:void(0)" class="admin-link" aria-label="Edit page" title="Edit page">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path
@@ -33,6 +33,22 @@
             if (!hasContent) {
                 const rootPath = footerHost.dataset.rootPath || '';
                 footerHost.innerHTML = renderFooter(rootPath);
+            }
+
+            // Ensure the gear never navigates/scrolls. Route through the editor controller if present.
+            const editLink = footerHost.querySelector('.admin-link');
+            if (editLink && !editLink.dataset.bound) {
+                editLink.dataset.bound = '1';
+                editLink.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    const toggle = window.__resumeCmsToggleEditor;
+                    if (typeof toggle === 'function') {
+                        Promise.resolve(toggle()).catch(() => {});
+                        return;
+                    }
+                    window.alert('Editor is not loaded on this page (missing js/editor-auth.js).');
+                }, true);
             }
         }
     }

@@ -2145,4 +2145,19 @@
 
     throw new Error(`Could not find the current HTML file inside the selected folder. Paths tried: ${candidates.join(', ')}`);
   }
+
+  // Allow the footer to trigger the editor even if the click handler misses for any reason.
+  window.__resumeCmsToggleEditor = async function () {
+    if (document.body.classList.contains('cms-admin-mode')) {
+      setEditorEnabledFlag(false);
+      disableAdminMode();
+      syncAdminLinkState();
+      updateStatusLine();
+      notify('Editor disabled.', 'success');
+      return;
+    }
+
+    setEditorEnabledFlag(true);
+    await openLoginModal();
+  };
 })();
