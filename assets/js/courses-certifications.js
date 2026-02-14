@@ -853,10 +853,10 @@
     const emptyEl = section.querySelector('[data-cc-empty="1"]');
     const searchInput = section.querySelector('[data-cc-search="1"]');
     const adminControls = section.querySelector('[data-cc-admin-controls="1"]');
-    const addBtn = section.querySelector('[data-cc-add="1"]');
+    let addBtn = section.querySelector('[data-cc-add="1"]');
     const tabs = Array.from(section.querySelectorAll("[data-cc-tab]"));
 
-    if (!grid || !emptyEl || !searchInput || !adminControls || !addBtn || tabs.length === 0) return;
+    if (!grid || !emptyEl || !searchInput || !adminControls || tabs.length === 0) return;
 
     const state = {
       rootPrefix,
@@ -874,9 +874,30 @@
     const modal = createModal(section);
     state.modal = modal;
 
+    // Only create the "Add new" button for admin sessions, so it never exists for public viewers.
+    function ensureAdminAddButton() {
+      if (addBtn && addBtn.isConnected) return addBtn;
+      adminControls.replaceChildren();
+      const btn = createEl("button", "cc-btn cc-btn-primary", "Add new");
+      btn.type = "button";
+      btn.dataset.ccAdd = "1";
+      adminControls.appendChild(btn);
+      addBtn = btn;
+
+      btn.addEventListener("click", async () => {
+        if (!isAdminModeActive() || !state.supabaseReady) return;
+        await maybeSeedOnAdminActive();
+        modal.openEdit(null);
+      });
+
+      return btn;
+    }
+
     function updateAdminUi() {
       const active = isAdminModeActive();
-      adminControls.hidden = !(active && state.supabaseReady);
+      const shouldShow = active && state.supabaseReady;
+      adminControls.hidden = !shouldShow;
+      if (shouldShow) ensureAdminAddButton();
     }
 
     function render() {
@@ -997,11 +1018,14 @@
       render();
     });
 
-    addBtn.addEventListener("click", async () => {
-      if (!isAdminModeActive() || !state.supabaseReady) return;
-      await maybeSeedOnAdminActive();
-      modal.openEdit(null);
-    });
+    // If an older snapshot already has the button in HTML, wire it up as well.
+    if (addBtn) {
+      addBtn.addEventListener("click", async () => {
+        if (!isAdminModeActive() || !state.supabaseReady) return;
+        await maybeSeedOnAdminActive();
+        modal.openEdit(null);
+      });
+    }
 
     modal.getEditForm().addEventListener("submit", async (event) => {
       event.preventDefault();
