@@ -23,22 +23,25 @@
     'THEAD', 'TFOOT', 'TR', 'TD', 'TH', 'UL'
   ]);
 
-  const state = {
-    rootDirHandle: null,
-    panel: null,
-    loginModal: null,
-    toast: null,
-    sectionLabel: null,
-    selectedSection: null,
-    autosaveEnabled: true,
-    autosaveTimer: null,
-    saveInFlight: false,
-    saveQueued: false,
-    imageControls: new Map(),
-    imageRepositionRaf: null,
-    serverMode: false,
-    serverModeChecked: false,
-    supabaseClient: null,
+	  const state = {
+	    rootDirHandle: null,
+	    panel: null,
+	    loginModal: null,
+	    toast: null,
+	    sectionLabel: null,
+	    selectedSection: null,
+	    autosaveEnabled: true,
+		    autosaveTimer: null,
+		    saveInFlight: false,
+		    saveQueued: false,
+		    uploadsInFlight: 0,
+		    editorDomObserver: null,
+		    editorDomRefreshTimer: null,
+		    imageControls: new Map(),
+		    imageRepositionRaf: null,
+	    serverMode: false,
+	    serverModeChecked: false,
+	    supabaseClient: null,
     supabaseInitPromise: null,
     authSession: null,
     authEmail: '',
@@ -527,6 +530,41 @@
     return state.supabaseClient;
   }
 
+  async function uploadFileViaSupabaseFunction(sb, cfg, functionName, { bucket, path, file }) {
+    const fn = String(functionName || '').trim();
+    if (!fn) throw new Error('Missing upload function name.');
+
+    const { data } = await sb.auth.getSession();
+    const token = data && data.session && data.session.access_token ? String(data.session.access_token) : '';
+    if (!token) throw new Error('Not signed in.');
+
+    // Trim a trailing slash from the Supabase URL so the Functions endpoint is well-formed.
+    const endpoint = `${String(cfg.url || '').replace(/\/$/, '')}/functions/v1/${encodeURIComponent(fn)}`;
+    const form = new FormData();
+    form.append('bucket', String(bucket || 'resume-cms'));
+    form.append('path', String(path || ''));
+    form.append('file', file, file && file.name ? file.name : 'upload');
+
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        apikey: String(cfg.anonKey || ''),
+        Authorization: `Bearer ${token}`
+      },
+      body: form
+    });
+
+    const payload = await res.json().catch(() => ({}));
+    if (!res.ok || !payload || payload.ok !== true) {
+      const msg = payload && payload.error ? payload.error : `Upload failed (HTTP ${res.status})`;
+      throw new Error(msg);
+    }
+
+    const publicUrl = payload && payload.publicUrl ? String(payload.publicUrl) : '';
+    if (!publicUrl) throw new Error('Upload succeeded but no public URL was returned.');
+    return publicUrl;
+  }
+
   async function initSupabase() {
     const unsafe = window.__SUPABASE_CONFIG__ && window.__SUPABASE_CONFIG__.unsafeNoAuth === true;
     if (unsafe) return;
@@ -564,40 +602,44 @@
     state.authIsAdmin = Boolean(adminEmail && currentEmail && adminEmail === currentEmail);
   }
 
-  function updateStatusLine() {
-    const statusLine = state.panel ? state.panel.querySelector('#cms-status-line') : null;
-    if (!statusLine) return;
+	  function updateStatusLine() {
+	    const statusLine = state.panel ? state.panel.querySelector('#cms-status-line') : null;
+	    if (!statusLine) return;
 
-    const unsafe = window.__SUPABASE_CONFIG__ && window.__SUPABASE_CONFIG__.unsafeNoAuth === true;
-    if (unsafe) {
-      statusLine.textContent = 'UNSAFE mode: no login required. Anyone can edit and publish.';
-    } else {
-      const email = String(state.authEmail || '');
-      if (!email) {
-        statusLine.textContent = 'Not signed in. Sign in to edit and publish changes.';
-      } else if (state.authIsAdmin) {
-        statusLine.textContent = `Signed in as ${email}.`;
-      } else {
-        statusLine.textContent = `Signed in as ${email} (no edit access).`;
-      }
-    }
+	    const unsafe = window.__SUPABASE_CONFIG__ && window.__SUPABASE_CONFIG__.unsafeNoAuth === true;
+	    const busy = (state.uploadsInFlight || 0) > 0;
+	    let line = '';
+	    if (unsafe) {
+	      line = 'UNSAFE mode: no login required. Anyone can edit and publish.';
+	    } else {
+	      const email = String(state.authEmail || '');
+	      if (!email) {
+	        line = 'Not signed in. Sign in to edit and publish changes.';
+	      } else if (state.authIsAdmin) {
+	        line = `Signed in as ${email}.`;
+	      } else {
+	        line = `Signed in as ${email} (no edit access).`;
+	      }
+	    }
+	    if (busy) line = `${line} Uploading image...`;
+	    statusLine.textContent = line;
 
-    const publishBtn = state.panel.querySelector('#cms-save-now');
-    const signOutBtn = state.panel.querySelector('#cms-sign-out');
-    const autosaveToggle = state.panel.querySelector('#cms-autosave');
+	    const publishBtn = state.panel.querySelector('#cms-save-now');
+	    const signOutBtn = state.panel.querySelector('#cms-sign-out');
+	    const autosaveToggle = state.panel.querySelector('#cms-autosave');
 
-    if (unsafe) {
-      if (publishBtn) publishBtn.disabled = false;
-      if (autosaveToggle) autosaveToggle.disabled = false;
-      if (signOutBtn) signOutBtn.disabled = true;
-      return;
-    }
+	    if (unsafe) {
+	      if (publishBtn) publishBtn.disabled = busy;
+	      if (autosaveToggle) autosaveToggle.disabled = busy;
+	      if (signOutBtn) signOutBtn.disabled = true;
+	      return;
+	    }
 
-    const email = String(state.authEmail || '');
-    if (publishBtn) publishBtn.disabled = !state.authIsAdmin;
-    if (autosaveToggle) autosaveToggle.disabled = !state.authIsAdmin;
-    if (signOutBtn) signOutBtn.disabled = !email;
-  }
+	    const email = String(state.authEmail || '');
+	    if (publishBtn) publishBtn.disabled = !state.authIsAdmin || busy;
+	    if (autosaveToggle) autosaveToggle.disabled = !state.authIsAdmin || busy;
+	    if (signOutBtn) signOutBtn.disabled = !email;
+	  }
 
   async function handleLoginSubmit() {
     const sb = await getSupabaseClient();
@@ -710,8 +752,8 @@
       const depth = Math.max(0, parts.length - 1);
       const rootPrefix = '../'.repeat(depth);
       const footerHost = `<footer id="site-footer" data-root-path="${rootPrefix}"></footer>`;
-      const FOOTER_V = 12;
-      const EDITOR_V = 10;
+      const FOOTER_V = 16;
+      const EDITOR_V = 15;
       const footerScript = `<script src="${rootPrefix}js/footer.js?v=${FOOTER_V}"></script>`;
       const editorScript = `<script src="${rootPrefix}js/editor-auth.js?v=${EDITOR_V}"></script>`;
 
@@ -986,10 +1028,10 @@
     state.loginModal.classList.remove('show');
   }
 
-  function bindGlobalEvents() {
-    document.addEventListener('click', (event) => {
-      const target = event.target;
-      if (!(target instanceof Element)) return;
+	  function bindGlobalEvents() {
+	    document.addEventListener('click', (event) => {
+	      const target = event.target;
+	      if (!(target instanceof Element)) return;
 
       const adminLink = target.closest('.admin-link');
       if (adminLink) {
@@ -1009,20 +1051,22 @@
           setEditorEnabledFlag(true);
           await openLoginModal();
         })();
-        return;
-      }
+	        return;
+	      }
 
-      if (!isAdmin()) return;
-      if (target.closest('[data-cms-ui="1"]')) return;
+	      // Only hijack clicks while the editor UI is active. Otherwise admins can't navigate the site.
+	      if (!document.body.classList.contains('cms-admin-mode')) return;
+	      if (!isAdmin()) return;
+	      if (target.closest('[data-cms-ui="1"]')) return;
 
-      const anchor = target.closest('a[href]');
-      if (anchor) event.preventDefault();
+	      const anchor = target.closest('a[href]');
+	      if (anchor) return; // Keep site navigation (and mailto links) usable in edit mode.
 
-      const section = target.closest('[data-cms-section="1"]');
-      if (section) {
-        selectSection(section);
-      }
-    }, true);
+	      const section = target.closest('[data-cms-section="1"]');
+	      if (section) {
+	        selectSection(section);
+	      }
+	    }, true);
 
     document.addEventListener('input', (event) => {
       if (!isAdmin()) return;
@@ -1100,21 +1144,23 @@
     link.setAttribute('aria-label', on ? 'Editor active, click to disable' : 'Enable editor');
   }
 
-  function enableAdminMode() {
-    if (!isAdmin()) {
-      lockEditingForNonAdmin();
-      return;
-    }
-    document.body.classList.add('cms-admin-mode');
-    detectServerMode();
-    refreshEditorTargets();
-  }
+	  function enableAdminMode() {
+	    if (!isAdmin()) {
+	      lockEditingForNonAdmin();
+	      return;
+	    }
+	    document.body.classList.add('cms-admin-mode');
+	    detectServerMode();
+	    refreshEditorTargets();
+	    startEditorDomObserver();
+	  }
 
-  function disableAdminMode() {
-    if (state.autosaveTimer) {
-      clearTimeout(state.autosaveTimer);
-      state.autosaveTimer = null;
-    }
+	  function disableAdminMode() {
+	    stopEditorDomObserver();
+	    if (state.autosaveTimer) {
+	      clearTimeout(state.autosaveTimer);
+	      state.autosaveTimer = null;
+	    }
 
     if (state.selectedSection) {
       state.selectedSection.classList.remove('cms-section-selected');
@@ -1128,10 +1174,10 @@
     updateSectionLabel();
   }
 
-  function lockEditingForNonAdmin() {
-    clearImageControls();
+	  function lockEditingForNonAdmin() {
+	    clearImageControls();
 
-    document.querySelectorAll('[contenteditable], [data-cms-editable="1"]').forEach((el) => {
+	    document.querySelectorAll('[contenteditable], [data-cms-editable="1"]').forEach((el) => {
       if (el.closest('[data-cms-ui="1"]')) return;
       el.removeAttribute('contenteditable');
       el.removeAttribute('spellcheck');
@@ -1145,16 +1191,67 @@
       el.classList.remove('cms-section-selected');
     });
 
-    document.querySelectorAll('[data-cms-image-id], [data-cms-image-kind]').forEach((el) => {
-      el.removeAttribute('data-cms-image-id');
-      el.removeAttribute('data-cms-image-kind');
-    });
-  }
+	    document.querySelectorAll('[data-cms-image-id], [data-cms-image-kind]').forEach((el) => {
+	      el.removeAttribute('data-cms-image-id');
+	      el.removeAttribute('data-cms-image-kind');
+	    });
+	  }
 
-  function refreshEditorTargets() {
-    clearImageControls();
+	  function startEditorDomObserver() {
+	    if (state.editorDomObserver) return;
+	    if (typeof MutationObserver !== 'function') return;
 
-    document.querySelectorAll('[data-cms-editable="1"]').forEach((el) => {
+	    const schedule = () => {
+	      if (!document.body.classList.contains('cms-admin-mode')) return;
+	      if (state.editorDomRefreshTimer) clearTimeout(state.editorDomRefreshTimer);
+	      state.editorDomRefreshTimer = setTimeout(() => {
+	        state.editorDomRefreshTimer = null;
+	        if (!document.body.classList.contains('cms-admin-mode')) return;
+	        refreshEditorTargets();
+	      }, 180);
+	    };
+
+	    state.editorDomObserver = new MutationObserver((mutations) => {
+	      // Only refresh when something structural changes (nodes added/removed).
+	      for (const m of mutations || []) {
+	        if ((m.addedNodes && m.addedNodes.length) || (m.removedNodes && m.removedNodes.length)) {
+	          schedule();
+	          break;
+	        }
+	      }
+	    });
+
+	    const roots = [];
+	    const main = document.querySelector('main');
+	    if (main) roots.push(main);
+	    const header = document.getElementById('site-header');
+	    if (header) roots.push(header);
+	    const footer = document.getElementById('site-footer');
+	    if (footer) roots.push(footer);
+	    if (roots.length === 0) roots.push(document.body);
+
+	    roots.forEach((root) => {
+	      try {
+	        state.editorDomObserver.observe(root, { childList: true, subtree: true });
+	      } catch (_e) {}
+	    });
+	  }
+
+	  function stopEditorDomObserver() {
+	    if (state.editorDomRefreshTimer) {
+	      clearTimeout(state.editorDomRefreshTimer);
+	      state.editorDomRefreshTimer = null;
+	    }
+	    if (state.editorDomObserver) {
+	      try { state.editorDomObserver.disconnect(); } catch (_e) {}
+	      state.editorDomObserver = null;
+	    }
+	  }
+
+	  function refreshEditorTargets() {
+	    clearImageControls();
+
+	    document.querySelectorAll('[data-cms-editable="1"]').forEach((el) => {
       el.removeAttribute('contenteditable');
       el.removeAttribute('spellcheck');
       el.removeAttribute('data-cms-editable');
@@ -1307,9 +1404,21 @@
     });
   }
 
-  function getDefaultPlaceholderPagePath() {
-    return toPageAssetPath('assets/images/placeholders/placeholder.png');
-  }
+	  function getDefaultPlaceholderPagePath() {
+	    const cfg = window.__SUPABASE_CONFIG__ || {};
+	    const bucket = cfg && cfg.cms && cfg.cms.assetsBucket ? String(cfg.cms.assetsBucket) : '';
+	    const url = cfg && cfg.url ? String(cfg.url) : '';
+	    if (bucket && url) {
+	      const base = `${url.replace(/\/$/, '')}/storage/v1/object/public/${bucket}/`;
+	      return `${base}images/placeholders/placeholder.png`;
+	    }
+	    return toPageAssetPath('assets/images/placeholders/placeholder.png');
+	  }
+
+	  function isPlaceholderAssetPath(assetPath) {
+	    const value = String(assetPath || '').replace(/\\/g, '/').replace(/^\/+/, '');
+	    return value.startsWith('assets/images/placeholders/');
+	  }
 
   function ensureAssetSlot(target, kind) {
     if (!(target instanceof HTMLElement)) return '';
@@ -1370,11 +1479,11 @@
     uploadBtn.className = 'cms-image-btn';
     uploadBtn.textContent = 'Upload';
     uploadBtn.title = 'Upload image from device';
-    uploadBtn.addEventListener('click', (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      handleImageUpload(target, kind);
-    });
+	    uploadBtn.addEventListener('click', (event) => {
+	      event.preventDefault();
+	      event.stopPropagation();
+	      handleImageUpload(target, kind, uploadBtn);
+	    });
 
     const linkBtn = document.createElement('button');
     linkBtn.type = 'button';
@@ -1407,55 +1516,101 @@
     return match ? String(match[2] || '').trim() : '';
   }
 
-  async function handleImageUpload(target, kind) {
-    if (!isAdmin()) return;
+		  async function handleImageUpload(target, kind, triggerBtn) {
+		    if (!isAdmin()) {
+		      notify('Sign in to upload images.', 'warn');
+		      try { void openLoginModal(); } catch (_e) {}
+		      return;
+		    }
 
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
+	    const input = document.createElement('input');
+	    input.type = 'file';
+	    input.accept = 'image/*';
+	    // Some browsers are picky about triggering the file picker from detached inputs.
+	    input.style.position = 'fixed';
+	    input.style.left = '-9999px';
+	    input.style.width = '1px';
+	    input.style.height = '1px';
+	    input.style.opacity = '0';
+	    input.setAttribute('aria-hidden', 'true');
+	    document.body.appendChild(input);
 
-    input.addEventListener('change', async () => {
-      const file = (input.files || [])[0];
-      if (!file) return;
+	    const uploadBtn = (triggerBtn instanceof HTMLElement) ? triggerBtn : null;
+	    const uploadBtnLabel = uploadBtn ? String(uploadBtn.textContent || '') : '';
+	    const setUploadBusy = (busy) => {
+	      if (!uploadBtn) return;
+	      uploadBtn.disabled = Boolean(busy);
+	      uploadBtn.textContent = busy ? 'Uploading...' : (uploadBtnLabel || 'Upload');
+	    };
 
-      try {
-        // Preferred path: Supabase Storage (works on static hosting).
-        const cfg = await getSupabaseConfig();
-        const sb = await getSupabaseClient();
-        if (sb && cfg && cfg.cms && cfg.cms.assetsBucket) {
-          const bucket = String(cfg.cms.assetsBucket || 'resume-cms');
-          const ext = extensionFromFile(file);
-          let destination = inferTargetAssetPath(target, kind, ext);
-          destination = normalizeDestinationExtension(destination, ext);
-          const objectPath = destination.replace(/^assets\//, '');
+	    input.addEventListener('change', async () => {
+	      const file = (input.files || [])[0];
+	      input.remove();
+	      if (!file) return;
 
-          const uploadRes = await sb.storage.from(bucket).upload(objectPath, file, {
-            upsert: true,
-            contentType: file.type || undefined
-          });
-          if (uploadRes && uploadRes.error) throw uploadRes.error;
+	      // Snapshot current value so we can revert if upload fails.
+	      const previousRef = getCurrentImageReference(target, kind) || '';
+	      const previousAssetPath = (target instanceof HTMLElement) ? String(target.dataset.assetPath || '') : '';
 
-          const publicUrlRes = sb.storage.from(bucket).getPublicUrl(objectPath);
-          const publicUrl = publicUrlRes && publicUrlRes.data && publicUrlRes.data.publicUrl ? publicUrlRes.data.publicUrl : '';
-          if (!publicUrl) throw new Error('Could not resolve public URL for the uploaded image.');
+	      let previewUrl = '';
+	      try {
+	        if (typeof URL === 'object' && typeof URL.createObjectURL === 'function') {
+	          previewUrl = URL.createObjectURL(file);
+	        }
+	      } catch (_e) {
+	        previewUrl = '';
+	      }
 
-          applyImageValue(target, kind, publicUrl);
-          requestImageControlPositionUpdate();
+	      let cfg = null;
+	      let uploadFunctionName = 'cms-upload';
 
-          if (state.autosaveEnabled) {
-            scheduleAutosave('image-upload');
-            notify('Image uploaded and queued for publish.', 'success');
-          } else {
-            notify('Image uploaded. Click "Publish" to save page changes.', 'success');
-          }
-          return;
-        }
+	      try {
+	        state.uploadsInFlight = (state.uploadsInFlight || 0) + 1;
+	        updateStatusLine();
+	        setUploadBusy(true);
 
-        if (await detectServerMode()) {
-          const ext = extensionFromFile(file);
-          let destination = inferTargetAssetPath(target, kind, ext);
-          destination = normalizeDestinationExtension(destination, ext);
-          target.dataset.assetPath = destination;
+	        if (previewUrl) {
+	          applyImageValue(target, kind, previewUrl);
+	          requestImageControlPositionUpdate();
+	        }
+	        notify('Uploading image...', 'warn');
+
+	        // Preferred path: Supabase Storage (works on static hosting).
+	        cfg = await getSupabaseConfig();
+	        if (cfg && cfg.cms && cfg.cms.uploadFunction) {
+	          uploadFunctionName = String(cfg.cms.uploadFunction || uploadFunctionName);
+	        }
+	        const sb = await getSupabaseClient();
+	        const supabaseConfigured = Boolean(cfg && cfg.url && cfg.anonKey && cfg.cms && cfg.cms.assetsBucket);
+	        if (supabaseConfigured) {
+	          if (!sb) throw new Error('Supabase client is not available (failed to load supabase-js).');
+	          const bucket = String(cfg.cms.assetsBucket || 'resume-cms');
+	          const ext = extensionFromFile(file);
+	          let destination = inferTargetAssetPath(target, kind, ext);
+	          destination = normalizeDestinationExtension(destination, ext);
+	          const objectPath = destination.replace(/^assets\//, '');
+	          if (target instanceof HTMLElement) target.dataset.assetPath = destination;
+
+	          const fn = cfg.cms && cfg.cms.uploadFunction ? String(cfg.cms.uploadFunction) : 'cms-upload';
+	          const publicUrl = await uploadFileViaSupabaseFunction(sb, cfg, fn, { bucket, path: objectPath, file });
+
+	          applyImageValue(target, kind, withAssetVersion(publicUrl));
+	          requestImageControlPositionUpdate();
+
+	          if (state.autosaveEnabled) {
+	            scheduleAutosave('image-upload');
+	            notify('Image uploaded to Supabase and queued for publish.', 'success');
+	          } else {
+	            notify('Image uploaded to Supabase. Click "Publish" to save page changes.', 'success');
+	          }
+	          return;
+	        }
+
+	        if (await detectServerMode()) {
+	          const ext = extensionFromFile(file);
+	          let destination = inferTargetAssetPath(target, kind, ext);
+	          destination = normalizeDestinationExtension(destination, ext);
+	          target.dataset.assetPath = destination;
 
           const form = new FormData();
           form.append('path', destination);
@@ -1467,9 +1622,9 @@
             throw new Error(payload && payload.error ? payload.error : 'Upload failed');
           }
 
-          const pageAssetPath = toPageAssetPath(destination);
-          applyImageValue(target, kind, pageAssetPath);
-          requestImageControlPositionUpdate();
+	          const pageAssetPath = toPageAssetPath(destination);
+	          applyImageValue(target, kind, withAssetVersion(pageAssetPath));
+	          requestImageControlPositionUpdate();
 
           if (state.autosaveEnabled) {
             scheduleAutosave('image-upload');
@@ -1497,15 +1652,15 @@
         const rootHandle = await ensureProjectRootHandle(true);
         if (!rootHandle) return;
 
-        const ext = extensionFromFile(file);
-        let destination = inferTargetAssetPath(target, kind, ext);
-        destination = normalizeDestinationExtension(destination, ext);
-        target.dataset.assetPath = destination;
-        await writeBlobToRepo(rootHandle, destination, file);
+	        const ext = extensionFromFile(file);
+	        let destination = inferTargetAssetPath(target, kind, ext);
+	        destination = normalizeDestinationExtension(destination, ext);
+	        target.dataset.assetPath = destination;
+	        await writeBlobToRepo(rootHandle, destination, file);
 
-        const pageAssetPath = toPageAssetPath(destination);
-        applyImageValue(target, kind, pageAssetPath);
-        requestImageControlPositionUpdate();
+	        const pageAssetPath = toPageAssetPath(destination);
+	        applyImageValue(target, kind, withAssetVersion(pageAssetPath));
+	        requestImageControlPositionUpdate();
 
         if (state.autosaveEnabled) {
           scheduleAutosave('image-upload');
@@ -1513,14 +1668,40 @@
         } else {
           notify(`Image uploaded from ${destination}. Click \"Publish\" to persist HTML changes.`, 'success');
         }
-      } catch (error) {
-        console.error(error);
-        notify(`Image upload failed: ${error.message}`, 'error');
-      }
-    });
+	      } catch (error) {
+	        console.error(error);
+	        const msg = error && error.message ? error.message : String(error);
+	        // Revert preview on failure.
+	        if (previousRef) {
+	          applyImageValue(target, kind, previousRef);
+	        } else if (kind === 'img' && target instanceof HTMLElement) {
+	          target.setAttribute('src', getDefaultPlaceholderPagePath());
+	        }
+	        if (target instanceof HTMLElement) {
+	          if (previousAssetPath) target.dataset.assetPath = previousAssetPath;
+	          else delete target.dataset.assetPath;
+	        }
+	        requestImageControlPositionUpdate();
+	        notify(`Image upload failed: ${msg}`, 'error');
 
-    input.click();
-  }
+	        // Make failures obvious (users often miss toasts behind fixed elements).
+	        window.alert(
+	          `Image upload failed.\\n\\n${msg}\\n\\nTip: sign in as the admin user and ensure the Supabase Edge Function \"${uploadFunctionName}\" has SUPABASE_SERVICE_ROLE_KEY configured.`
+	        );
+	      } finally {
+	        try {
+	          if (previewUrl && typeof URL === 'object' && typeof URL.revokeObjectURL === 'function') {
+	            URL.revokeObjectURL(previewUrl);
+	          }
+	        } catch (_e) {}
+	        state.uploadsInFlight = Math.max(0, (state.uploadsInFlight || 1) - 1);
+	        updateStatusLine();
+	        setUploadBusy(false);
+	      }
+	    }, { once: true });
+
+	    input.click();
+	  }
 
   function fileToDataUrl(file) {
     return new Promise((resolve, reject) => {
@@ -1584,6 +1765,33 @@
     target.style.backgroundImage = `url("${safeValue}")`;
   }
 
+  function withAssetVersion(rawUrl) {
+    const value = String(rawUrl || '').trim();
+    if (!value) return value;
+    if (/^(data:|blob:)/i.test(value)) return value;
+
+    const hashIndex = value.indexOf('#');
+    const base = hashIndex === -1 ? value : value.slice(0, hashIndex);
+    const hash = hashIndex === -1 ? '' : value.slice(hashIndex);
+
+    const qIndex = base.indexOf('?');
+    const path = qIndex === -1 ? base : base.slice(0, qIndex);
+    const query = qIndex === -1 ? '' : base.slice(qIndex + 1);
+
+    const kept = query
+      ? query
+        .split('&')
+        .filter(Boolean)
+        .filter((part) => {
+          const key = part.split('=', 1)[0];
+          return key !== 'v' && key !== 'cb';
+        })
+      : [];
+
+    kept.push(`v=${Date.now()}`);
+    return `${path}?${kept.join('&')}${hash}`;
+  }
+
   function isValidHttpUrl(value) {
     try {
       const parsed = new URL(String(value || '').trim());
@@ -1597,14 +1805,16 @@
     return String(value || '').replace(/\s+/g, ' ').trim();
   }
 
-  function isEditableTextElement(element) {
-    if (!(element instanceof HTMLElement)) return false;
-    if (element.closest('[data-cms-ui="1"]')) return false;
+	  function isEditableTextElement(element) {
+	    if (!(element instanceof HTMLElement)) return false;
+	    if (element.closest('[data-cms-ui="1"]')) return false;
 
-    const tag = element.tagName;
-    if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'LINK' || tag === 'META' || tag === 'SVG' || tag === 'PATH') {
-      return false;
-    }
+	    const tag = element.tagName;
+	    // Keep navigation + external links clickable, even in edit mode.
+	    if (tag === 'A' || element.closest('a[href]')) return false;
+	    if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'LINK' || tag === 'META' || tag === 'SVG' || tag === 'PATH') {
+	      return false;
+	    }
 
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || tag === 'OPTION' || tag === 'BUTTON') {
       return false;
@@ -1614,12 +1824,15 @@
       return false;
     }
 
-    const text = compactText(element.textContent || '');
-    if (!text) return false;
+	    const text = compactText(element.textContent || '');
+	    if (!text) return false;
 
-    if (element.querySelector('img, video, audio, canvas, iframe, form, table')) {
-      return false;
-    }
+	    // Do not mark containers that include links as editable; it breaks navigation.
+	    if (element.querySelector('a[href]')) return false;
+
+	    if (element.querySelector('img, video, audio, canvas, iframe, form, table')) {
+	      return false;
+	    }
 
     const children = Array.from(element.children);
     if (children.length === 0) return true;
@@ -1902,14 +2115,14 @@
       meta.setAttribute('name', 'cms-snapshot');
       meta.setAttribute('content', '1');
       head.appendChild(meta);
-    }
+	    }
 
-    root.querySelectorAll('#cms-admin-style, .cms-ui, [data-cms-ui="1"]').forEach((el) => el.remove());
-    root.querySelectorAll('#bg-canvas, #particle-canvas, #theme-toggle').forEach((el) => el.remove());
+	    root.querySelectorAll('#cms-admin-style, .cms-ui, [data-cms-ui="1"]').forEach((el) => el.remove());
+	    root.querySelectorAll('#bg-canvas, #particle-canvas, #theme-toggle').forEach((el) => el.remove());
 
-    root.querySelectorAll('*').forEach((el) => {
-      el.removeAttribute('contenteditable');
-      el.removeAttribute('spellcheck');
+	    root.querySelectorAll('*').forEach((el) => {
+	      el.removeAttribute('contenteditable');
+	      el.removeAttribute('spellcheck');
 
       Array.from(el.attributes).forEach((attribute) => {
         if (attribute.name.startsWith('data-cms-')) {
@@ -1927,12 +2140,12 @@
     const body = root.querySelector('body');
     if (body) body.classList.remove('cms-admin-mode');
 
-    return `<!DOCTYPE html>\n${root.outerHTML}`;
-  }
+	    return `<!DOCTYPE html>\n${root.outerHTML}`;
+	  }
 
-  function supportsFileSystemAccessApi() {
-    return typeof window.showDirectoryPicker === 'function';
-  }
+	  function supportsFileSystemAccessApi() {
+	    return typeof window.showDirectoryPicker === 'function';
+	  }
 
   function persistLocalDraft(html, reason) {
     try {
@@ -1996,17 +2209,21 @@
       .slice(0, 60) || 'image';
   }
 
-  function inferTargetAssetPath(target, kind, ext) {
-    if (target instanceof HTMLElement) {
-      const preset = String(target.dataset.assetPath || '').trim();
-      if (preset && preset.startsWith('assets/')) return preset;
-    }
+	  function inferTargetAssetPath(target, kind, ext) {
+	    if (target instanceof HTMLElement) {
+	      const preset = String(target.dataset.assetPath || '').trim();
+	      if (preset && preset.startsWith('assets/') && !isPlaceholderAssetPath(preset)) return preset;
+	    }
 
-    const existing = resolveTargetAssetPath(target, kind);
-    if (existing) {
-      if (target instanceof HTMLElement) target.dataset.assetPath = existing;
-      return existing;
-    }
+	    const existing = resolveTargetAssetPath(target, kind);
+	    if (existing) {
+	      if (existing.startsWith('assets/') && isPlaceholderAssetPath(existing)) {
+	        // Never overwrite the shared placeholder asset when the page hasn't set a real image yet.
+	      } else {
+	        if (target instanceof HTMLElement) target.dataset.assetPath = existing;
+	        return existing;
+	      }
+	    }
 
     const safeExt = extensionFromFile({ name: `file.${ext || 'jpg'}` });
     const slot = target instanceof HTMLElement ? ensureAssetSlot(target, kind) : slugify(`${kind}-slot`);
@@ -2052,7 +2269,10 @@
     try {
       const parsed = new URL(raw, location.href);
       const sameOrigin = parsed.origin === location.origin || parsed.protocol === 'file:' || location.protocol === 'file:';
-      if (!sameOrigin) return '';
+      if (!sameOrigin) {
+        const supabasePath = resolveSupabasePublicAssetPath(raw);
+        return supabasePath || '';
+      }
 
       let pathname = decodeURIComponent(parsed.pathname || '').replace(/\\/g, '/');
       const scriptRoot = normalizeDirectoryPath(getScriptRootPathname());
@@ -2069,6 +2289,35 @@
 
       return pathname.startsWith('assets/') ? pathname : '';
     } catch (error) {
+      return '';
+    }
+  }
+
+  function getConfiguredAssetsBucket() {
+    const cfg = window.__SUPABASE_CONFIG__ || {};
+    const bucket = cfg && cfg.cms && cfg.cms.assetsBucket ? String(cfg.cms.assetsBucket) : 'resume-cms';
+    return bucket || 'resume-cms';
+  }
+
+  function resolveSupabasePublicAssetPath(rawUrl) {
+    const expectedBucket = getConfiguredAssetsBucket();
+    const value = String(rawUrl || '').trim();
+    if (!value) return '';
+    try {
+      const parsed = new URL(value, location.href);
+      const pathname = String(parsed.pathname || '');
+      const marker = '/storage/v1/object/public/';
+      const idx = pathname.indexOf(marker);
+      if (idx === -1) return '';
+      const remainder = pathname.slice(idx + marker.length).replace(/^\/+/, '');
+      const slash = remainder.indexOf('/');
+      if (slash === -1) return '';
+      const bucket = remainder.slice(0, slash);
+      if (!bucket || bucket !== expectedBucket) return '';
+      const objectPath = remainder.slice(slash + 1).replace(/^\/+/, '');
+      if (!objectPath) return '';
+      return `assets/${objectPath}`;
+    } catch (_e) {
       return '';
     }
   }
