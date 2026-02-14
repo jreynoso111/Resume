@@ -1,4 +1,6 @@
 (function () {
+  installErrorOverlay();
+
   const EDITOR_ENABLED_KEY = 'resume_cms_editor_enabled_v1';
   const SETTINGS_KEY = 'resume_admin_settings_v2';
   const DRAFT_KEY_PREFIX = 'resume_admin_draft_v2:';
@@ -43,6 +45,57 @@
     authIsAdmin: false,
     cmsHydrated: false
   };
+
+  function installErrorOverlay() {
+    const ensureBox = () => {
+      let box = document.getElementById('cms-error-overlay');
+      if (box) return box;
+      box = document.createElement('div');
+      box.id = 'cms-error-overlay';
+      box.style.position = 'fixed';
+      box.style.left = '12px';
+      box.style.bottom = '12px';
+      box.style.zIndex = '10080';
+      box.style.maxWidth = 'min(92vw, 720px)';
+      box.style.padding = '10px 12px';
+      box.style.borderRadius = '10px';
+      box.style.background = 'rgba(153, 27, 27, 0.92)';
+      box.style.color = '#fff';
+      box.style.font = '12px/1.35 system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
+      box.style.display = 'none';
+      box.style.whiteSpace = 'pre-wrap';
+      box.style.boxShadow = '0 10px 25px rgba(0,0,0,0.25)';
+      box.style.cursor = 'pointer';
+      box.title = 'Click to dismiss';
+      box.addEventListener('click', () => {
+        box.style.display = 'none';
+        box.textContent = '';
+      });
+      const attach = () => (document.body || document.documentElement).appendChild(box);
+      if (document.body) attach();
+      else document.addEventListener('DOMContentLoaded', attach, { once: true });
+      return box;
+    };
+
+    const show = (label, message) => {
+      const box = ensureBox();
+      box.textContent = `${label}\n${String(message || '').slice(0, 2000)}`;
+      box.style.display = 'block';
+    };
+
+    window.addEventListener('error', (event) => {
+      const msg = event && (event.message || (event.error && event.error.message))
+        ? (event.message || event.error.message)
+        : 'Unknown error';
+      show('JS error', msg);
+    });
+
+    window.addEventListener('unhandledrejection', (event) => {
+      const reason = event && event.reason ? event.reason : 'Unknown rejection';
+      const msg = reason && reason.message ? reason.message : String(reason);
+      show('Unhandled rejection', msg);
+    });
+  }
 
   const css = `
     body.cms-admin-mode {
@@ -604,6 +657,7 @@
 
     // If we already rendered a snapshot for this path in this tab, do not re-render.
     const path = getPreferredCurrentPagePath();
+    if (path.startsWith('admin/')) return false;
     const storageKey = `cms:hydrated:${path}`;
     if (sessionStorage.getItem(storageKey) === '1') return false;
 
@@ -825,7 +879,10 @@
   }
 
   async function openLoginModal() {
-    const unsafe = window.__SUPABASE_CONFIG__ && window.__SUPABASE_CONFIG__.unsafeNoAuth === true;
+    // Always load config before deciding between UNSAFE vs Auth-gated mode.
+    const cfg = await getSupabaseConfig();
+    const unsafe = cfg && cfg.unsafeNoAuth === true;
+
     if (unsafe) {
       setEditorEnabledFlag(true);
       enableAdminMode();
@@ -834,8 +891,18 @@
       notify('Editor enabled (UNSAFE mode).', 'success');
       return;
     }
+
+    // If already signed in as admin, just enable.
+    if (state.authIsAdmin) {
+      setEditorEnabledFlag(true);
+      enableAdminMode();
+      syncAdminLinkState();
+      updateStatusLine();
+      notify('Editor enabled.', 'success');
+      return;
+    }
+
     createLoginModal();
-    const cfg = await getSupabaseConfig();
     const emailInput = state.loginModal.querySelector('#cms-login-email');
     if (cfg && cfg.adminEmail && !emailInput.value) emailInput.value = cfg.adminEmail;
 
@@ -873,13 +940,6 @@
           }
 
           setEditorEnabledFlag(true);
-          if (isAdmin()) {
-            enableAdminMode();
-            syncAdminLinkState();
-            notify('Editor enabled.', 'success');
-            return;
-          }
-
           await openLoginModal();
         })();
         return;
@@ -1706,6 +1766,10 @@
       if (sb && cfg && cfg.cms && cfg.cms.pagesTable) {
         const table = String(cfg.cms.pagesTable || 'cms_pages');
         const path = getPreferredCurrentPagePath();
+        if (path.startsWith('admin/')) {
+          if (!silent) notify('Publishing admin pages is disabled.', 'warn');
+          return;
+        }
         const { error } = await sb.from(table).upsert({ path, html }, { onConflict: 'path' });
         if (error) throw error;
         persistLocalDraft(html, reason);

@@ -36,6 +36,47 @@
     </style>
 </head>
 <body>
+    <script>
+      // Simple on-screen error banner (helps debug "blank page" cases).
+      (function () {
+        function ensureBox() {
+          var box = document.getElementById('admin-error-overlay');
+          if (box) return box;
+          box = document.createElement('div');
+          box.id = 'admin-error-overlay';
+          box.style.position = 'fixed';
+          box.style.left = '12px';
+          box.style.bottom = '12px';
+          box.style.zIndex = '10080';
+          box.style.maxWidth = 'min(92vw, 820px)';
+          box.style.padding = '10px 12px';
+          box.style.borderRadius = '10px';
+          box.style.background = 'rgba(153, 27, 27, 0.92)';
+          box.style.color = '#fff';
+          box.style.font = '12px/1.35 system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
+          box.style.display = 'none';
+          box.style.whiteSpace = 'pre-wrap';
+          box.style.boxShadow = '0 10px 25px rgba(0,0,0,0.25)';
+          box.style.cursor = 'pointer';
+          box.title = 'Click to dismiss';
+          box.onclick = function () { box.style.display = 'none'; box.textContent = ''; };
+          document.addEventListener('DOMContentLoaded', function () { document.body.appendChild(box); }, { once: true });
+          return box;
+        }
+        function show(label, msg) {
+          var box = ensureBox();
+          box.textContent = label + "\\n" + String(msg || '').slice(0, 2000);
+          box.style.display = 'block';
+        }
+        window.addEventListener('error', function (e) {
+          show('JS error', (e && e.message) ? e.message : 'Unknown error');
+        });
+        window.addEventListener('unhandledrejection', function (e) {
+          var r = e && e.reason ? e.reason : 'Unknown rejection';
+          show('Unhandled rejection', (r && r.message) ? r.message : String(r));
+        });
+      })();
+    </script>
 
     <div id="app-shell">
     <header>
