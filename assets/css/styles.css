@@ -804,6 +804,15 @@ header {
 
 }
 
+/* About page: give the External Links buttons more room before the footer. */
+body.about-page main {
+  padding-bottom: 120px;
+}
+
+body.about-page .external-links-actions {
+  margin-bottom: 120px;
+}
+
 .social-link-btn {
 
   position: relative;
