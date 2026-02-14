@@ -46,6 +46,26 @@
     cmsHydrated: false
   };
 
+  // Marker for smoke tests / footer loader. If this isn't set after the script loads,
+  // the browser likely received non-JS content (HTML fallback) or hit a parse error.
+  window.__resumeCmsEditorAuthLoaded = true;
+
+  // Expose a stable controller early so the footer gear can always toggle the editor,
+  // even if later async init work fails.
+  window.__resumeCmsToggleEditor = async function () {
+    if (document.body && document.body.classList.contains('cms-admin-mode')) {
+      setEditorEnabledFlag(false);
+      disableAdminMode();
+      syncAdminLinkState();
+      updateStatusLine();
+      notify('Editor disabled.', 'success');
+      return;
+    }
+
+    setEditorEnabledFlag(true);
+    await openLoginModal();
+  };
+
   function installErrorOverlay() {
     const ensureBox = () => {
       let box = document.getElementById('cms-error-overlay');
@@ -684,10 +704,57 @@
     const html = data && data.html ? String(data.html) : '';
     if (!html) return false;
 
+    const patchSnapshotShell = (rawHtml, pagePath) => {
+      const safeHtml = String(rawHtml || '');
+      const parts = String(pagePath || '').split('/').filter(Boolean);
+      const depth = Math.max(0, parts.length - 1);
+      const rootPrefix = '../'.repeat(depth);
+      const footerHost = `<footer id="site-footer" data-root-path="${rootPrefix}"></footer>`;
+      const FOOTER_V = 12;
+      const EDITOR_V = 10;
+      const footerScript = `<script src="${rootPrefix}js/footer.js?v=${FOOTER_V}"></script>`;
+      const editorScript = `<script src="${rootPrefix}js/editor-auth.js?v=${EDITOR_V}"></script>`;
+
+      let out = safeHtml;
+
+      // Repair a previously-published broken script tag (`src="js/"`, `src="../js/"`, etc.).
+      out = out.replace(/<script\b[^>]*\bsrc=(['"])(?:\.\.\/)*js\/\1[^>]*>\s*<\/script>/gi, '');
+
+      // Force current cache busters even if the snapshot already has older v= values.
+      out = out.replace(/(js\/footer\.js\?v=)\d+/gi, `$1${FOOTER_V}`);
+      out = out.replace(/(js\/editor-auth\.js\?v=)\d+/gi, `$1${EDITOR_V}`);
+
+      // Ensure the footer host exists (some snapshots were saved without it).
+      if (!/\bid=(['"])site-footer\1/i.test(out)) {
+        out = out.replace(/<\/body>/i, `${footerHost}\n</body>`);
+        if (out === safeHtml) out = `${out}\n${footerHost}\n`;
+      } else {
+        // Ensure root path attribute exists when the host is present.
+        out = out.replace(
+          /<footer\b([^>]*\bid=(['"])site-footer\2)(?![^>]*\bdata-root-path=)([^>]*)>/i,
+          `<footer$1 data-root-path="${rootPrefix}"$3>`
+        );
+      }
+
+      // Ensure footer rendering script exists.
+      if (!/js\/footer\.js/i.test(out)) {
+        out = out.replace(/<\/body>/i, `${footerScript}\n</body>`);
+        if (!/js\/footer\.js/i.test(out)) out = `${out}\n${footerScript}\n`;
+      }
+
+      // Ensure editor script exists so the gear button can always load.
+      if (!/js\/editor-auth\.js/i.test(out)) {
+        out = out.replace(/<\/body>/i, `${editorScript}\n</body>`);
+        if (!/js\/editor-auth\.js/i.test(out)) out = `${out}\n${editorScript}\n`;
+      }
+
+      return out;
+    };
+
     sessionStorage.setItem(storageKey, '1');
     state.cmsHydrated = true;
     document.open();
-    document.write(html);
+    document.write(patchSnapshotShell(html, path));
     document.close();
     return true;
   }
@@ -1360,7 +1427,7 @@
           const ext = extensionFromFile(file);
           let destination = inferTargetAssetPath(target, kind, ext);
           destination = normalizeDestinationExtension(destination, ext);
-          const objectPath = destination.replace(/^assets\\//, '');
+          const objectPath = destination.replace(/^assets\//, '');
 
           const uploadRes = await sb.storage.from(bucket).upload(objectPath, file, {
             upsert: true,
@@ -2145,19 +2212,4 @@
 
     throw new Error(`Could not find the current HTML file inside the selected folder. Paths tried: ${candidates.join(', ')}`);
   }
-
-  // Allow the footer to trigger the editor even if the click handler misses for any reason.
-  window.__resumeCmsToggleEditor = async function () {
-    if (document.body.classList.contains('cms-admin-mode')) {
-      setEditorEnabledFlag(false);
-      disableAdminMode();
-      syncAdminLinkState();
-      updateStatusLine();
-      notify('Editor disabled.', 'success');
-      return;
-    }
-
-    setEditorEnabledFlag(true);
-    await openLoginModal();
-  };
 })();
