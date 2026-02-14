@@ -449,12 +449,10 @@
     await initSupabase();
     updateStatusLine();
 
-    // Re-enable editor if it was previously toggled on.
-    if (isEditorEnabledFlag() && isAdmin()) {
-      enableAdminMode();
-    } else {
-      setEditorEnabledFlag(false);
-    }
+    // Always start with the editor disabled. Even if the admin session still exists,
+    // editing UI (and admin-only controls on dynamic sections) should only appear
+    // after clicking the gear and validating as admin.
+    setEditorEnabledFlag(false);
 
     syncAdminLinkState();
   }
@@ -616,7 +614,7 @@
 	      if (!email) {
 	        line = 'Not signed in. Sign in to edit and publish changes.';
 	      } else if (state.authIsAdmin) {
-	        line = `Signed in as ${email}.`;
+	        line = `Signed in as ${email}. Edit outlined text, then Publish to save. (Cmd/Ctrl+Click links to open.)`;
 	      } else {
 	        line = `Signed in as ${email} (no edit access).`;
 	      }
@@ -717,11 +715,15 @@
   async function maybeHydrateFromSupabase() {
     if (state.cmsHydrated) return false;
 
-    // If we already rendered a snapshot for this path in this tab, do not re-render.
+    // If we already loaded a CMS snapshot (document.write), do not re-hydrate or we'll loop.
+    const snapshotMeta = document.querySelector('meta[name="cms-snapshot"][content="1"]');
+    if (snapshotMeta) {
+      state.cmsHydrated = true;
+      return false;
+    }
+
     const path = getPreferredCurrentPagePath();
     if (path.startsWith('admin/')) return false;
-    const storageKey = `cms:hydrated:${path}`;
-    if (sessionStorage.getItem(storageKey) === '1') return false;
 
     const cfg = await getSupabaseConfig();
     if (!cfg || !cfg.cms || !cfg.cms.pagesTable) return false;
@@ -752,12 +754,20 @@
       const depth = Math.max(0, parts.length - 1);
       const rootPrefix = '../'.repeat(depth);
       const footerHost = `<footer id="site-footer" data-root-path="${rootPrefix}"></footer>`;
-      const FOOTER_V = 16;
-      const EDITOR_V = 15;
+      const FOOTER_V = 18;
+      const EDITOR_V = 20;
       const footerScript = `<script src="${rootPrefix}js/footer.js?v=${FOOTER_V}"></script>`;
       const editorScript = `<script src="${rootPrefix}js/editor-auth.js?v=${EDITOR_V}"></script>`;
 
       let out = safeHtml;
+
+      // Ensure the snapshot marker exists so the client can avoid infinite hydration loops.
+      if (!/<meta\b[^>]*\bname=(['"])cms-snapshot\1/i.test(out)) {
+        out = out.replace(
+          /<head\b[^>]*>/i,
+          (m) => `${m}\n  <meta name="cms-snapshot" content="1">`
+        );
+      }
 
       // Repair a previously-published broken script tag (`src="js/"`, `src="../js/"`, etc.).
       out = out.replace(/<script\b[^>]*\bsrc=(['"])(?:\.\.\/)*js\/\1[^>]*>\s*<\/script>/gi, '');
@@ -793,7 +803,6 @@
       return out;
     };
 
-    sessionStorage.setItem(storageKey, '1');
     state.cmsHydrated = true;
     document.open();
     document.write(patchSnapshotShell(html, path));
@@ -1060,7 +1069,14 @@
 	      if (target.closest('[data-cms-ui="1"]')) return;
 
 	      const anchor = target.closest('a[href]');
-	      if (anchor) return; // Keep site navigation (and mailto links) usable in edit mode.
+	      if (anchor) {
+	        // In edit mode, prevent navigation so link text is editable.
+	        // Use modifier keys (Cmd/Ctrl/Shift/Alt) or middle click to open links intentionally.
+	        if (!(event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button === 1)) {
+	          event.preventDefault();
+	        }
+	        return;
+	      }
 
 	      const section = target.closest('[data-cms-section="1"]');
 	      if (section) {
@@ -1282,6 +1298,7 @@
     const sections = Array.from(document.querySelectorAll(SECTION_SELECTOR)).filter((element) => {
       if (!(element instanceof HTMLElement)) return false;
       if (element.closest('[data-cms-ui="1"]')) return false;
+      if (element.closest('[data-resume-dynamic="1"]')) return false;
       const text = compactText(element.textContent || '');
       return text.length >= 12;
     });
@@ -1366,6 +1383,7 @@
     const images = Array.from(document.querySelectorAll('img')).filter((el) => {
       if (!(el instanceof HTMLImageElement)) return false;
       if (el.closest('[data-cms-ui="1"]')) return false;
+      if (el.closest('[data-resume-dynamic="1"]')) return false;
       return true;
     });
 
@@ -1387,6 +1405,7 @@
     const backgroundTargets = Array.from(document.querySelectorAll('body *')).filter((el) => {
       if (!(el instanceof HTMLElement)) return false;
       if (el.closest('[data-cms-ui="1"]')) return false;
+      if (el.closest('[data-resume-dynamic="1"]')) return false;
       if (el.tagName === 'IMG') return false;
       const bgUrl = getBackgroundImageUrl(el);
       const className = typeof el.className === 'string' ? el.className : '';
@@ -1808,10 +1827,9 @@
 	  function isEditableTextElement(element) {
 	    if (!(element instanceof HTMLElement)) return false;
 	    if (element.closest('[data-cms-ui="1"]')) return false;
+	    if (element.closest('[data-resume-dynamic="1"]')) return false;
 
 	    const tag = element.tagName;
-	    // Keep navigation + external links clickable, even in edit mode.
-	    if (tag === 'A' || element.closest('a[href]')) return false;
 	    if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'LINK' || tag === 'META' || tag === 'SVG' || tag === 'PATH') {
 	      return false;
 	    }
@@ -1826,9 +1844,6 @@
 
 	    const text = compactText(element.textContent || '');
 	    if (!text) return false;
-
-	    // Do not mark containers that include links as editable; it breaks navigation.
-	    if (element.querySelector('a[href]')) return false;
 
 	    if (element.querySelector('img, video, audio, canvas, iframe, form, table')) {
 	      return false;
@@ -2130,7 +2145,11 @@
         }
       });
 
-      el.classList.remove('cms-admin-mode', 'cms-text-target', 'cms-section-target', 'cms-section-selected');
+      el.classList.remove('cms-admin-mode', 'cms-text-target', 'cms-section-target', 'cms-section-selected', 'cc-modal-open');
+
+      if (el.classList && el.classList.contains('cc-modal-overlay')) {
+        el.classList.remove('is-open');
+      }
 
       if ((el.getAttribute('class') || '').trim() === '') {
         el.removeAttribute('class');
