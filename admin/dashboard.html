@@ -37,26 +37,7 @@
 </head>
 <body>
 
-    <div id="auth-shell" style="display:none; max-width:520px; margin: 4rem auto; padding: 0 1rem;">
-        <section class="card">
-            <h2 style="margin-top:0;">Sign in</h2>
-            <p style="margin-top:-10px; color:#6b7280;">Use your Supabase Auth email/password to access the dashboard.</p>
-            <form id="auth-form">
-                <div class="form-group">
-                    <label>Email</label>
-                    <input type="email" id="auth-email" autocomplete="email" required>
-                </div>
-                <div class="form-group">
-                    <label>Password</label>
-                    <input type="password" id="auth-password" autocomplete="current-password" required>
-                </div>
-                <div id="auth-error" style="display:none; color:#991b1b; font-size:0.95rem;"></div>
-                <button type="submit" class="btn-primary">Sign in</button>
-            </form>
-        </section>
-    </div>
-
-    <div id="app-shell" style="display:none;">
+    <div id="app-shell">
     <header>
         <h1>Admin Dashboard</h1>
         <div class="header-actions">
@@ -64,7 +45,9 @@
                 <span>View public site</span>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
             </a>
-            <button id="logout-btn" style="background:#dc2626; color:white; border:none; padding:0.5rem 1rem; border-radius:8px; cursor:pointer;">Sign out</button>
+            <a href="../index.html" class="btn-secondary">
+                <span>Back</span>
+            </a>
         </div>
     </header>
 
@@ -196,7 +179,6 @@
         </div>
 
     </main>
-    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../js/supabase-config.js"></script>
@@ -211,96 +193,6 @@
             throw new Error('Missing Supabase config');
         }
         const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-        // --- AUTH GATE ---
-        const authShell = document.getElementById('auth-shell');
-        const appShell = document.getElementById('app-shell');
-        const authForm = document.getElementById('auth-form');
-        const authEmail = document.getElementById('auth-email');
-        const authPassword = document.getElementById('auth-password');
-        const authError = document.getElementById('auth-error');
-
-        function showAuthError(message) {
-            authError.textContent = message || 'Sign-in failed.';
-            authError.style.display = 'block';
-        }
-
-        function showLogin() {
-            authError.style.display = 'none';
-            authError.textContent = '';
-            authShell.style.display = 'block';
-            appShell.style.display = 'none';
-            if (window.__SUPABASE_CONFIG__ && window.__SUPABASE_CONFIG__.adminEmail && !authEmail.value) {
-                authEmail.value = window.__SUPABASE_CONFIG__.adminEmail;
-            }
-        }
-
-        function showApp() {
-            authShell.style.display = 'none';
-            appShell.style.display = 'block';
-        }
-
-        async function ensureAdminSession() {
-            const { data, error } = await sb.auth.getSession();
-            if (error) {
-                showAuthError(error.message);
-                showLogin();
-                return null;
-            }
-
-            const session = data ? data.session : null;
-            if (!session) {
-                showLogin();
-                return null;
-            }
-
-            const email = (session.user && session.user.email) ? String(session.user.email) : '';
-            const adminEmail = (window.__SUPABASE_CONFIG__ && window.__SUPABASE_CONFIG__.adminEmail)
-                ? String(window.__SUPABASE_CONFIG__.adminEmail)
-                : '';
-
-            if (!adminEmail || email.trim().toLowerCase() !== adminEmail.trim().toLowerCase()) {
-                await sb.auth.signOut();
-                showAuthError('Signed in, but this user does not have admin access.');
-                showLogin();
-                return null;
-            }
-
-            showApp();
-            return session;
-        }
-
-        authForm.onsubmit = async (e) => {
-            e.preventDefault();
-            authError.style.display = 'none';
-            authError.textContent = '';
-
-            const email = String(authEmail.value || '').trim();
-            const password = String(authPassword.value || '');
-            if (!email || !password) {
-                showAuthError('Email and password are required.');
-                return;
-            }
-
-            const { error } = await sb.auth.signInWithPassword({ email, password });
-            if (error) {
-                showAuthError(error.message);
-                return;
-            }
-
-            const session = await ensureAdminSession();
-            if (session) bootData();
-        };
-
-        document.getElementById('logout-btn').onclick = async () => {
-            await sb.auth.signOut();
-            showLogin();
-        };
-
-        sb.auth.onAuthStateChange(async () => {
-            const session = await ensureAdminSession();
-            if (session) bootData();
-        });
 
         // --- TABS ---
         function openTab(tabId) {
@@ -600,9 +492,7 @@
         }
 
         // Initial load
-        ensureAdminSession().then((session) => {
-            if (session) bootData();
-        });
+        bootData();
 
     </script>
 </body>

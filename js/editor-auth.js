@@ -373,7 +373,7 @@
     await initSupabase();
     updateStatusLine();
 
-    // Re-enable editor if the user previously toggled it on and is still signed in.
+    // Re-enable editor if it was previously toggled on.
     if (isEditorEnabledFlag() && isAdmin()) {
       enableAdminMode();
     } else {
@@ -455,6 +455,8 @@
   }
 
   async function initSupabase() {
+    const unsafe = window.__SUPABASE_CONFIG__ && window.__SUPABASE_CONFIG__.unsafeNoAuth === true;
+    if (unsafe) return;
     if (state.supabaseInitPromise) return state.supabaseInitPromise;
     state.supabaseInitPromise = (async () => {
       const sb = await getSupabaseClient();
@@ -478,6 +480,11 @@
   }
 
   async function refreshAdminFlag() {
+    const unsafe = window.__SUPABASE_CONFIG__ && window.__SUPABASE_CONFIG__.unsafeNoAuth === true;
+    if (unsafe) {
+      state.authIsAdmin = false;
+      return;
+    }
     const cfg = await getSupabaseConfig();
     const adminEmail = cfg && cfg.adminEmail ? String(cfg.adminEmail).trim().toLowerCase() : '';
     const currentEmail = String(state.authEmail || '').trim().toLowerCase();
@@ -488,19 +495,32 @@
     const statusLine = state.panel ? state.panel.querySelector('#cms-status-line') : null;
     if (!statusLine) return;
 
-    const email = String(state.authEmail || '');
-    if (!email) {
-      statusLine.textContent = 'Not signed in. Sign in to edit and publish changes.';
-    } else if (state.authIsAdmin) {
-      statusLine.textContent = `Signed in as ${email}.`;
+    const unsafe = window.__SUPABASE_CONFIG__ && window.__SUPABASE_CONFIG__.unsafeNoAuth === true;
+    if (unsafe) {
+      statusLine.textContent = 'UNSAFE mode: no login required. Anyone can edit and publish.';
     } else {
-      statusLine.textContent = `Signed in as ${email} (no edit access).`;
+      const email = String(state.authEmail || '');
+      if (!email) {
+        statusLine.textContent = 'Not signed in. Sign in to edit and publish changes.';
+      } else if (state.authIsAdmin) {
+        statusLine.textContent = `Signed in as ${email}.`;
+      } else {
+        statusLine.textContent = `Signed in as ${email} (no edit access).`;
+      }
     }
 
     const publishBtn = state.panel.querySelector('#cms-save-now');
     const signOutBtn = state.panel.querySelector('#cms-sign-out');
     const autosaveToggle = state.panel.querySelector('#cms-autosave');
 
+    if (unsafe) {
+      if (publishBtn) publishBtn.disabled = false;
+      if (autosaveToggle) autosaveToggle.disabled = false;
+      if (signOutBtn) signOutBtn.disabled = true;
+      return;
+    }
+
+    const email = String(state.authEmail || '');
     if (publishBtn) publishBtn.disabled = !state.authIsAdmin;
     if (autosaveToggle) autosaveToggle.disabled = !state.authIsAdmin;
     if (signOutBtn) signOutBtn.disabled = !email;
@@ -642,6 +662,8 @@
   }
 
   function isAdmin() {
+    const unsafe = window.__SUPABASE_CONFIG__ && window.__SUPABASE_CONFIG__.unsafeNoAuth === true;
+    if (unsafe) return isEditorEnabledFlag();
     return state.authIsAdmin === true;
   }
 
@@ -669,9 +691,10 @@
     state.panel = document.createElement('aside');
     state.panel.className = 'cms-panel cms-ui';
     state.panel.setAttribute('data-cms-ui', '1');
+    const unsafe = window.__SUPABASE_CONFIG__ && window.__SUPABASE_CONFIG__.unsafeNoAuth === true;
     state.panel.innerHTML = `
       <h3>Editor</h3>
-      <div class="cms-muted" id="cms-status-line">Sign in to edit and publish changes.</div>
+      <div class="cms-muted" id="cms-status-line">${unsafe ? 'UNSAFE mode: no login required. Anyone can edit and publish.' : 'Sign in to edit and publish changes.'}</div>
 
       <div class="cms-row">
         <button type="button" class="cms-btn" id="cms-save-now">Publish</button>
@@ -714,7 +737,7 @@
     state.toast.setAttribute('data-cms-ui', '1');
 
     document.body.append(state.panel, state.toast);
-    createLoginModal();
+    if (!unsafe) createLoginModal();
 
     state.sectionLabel = state.panel.querySelector('#cms-section-label');
 
@@ -739,6 +762,8 @@
     });
 
     state.panel.querySelector('#cms-sign-out').addEventListener('click', () => {
+      const unsafe = window.__SUPABASE_CONFIG__ && window.__SUPABASE_CONFIG__.unsafeNoAuth === true;
+      if (unsafe) return;
       void signOut();
     });
 
@@ -800,6 +825,15 @@
   }
 
   async function openLoginModal() {
+    const unsafe = window.__SUPABASE_CONFIG__ && window.__SUPABASE_CONFIG__.unsafeNoAuth === true;
+    if (unsafe) {
+      setEditorEnabledFlag(true);
+      enableAdminMode();
+      syncAdminLinkState();
+      updateStatusLine();
+      notify('Editor enabled (UNSAFE mode).', 'success');
+      return;
+    }
     createLoginModal();
     const cfg = await getSupabaseConfig();
     const emailInput = state.loginModal.querySelector('#cms-login-email');

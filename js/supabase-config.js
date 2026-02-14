@@ -10,6 +10,9 @@ window.__SUPABASE_CONFIG__ = {
   // Used client-side to decide whether to enable edit mode UI.
   // Server-side access is enforced by RLS policies.
   adminEmail: 'JReynoso111@gmail.com',
+  // UNSAFE mode: no login required. Anyone with access to the website can edit content.
+  // This must match your "UNSAFE grants" SQL setup in Supabase.
+  unsafeNoAuth: true,
   cms: {
     pagesTable: 'cms_pages',
     assetsBucket: 'resume-cms'
