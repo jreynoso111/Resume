@@ -722,15 +722,17 @@
 	      return false;
 	    }
 
-	    // Local dev should prefer the on-disk HTML so published CMS snapshots don't overwrite edits.
-	    // Add `?cms=1` to force hydration, or `?nocms=1` to disable hydration on any host.
+	    // Default: do NOT hydrate public pages from Supabase CMS snapshots (static HTML is source of truth).
+	    // Add `?cms=1` to force hydration, set `cms.autoHydrate = true` to enable it globally,
+	    // or add `?nocms=1` to disable hydration on any host.
+	    let forced = false;
 	    try {
 	      const params = new URLSearchParams(location.search || '');
 	      const noCms = String(params.get('nocms') || '').toLowerCase();
 	      if (noCms === '1' || noCms === 'true') return false;
 
 	      const forceCms = String(params.get('cms') || '').toLowerCase();
-	      const forced = forceCms === '1' || forceCms === 'true';
+	      forced = forceCms === '1' || forceCms === 'true';
 	      if (!forced) {
 	        const host = String(location.hostname || '').toLowerCase();
 	        const loopbackV4 = host === '127.0.0.1' || host.startsWith('127.');
@@ -748,6 +750,12 @@
 
 	    const cfg = await getSupabaseConfig();
 	    if (!cfg || !cfg.cms || !cfg.cms.pagesTable) return false;
+	    const cmsCfg = cfg && cfg.cms ? cfg.cms : {};
+	    const autoHydrateSetting = cmsCfg.autoHydrate ?? cmsCfg.autoHydratePages ?? cmsCfg.hydratePages;
+	    // Opt-in only: prevent Supabase CMS snapshots from "taking over" a static deploy.
+	    // To enable auto-hydration, set `cms.autoHydrate = true` in js/supabase-config.js.
+	    const autoHydrate = autoHydrateSetting === true;
+	    if (!forced && !autoHydrate) return false;
 
     const sb = await getSupabaseClient();
     if (!sb) return false;
@@ -755,7 +763,7 @@
     const table = String(cfg.cms.pagesTable || 'cms_pages');
     const { data, error, status } = await sb
       .from(table)
-      .select('html')
+      .select('html,updated_at')
       .eq('path', path)
       .limit(1)
       .single();
@@ -769,16 +777,27 @@
     const html = data && data.html ? String(data.html) : '';
     if (!html) return false;
 
+    // Prevent a stale CMS snapshot from overwriting a newer on-disk HTML deploy.
+    // This is the root cause of "new version flashes, then reverts to an older version" after hydration.
+    if (!forced) {
+      const snapshotUpdatedAt = data && data.updated_at ? Date.parse(String(data.updated_at)) : NaN;
+      const staticLastModified = Date.parse(String(document.lastModified || ''));
+      if (Number.isFinite(snapshotUpdatedAt) && Number.isFinite(staticLastModified)) {
+        // If the static file is newer, prefer it. Add a small tolerance for clock skew/format rounding.
+        if (staticLastModified > snapshotUpdatedAt + 1000) return false;
+      }
+    }
+
     const patchSnapshotShell = (rawHtml, pagePath) => {
       const safeHtml = String(rawHtml || '');
       const parts = String(pagePath || '').split('/').filter(Boolean);
       const depth = Math.max(0, parts.length - 1);
       const rootPrefix = '../'.repeat(depth);
       const footerHost = `<footer id="site-footer" data-root-path="${rootPrefix}"></footer>`;
-      const STYLES_V = 19;
-      const HEADER_V = 3;
-      const FOOTER_V = 18;
-	      const EDITOR_V = 23;
+	      const STYLES_V = 19;
+	      const HEADER_V = 3;
+	      const FOOTER_V = 18;
+	      const EDITOR_V = 24;
       const SHELL_V = 4;
       const footerScript = `<script src="${rootPrefix}js/footer.js?v=${FOOTER_V}"></script>`;
       const headerScript = `<script src="${rootPrefix}js/header.js?v=${HEADER_V}"></script>`;
