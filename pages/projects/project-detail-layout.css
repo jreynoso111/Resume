@@ -354,6 +354,18 @@ header {
   }
 }
 
+@media (max-width: 860px) {
+  .header-nav,
+  .header-cta {
+    display: none;
+  }
+
+  .header-row {
+    flex-wrap: nowrap;
+    justify-content: space-between;
+  }
+}
+
 @media (max-width: 640px) {
 
   .container,

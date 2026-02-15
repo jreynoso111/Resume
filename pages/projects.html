@@ -6,13 +6,21 @@
     <title>Projects | Juan R. Reynoso</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="../assets/css/styles.css?v=19" />
+    <link rel="stylesheet" href="../assets/css/styles.css?v=20" />
     <style>
         .projects-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
             gap: 24px;
             margin-top: 32px;
+        }
+
+        @media (max-width: 520px) {
+            .projects-grid {
+                grid-template-columns: minmax(0, 1fr);
+                gap: 14px;
+                margin-top: 20px;
+            }
         }
 
         .project-card {
