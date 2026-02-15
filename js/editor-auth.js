@@ -722,31 +722,26 @@
 	      return false;
 	    }
 
-	    // Default: do NOT hydrate public pages from Supabase CMS snapshots (static HTML is source of truth).
-	    // Add `?cms=1` to force hydration, set `cms.autoHydrate = true` to enable it globally,
-	    // or add `?nocms=1` to disable hydration on any host.
-	    let forced = false;
-	    try {
-	      const params = new URLSearchParams(location.search || '');
-	      const noCms = String(params.get('nocms') || '').toLowerCase();
-	      if (noCms === '1' || noCms === 'true') return false;
+		    // Default: do NOT hydrate public pages from Supabase CMS snapshots (static HTML is source of truth).
+		    // Add `?cms=1` to force hydration, set `cms.autoHydrate = true` to enable it globally,
+		    // or add `?nocms=1` to disable hydration on any host.
+		    let forced = false;
+		    try {
+		      const params = new URLSearchParams(location.search || '');
+		      const noCms = String(params.get('nocms') || '').toLowerCase();
+		      if (noCms === '1' || noCms === 'true') return false;
 
-	      const forceCms = String(params.get('cms') || '').toLowerCase();
-	      forced = forceCms === '1' || forceCms === 'true';
-	      if (!forced) {
-	        const host = String(location.hostname || '').toLowerCase();
-	        const loopbackV4 = host === '127.0.0.1' || host.startsWith('127.');
-	        const loopbackV6 = host === '::1' || host === '::';
-	        if (location.protocol === 'file:' || host === 'localhost' || host === '0.0.0.0' || loopbackV4 || loopbackV6) {
-	          return false;
-	        }
-	      }
-	    } catch (_e) {
-	      // Ignore URL parsing failures; hydrate if configured.
-	    }
+		      const forceCms = String(params.get('cms') || '').toLowerCase();
+		      forced = forceCms === '1' || forceCms === 'true';
+		    } catch (_e) {
+		      // Ignore URL parsing failures; hydrate if configured.
+		    }
 
-	    const path = getPreferredCurrentPagePath();
-	    if (path.startsWith('admin/')) return false;
+		    // Avoid hydrating when the page is opened directly from disk (file://).
+		    if (location.protocol === 'file:') return false;
+
+		    const path = getPreferredCurrentPagePath();
+		    if (path.startsWith('admin/')) return false;
 
 	    const cfg = await getSupabaseConfig();
 	    if (!cfg || !cfg.cms || !cfg.cms.pagesTable) return false;
@@ -774,30 +769,19 @@
       return false;
     }
 
-    const html = data && data.html ? String(data.html) : '';
-    if (!html) return false;
+	    const html = data && data.html ? String(data.html) : '';
+	    if (!html) return false;
 
-    // Prevent a stale CMS snapshot from overwriting a newer on-disk HTML deploy.
-    // This is the root cause of "new version flashes, then reverts to an older version" after hydration.
-    if (!forced) {
-      const snapshotUpdatedAt = data && data.updated_at ? Date.parse(String(data.updated_at)) : NaN;
-      const staticLastModified = Date.parse(String(document.lastModified || ''));
-      if (Number.isFinite(snapshotUpdatedAt) && Number.isFinite(staticLastModified)) {
-        // If the static file is newer, prefer it. Add a small tolerance for clock skew/format rounding.
-        if (staticLastModified > snapshotUpdatedAt + 1000) return false;
-      }
-    }
-
-    const patchSnapshotShell = (rawHtml, pagePath) => {
-      const safeHtml = String(rawHtml || '');
-      const parts = String(pagePath || '').split('/').filter(Boolean);
+	    const patchSnapshotShell = (rawHtml, pagePath) => {
+	      const safeHtml = String(rawHtml || '');
+	      const parts = String(pagePath || '').split('/').filter(Boolean);
       const depth = Math.max(0, parts.length - 1);
       const rootPrefix = '../'.repeat(depth);
       const footerHost = `<footer id="site-footer" data-root-path="${rootPrefix}"></footer>`;
 	      const STYLES_V = 19;
 	      const HEADER_V = 3;
 	      const FOOTER_V = 18;
-	      const EDITOR_V = 24;
+	      const EDITOR_V = 25;
       const SHELL_V = 4;
       const footerScript = `<script src="${rootPrefix}js/footer.js?v=${FOOTER_V}"></script>`;
       const headerScript = `<script src="${rootPrefix}js/header.js?v=${HEADER_V}"></script>`;
@@ -2189,23 +2173,33 @@
     }
   }
 
-  function buildCleanHtmlSnapshot() {
-    const root = document.documentElement.cloneNode(true);
+	  function buildCleanHtmlSnapshot() {
+	    const root = document.documentElement.cloneNode(true);
 
-    const head = root.querySelector('head');
-    if (head && !head.querySelector('meta[name="cms-snapshot"]')) {
-      const meta = document.createElement('meta');
-      meta.setAttribute('name', 'cms-snapshot');
-      meta.setAttribute('content', '1');
-      head.appendChild(meta);
-	    }
+	    const head = root.querySelector('head');
+	    if (head && !head.querySelector('meta[name="cms-snapshot"]')) {
+	      const meta = document.createElement('meta');
+	      meta.setAttribute('name', 'cms-snapshot');
+	      meta.setAttribute('content', '1');
+	      head.appendChild(meta);
+		    }
 
-	    root.querySelectorAll('#cms-admin-style, .cms-ui, [data-cms-ui="1"]').forEach((el) => el.remove());
-	    root.querySelectorAll('#bg-canvas, #particle-canvas, #theme-toggle').forEach((el) => el.remove());
+		    root.querySelectorAll('#cms-admin-style, .cms-ui, [data-cms-ui="1"]').forEach((el) => el.remove());
+		    root.querySelectorAll('#bg-canvas, #particle-canvas, #theme-toggle, #theme-toggle-label').forEach((el) => el.remove());
 
-	    root.querySelectorAll('*').forEach((el) => {
-	      el.removeAttribute('contenteditable');
-	      el.removeAttribute('spellcheck');
+	    // Avoid freezing dynamic/global UI into the CMS snapshot.
+	    // These elements are rendered by scripts (header/footer/site shell) and should stay code-driven.
+	    root.removeAttribute('style'); // theme variables are applied at runtime (localStorage)
+	    const headerHost = root.querySelector('#site-header');
+	    if (headerHost) headerHost.innerHTML = '';
+	    const footerHost = root.querySelector('#site-footer');
+	    if (footerHost) footerHost.innerHTML = '';
+	    const projectsSidebar = root.querySelector('#projects-sidebar');
+	    if (projectsSidebar) projectsSidebar.innerHTML = '';
+
+		    root.querySelectorAll('*').forEach((el) => {
+		      el.removeAttribute('contenteditable');
+		      el.removeAttribute('spellcheck');
 
       Array.from(el.attributes).forEach((attribute) => {
         if (attribute.name.startsWith('data-cms-')) {
