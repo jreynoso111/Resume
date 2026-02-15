@@ -123,10 +123,10 @@
       </div>`;
         }
 
-        if (variant === 'inner') {
-            return `
-      <div class="shell">
-        <nav class="nav">
+	        if (variant === 'inner') {
+	            return `
+	      <div class="shell">
+	        <nav class="nav">
           <div class="logo-wrap">
             <div class="logo-mark"><div class="logo-inner">JR</div></div>
             <div class="logo-text-block">
@@ -157,8 +157,47 @@
                 aboutHref: 'about.html'
             })}
         </nav>
-      </div>`;
-        }
+	      </div>`;
+	        }
+
+	        // Nested "inner" pages that live under /pages/*/ (for example /pages/blog/my-post.html).
+	        // Same visual style as `inner`, but links must step up one extra directory.
+	        if (variant === 'inner-nested') {
+	            return `
+	      <div class="shell">
+	        <nav class="nav">
+	          <div class="logo-wrap">
+	            <div class="logo-mark"><div class="logo-inner">JR</div></div>
+	            <div class="logo-text-block">
+	              <div class="logo-title">Juan R. Reynoso</div>
+	              <div class="logo-sub">Maintenance &amp; Inventory Management</div>
+	            </div>
+	          </div>
+	          <div class="nav-main">
+	            ${renderMainNavLinks(activePage, {
+	                overviewHref: '../../index.html',
+
+	                projectsHref: '../projects.html',
+	                projectsDropdownPrefix: '../projects/',
+	                projectsWrapperClass: 'dropdown',
+	                projectsAnchorClass: 'dropbtn',
+	                projectsDropdownClass: 'dropdown-content',
+	                blogHref: '../blog.html',
+	                aboutHref: '../about.html'
+	            })}
+	          </div>
+	          <a href="mailto:jreynoso111@gmail.com" class="nav-cta">Contact <span aria-hidden="true">→</span></a>
+
+	          ${renderMobileMenu(activePage, {
+	                overviewHref: '../../index.html',
+	                projectsHref: '../projects.html',
+	                projectsDropdownPrefix: '../projects/',
+	                blogHref: '../blog.html',
+	                aboutHref: '../about.html'
+	            })}
+	        </nav>
+	      </div>`;
+	        }
 
         if (variant === 'projects-index') {
             return `

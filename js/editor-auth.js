@@ -776,11 +776,12 @@
       const rootPrefix = '../'.repeat(depth);
       const footerHost = `<footer id="site-footer" data-root-path="${rootPrefix}"></footer>`;
 	      const STYLES_V = 22;
-	      const HEADER_V = 4;
+	      const HEADER_V = 5;
 	      const FOOTER_V = 19;
-	      const EDITOR_V = 27;
-      const SHELL_V = 4;
-      const PROJECTS_V = 4;
+	      const EDITOR_V = 30;
+	      const SHELL_V = 4;
+	      const PROJECTS_V = 4;
+	      const PROJECT_DETAIL_LAYOUT_V = 2;
       const footerScript = `<script src="${rootPrefix}js/footer.js?v=${FOOTER_V}"></script>`;
       const headerScript = `<script src="${rootPrefix}js/header.js?v=${HEADER_V}"></script>`;
       const editorScript = `<script src="${rootPrefix}js/editor-auth.js?v=${EDITOR_V}"></script>`;
@@ -796,16 +797,23 @@
         );
       }
 
-      // Repair a previously-published broken script tag (`src="js/"`, `src="../js/"`, etc.).
-      out = out.replace(/<script\b[^>]*\bsrc=(['"])(?:\.\.\/)*js\/\1[^>]*>\s*<\/script>/gi, '');
+	      // Repair a previously-published broken script tag (`src="js/"`, `src="../js/"`, etc.).
+	      out = out.replace(/<script\b[^>]*\bsrc=(['"])(?:\.\.\/)*js\/\1[^>]*>\s*<\/script>/gi, '');
 
-      // Force current cache busters even if the snapshot already has older v= values.
-      out = out.replace(/(assets\/css\/styles\.css\?v=)\d+/gi, `$1${STYLES_V}`);
-      out = out.replace(/(js\/header\.js\?v=)\d+/gi, `$1${HEADER_V}`);
-      out = out.replace(/(js\/footer\.js\?v=)\d+/gi, `$1${FOOTER_V}`);
-      out = out.replace(/(js\/editor-auth\.js\?v=)\d+/gi, `$1${EDITOR_V}`);
-      out = out.replace(/(js\/site-shell\.js\?v=)\d+/gi, `$1${SHELL_V}`);
-      out = out.replace(/(js\/projects-page\.js\?v=)\d+/gi, `$1${PROJECTS_V}`);
+	      // Strip dynamic background scripts that should remain code-driven.
+	      // These can get frozen into CMS snapshots via DOM cloning and cause double-init.
+	      out = out.replace(/<script\b[^>]*\bsrc=(['"])[^'"]*three\.min\.js\1[^>]*>\s*<\/script>/gi, '');
+	      out = out.replace(/<script\b[^>]*\bsrc=(['"])(?:\.\.\/)*js\/particles\.js\1[^>]*>\s*<\/script>/gi, '');
+	      out = out.replace(/<script\b[^>]*\bsrc=(['"])(?:\.\.\/)*js\/background-animation\.js\1[^>]*>\s*<\/script>/gi, '');
+
+	      // Force current cache busters even if the snapshot already has older v= values.
+	      out = out.replace(/(assets\/css\/styles\.css\?v=)\d+/gi, `$1${STYLES_V}`);
+	      out = out.replace(/(js\/header\.js\?v=)\d+/gi, `$1${HEADER_V}`);
+	      out = out.replace(/(js\/footer\.js\?v=)\d+/gi, `$1${FOOTER_V}`);
+	      out = out.replace(/(js\/editor-auth\.js\?v=)\d+/gi, `$1${EDITOR_V}`);
+	      out = out.replace(/(js\/site-shell\.js\?v=)\d+/gi, `$1${SHELL_V}`);
+	      out = out.replace(/(js\/projects-page\.js\?v=)\d+/gi, `$1${PROJECTS_V}`);
+	      out = out.replace(/project-detail-layout\.css(?:\?v=\d+)?/gi, `project-detail-layout.css?v=${PROJECT_DETAIL_LAYOUT_V}`);
 
       // Ensure the footer host exists (some snapshots were saved without it).
       if (!/\bid=(['"])site-footer\1/i.test(out)) {
@@ -2185,6 +2193,15 @@
 
 		    root.querySelectorAll('#cms-admin-style, .cms-ui, [data-cms-ui="1"]').forEach((el) => el.remove());
 		    root.querySelectorAll('#bg-canvas, #particle-canvas, #theme-toggle, #theme-toggle-label').forEach((el) => el.remove());
+		    root.querySelectorAll('script[src]').forEach((el) => {
+		      const src = String(el.getAttribute('src') || '');
+		      if (!src) return;
+		      if (src.includes('three.min.js')) return el.remove();
+		      // These are injected by js/site-shell.js at runtime.
+		      const cleaned = src.split('?', 1)[0].split('#', 1)[0].replace(/\\\\/g, '/');
+		      if (cleaned.endsWith('js/particles.js')) return el.remove();
+		      if (cleaned.endsWith('js/background-animation.js')) return el.remove();
+		    });
 
 	    // Avoid freezing dynamic/global UI into the CMS snapshot.
 	    // These elements are rendered by scripts (header/footer/site shell) and should stay code-driven.
