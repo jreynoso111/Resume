@@ -221,6 +221,16 @@
 	                    <button type="submit" class="btn-primary" style="width:auto;">Add</button>
 	                </form>
 	            </section>
+
+            <section class="card">
+                <h2>Publishing (CMS)</h2>
+                <p style="margin:0 0 12px; color:#4b5563; font-size:0.95rem; line-height:1.45;">
+                    If the public site is showing an older version after enabling CMS hydration, you can replace the
+                    server-side page snapshots with the latest HTML from this deployment.
+                </p>
+                <button type="button" class="btn-primary" id="cms-sync-btn">Sync site HTML to CMS</button>
+                <div id="cms-sync-status" style="margin-top:12px; font-size:0.9rem; white-space:pre-wrap; color:#374151;"></div>
+            </section>
 	        </div>
 
         <div id="tab-skills" class="tab-content">
@@ -987,6 +997,95 @@
                 alert('Error: ' + (err && err.message ? err.message : String(err)));
             }
         });
+
+        // ==========================================
+        // 6) CMS PUBLISHING (HTML SNAPSHOTS)
+        // ==========================================
+        const cmsSyncBtn = document.getElementById('cms-sync-btn');
+        const cmsSyncStatus = document.getElementById('cms-sync-status');
+
+        function setCmsSyncStatus(message, tone) {
+            if (!cmsSyncStatus) return;
+            cmsSyncStatus.textContent = String(message || '');
+            const t = String(tone || '');
+            if (t === 'success') cmsSyncStatus.style.color = '#166534';
+            else if (t === 'error') cmsSyncStatus.style.color = '#b91c1c';
+            else if (t === 'warn') cmsSyncStatus.style.color = '#b45309';
+            else cmsSyncStatus.style.color = '#374151';
+        }
+
+        function getDefaultCmsSyncPaths() {
+            // Keep this list in sync with the public HTML files you want editable/publishable.
+            return [
+                'index.html',
+                'pages/about.html',
+                'pages/projects.html',
+                'pages/projects/fleet-maintenance-analytics.html',
+                'pages/projects/inventory-control-dashboard.html',
+                'pages/projects/repossession-risk-monitoring.html',
+                'pages/projects/gps-movement-analytics.html',
+                'pages/projects/techloc-fleet-service-control.html',
+                'pages/editor-example.html'
+            ];
+        }
+
+        async function syncStaticHtmlToCms() {
+            if(!(await requireAdmin())) return;
+            if (!cfg || !cfg.cms || !cfg.cms.pagesTable) {
+                alert('Missing CMS configuration (cfg.cms.pagesTable).');
+                return;
+            }
+
+            const table = String(cfg.cms.pagesTable || 'cms_pages');
+            const paths = getDefaultCmsSyncPaths();
+
+            if (!confirm('This will replace the CMS snapshots for the public site with the current deployed HTML files. Continue?')) {
+                return;
+            }
+
+            if (cmsSyncBtn) cmsSyncBtn.disabled = true;
+            setCmsSyncStatus('Starting...', 'warn');
+
+            try {
+                const snapshots = [];
+
+                for (let i = 0; i < paths.length; i++) {
+                    const path = String(paths[i] || '').replace(/^\/+/, '');
+                    if (!path || path.startsWith('admin/')) continue;
+
+                    setCmsSyncStatus(`Fetching ${i + 1}/${paths.length}: ${path}`, 'warn');
+                    const url = new URL(`../${path}`, location.href);
+                    const res = await fetch(url.toString(), { cache: 'no-store' });
+                    if (!res.ok) throw new Error(`Fetch failed for ${path} (HTTP ${res.status})`);
+                    const html = await res.text();
+                    snapshots.push({ path, html });
+                }
+
+                setCmsSyncStatus(`Publishing ${snapshots.length} page(s) to ${table}...`, 'warn');
+
+                const chunkSize = 3;
+                for (let i = 0; i < snapshots.length; i += chunkSize) {
+                    const chunk = snapshots.slice(i, i + chunkSize);
+                    const { error } = await sb.from(table).upsert(chunk, { onConflict: 'path' });
+                    if (error) throw error;
+                    setCmsSyncStatus(`Published ${Math.min(i + chunk.length, snapshots.length)}/${snapshots.length}`, 'warn');
+                }
+
+                setCmsSyncStatus(`Done. CMS snapshots updated for ${snapshots.length} page(s).`, 'success');
+            } catch (err) {
+                console.error(err);
+                const msg = err && err.message ? err.message : String(err);
+                setCmsSyncStatus(`Error: ${msg}`, 'error');
+            } finally {
+                if (cmsSyncBtn) cmsSyncBtn.disabled = false;
+            }
+        }
+
+        if (cmsSyncBtn) {
+            cmsSyncBtn.addEventListener('click', () => {
+                syncStaticHtmlToCms();
+            });
+        }
 
 	        function bootData() {
 	            loadGeneral();

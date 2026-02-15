@@ -16,7 +16,8 @@ window.__SUPABASE_CONFIG__ = {
   cms: {
     // When false (recommended for a "static is source-of-truth" site), the public pages will NOT
     // auto-hydrate from `cms_pages`. You can still force hydration with `?cms=1`.
-    autoHydrate: false,
+    // Set true to make "Publish" changes persist for visitors (Supabase becomes the source of truth).
+    autoHydrate: true,
     pagesTable: 'cms_pages',
     assetsBucket: 'resume-cms',
     uploadFunction: 'cms-upload'
