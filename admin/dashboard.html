@@ -202,19 +202,26 @@
                 </form>
             </section>
 
-            <section class="card">
-                <h2>Certifications & Courses</h2>
-                <ul class="item-list" id="certs-list"></ul>
-                
-                <form id="certs-form" style="margin-top:15px; display:flex; gap:10px; align-items:flex-end;">
-                    <div class="form-group" style="flex:1; margin:0;">
-                        <label>Certification / course name</label>
-                        <input type="text" id="cert-name" required>
-                    </div>
-                    <button type="submit" class="btn-primary" style="width:auto;">Add</button>
-                </form>
-            </section>
-        </div>
+	            <section class="card">
+	                <h2>Certifications & Courses</h2>
+	                <ul class="item-list" id="certs-list"></ul>
+	                
+	                <form id="certs-form" style="margin-top:15px; display:flex; gap:10px; align-items:flex-end;">
+	                    <div class="form-group" style="flex:1; margin:0;">
+	                        <label>Certification / course name</label>
+	                        <input type="text" id="cert-name" required>
+	                    </div>
+	                    <div class="form-group" style="margin:0; min-width:160px;">
+	                        <label>Type</label>
+	                        <select id="cert-kind">
+	                            <option value="certification" selected>Certification</option>
+	                            <option value="course">Course</option>
+	                        </select>
+	                    </div>
+	                    <button type="submit" class="btn-primary" style="width:auto;">Add</button>
+	                </form>
+	            </section>
+	        </div>
 
         <div id="tab-skills" class="tab-content">
             <section class="card">
@@ -394,14 +401,14 @@
             const { error } = await sb.from(table).delete().eq('id', id);
             if(error) alert('Error: ' + error.message);
             else {
-                // Reload based on table.
-                if(table === 'experience') loadExp();
-                if(table === 'education') loadEdu();
-                if(table === 'certifications') loadCerts();
-                if(table === 'skills') loadSkills();
-                if(table === 'projects') loadProjects();
-            }
-        };
+	                // Reload based on table.
+	                if(table === 'experience') loadExp();
+	                if(table === 'education') loadEdu();
+	                if(table === 'credentials') loadCredentials();
+	                if(table === 'skills') loadSkills();
+	                if(table === 'projects') loadProjects();
+	            }
+	        };
 
         function escapeHtml(value) {
             return String(value == null ? '' : value).replace(/[&<>"']/g, (ch) => ({
@@ -512,9 +519,9 @@
             }
         };
 
-        // ==========================================
-        // 3) EDUCATION & CERTIFICATIONS
-        // ==========================================
+	        // ==========================================
+	        // 3) EDUCATION & CREDENTIALS
+	        // ==========================================
         async function loadEdu() {
             const list = document.getElementById('edu-list');
             try {
@@ -555,41 +562,58 @@
             }
         }
 
-        async function loadCerts() {
-            const list = document.getElementById('certs-list');
-            try {
-                const { data, error } = await sb.from('certifications').select('*').order('id', {ascending: false});
-                if (error) {
-                    console.error('Supabase loadCerts error:', error);
-                    list.innerHTML = renderLoadError('certifications', error);
-                    return;
-                }
-                list.innerHTML = '';
-                if (!data || data.length === 0) {
-                    list.innerHTML = '<li class="item-row"><div>No certifications yet.</div></li>';
-                    return;
-                }
-                data.forEach(x => list.innerHTML += `<li class="item-row"><div>${escapeHtml(x.name)}</div><button class="btn-delete" onclick="deleteItem('certifications',${x.id})">Delete</button></li>`);
-            } catch (err) {
-                console.error('Supabase loadCerts exception:', err);
-                list.innerHTML = renderLoadError('certifications', err);
-            }
-        }
-        document.getElementById('certs-form').onsubmit = async (e) => {
-            e.preventDefault();
-            if(!(await requireAdmin())) return;
-            try {
-                const { error } = await sb.from('certifications').insert([{ name: document.getElementById('cert-name').value }]);
-                if (error) {
-                    alert('Error: ' + error.message);
-                    return;
-                }
-                document.getElementById('cert-name').value = '';
-                loadCerts();
-            } catch (err) {
-                alert('Error: ' + (err && err.message ? err.message : String(err)));
-            }
-        }
+	        async function loadCredentials() {
+	            const list = document.getElementById('certs-list');
+	            try {
+	                const { data, error } = await sb
+	                    .from('credentials')
+	                    .select('id, kind, title, issuer, year, category, sort_order')
+	                    .order('kind', { ascending: true })
+	                    .order('sort_order', { ascending: true })
+	                    .order('id', { ascending: true });
+	                if (error) {
+	                    console.error('Supabase loadCredentials error:', error);
+	                    list.innerHTML = renderLoadError('credentials', error);
+	                    return;
+	                }
+	                list.innerHTML = '';
+	                if (!data || data.length === 0) {
+	                    list.innerHTML = '<li class="item-row"><div>No credentials yet.</div></li>';
+	                    return;
+	                }
+	                data.forEach(x => {
+	                    const kindLabel = String(x.kind || '').trim() || 'credential';
+	                    const issuer = String(x.issuer || '').trim();
+	                    const year = x.year == null ? '' : String(x.year);
+	                    const meta = [issuer, year].filter(Boolean).join(' · ');
+	                    list.innerHTML += `
+	                    <li class="item-row">
+	                        <div><b>${escapeHtml(kindLabel)}</b>: ${escapeHtml(x.title)}${meta ? `<br><small>${escapeHtml(meta)}</small>` : ''}</div>
+	                        <button class="btn-delete" onclick="deleteItem('credentials',${x.id})">Delete</button>
+	                    </li>`;
+	                });
+	            } catch (err) {
+	                console.error('Supabase loadCredentials exception:', err);
+	                list.innerHTML = renderLoadError('credentials', err);
+	            }
+	        }
+	        document.getElementById('certs-form').onsubmit = async (e) => {
+	            e.preventDefault();
+	            if(!(await requireAdmin())) return;
+	            try {
+	                const title = String(document.getElementById('cert-name').value || '').trim();
+	                const kind = String(document.getElementById('cert-kind').value || 'certification').trim();
+	                const { error } = await sb.from('credentials').insert([{ kind, title }]);
+	                if (error) {
+	                    alert('Error: ' + error.message);
+	                    return;
+	                }
+	                document.getElementById('cert-name').value = '';
+	                loadCredentials();
+	            } catch (err) {
+	                alert('Error: ' + (err && err.message ? err.message : String(err)));
+	            }
+	        }
 
         // ==========================================
         // 4) SKILLS
@@ -964,14 +988,14 @@
             }
         });
 
-        function bootData() {
-            loadGeneral();
-            loadExp();
-            loadEdu();
-            loadCerts();
-            loadSkills();
-            loadProjects();
-        }
+	        function bootData() {
+	            loadGeneral();
+	            loadExp();
+	            loadEdu();
+	            loadCredentials();
+	            loadSkills();
+	            loadProjects();
+	        }
 
         async function refreshAuthUi() {
             if (isUnsafeMode()) {
