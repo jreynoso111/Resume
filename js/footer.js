@@ -94,11 +94,11 @@
 
 	        const base = String(rootPath || '');
 	        const scriptRoot = getFooterScriptRoot();
-	        const canonical = `${base}js/editor-auth.js?v=26`;
+	        const canonical = `${base}js/editor-auth.js?v=27`;
 	            const canonicalFromFooter = scriptRoot
 	            ? (scriptRoot.endsWith('/') || scriptRoot.endsWith('\\')
-	                ? `${scriptRoot}js/editor-auth.js?v=26`
-	                : `${scriptRoot.replace(/[\\/]+$/, '')}/js/editor-auth.js?v=26`)
+	                ? `${scriptRoot}js/editor-auth.js?v=27`
+	                : `${scriptRoot.replace(/[\\/]+$/, '')}/js/editor-auth.js?v=27`)
 	            : '';
 	        const src = existing ? (existing.getAttribute('src') || existing.src || canonical) : canonical;
 	        const bust = `${src}${src.includes('?') ? '&' : '?'}cb=${Date.now()}`;
@@ -111,10 +111,10 @@
 	                canonical,
 	                canonicalFromFooter,
 	                // Fallbacks relative to the current page URL.
-	                new URL('js/editor-auth.js?v=26', location.href).toString(),
-	                new URL('../js/editor-auth.js?v=26', location.href).toString(),
-	                new URL('../../js/editor-auth.js?v=26', location.href).toString(),
-	                new URL('../../../js/editor-auth.js?v=26', location.href).toString()
+	                new URL('js/editor-auth.js?v=27', location.href).toString(),
+	                new URL('../js/editor-auth.js?v=27', location.href).toString(),
+	                new URL('../../js/editor-auth.js?v=27', location.href).toString(),
+	                new URL('../../../js/editor-auth.js?v=27', location.href).toString()
 	            ].filter(Boolean);
 
 	            for (const candidate of candidates) {

@@ -114,13 +114,13 @@
     </header>
 
     <main>
-        <div class="tabs">
-            <button class="tab-btn active" onclick="openTab('tab-general')">General & Hero</button>
-            <button class="tab-btn" onclick="openTab('tab-experience')">Experience</button>
-            <button class="tab-btn" onclick="openTab('tab-education')">Education</button>
-            <button class="tab-btn" onclick="openTab('tab-skills')">Skills</button>
-            <button class="tab-btn" onclick="openTab('tab-projects')">Projects</button>
-        </div>
+	        <div class="tabs">
+	            <button class="tab-btn active" onclick="openTab('tab-general')">General & Hero</button>
+	            <button class="tab-btn" onclick="openTab('tab-experience')">Experience</button>
+	            <button class="tab-btn" onclick="openTab('tab-education')">Education</button>
+	            <button class="tab-btn" onclick="openTab('tab-skills')">Skills</button>
+	            <button class="tab-btn" onclick="openTab('tab-projects')">Projects</button>
+	        </div>
 
         <div id="tab-general" class="tab-content active">
             <section class="card">
@@ -308,8 +308,8 @@
                 </form>
             </section>
         </div>
- 
-    </main>
+
+	    </main>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../js/supabase-config.js"></script>
@@ -336,8 +336,8 @@
         const authStatus = document.getElementById('auth-status');
         const logoutBtn = document.getElementById('logout-btn');
 
-        let booted = false;
-        let projectsById = new Map();
+	        let booted = false;
+	        let projectsById = new Map();
 
         function getAdminEmail() {
             return String((cfg && cfg.adminEmail) || '').trim().toLowerCase();
@@ -405,20 +405,20 @@
         }
 
         // --- DELETE HELPERS ---
-        window.deleteItem = async (table, id) => {
-            if(!(await requireAdmin())) return;
-            if(!confirm('Are you sure you want to delete this item?')) return;
-            const { error } = await sb.from(table).delete().eq('id', id);
-            if(error) alert('Error: ' + error.message);
-            else {
-	                // Reload based on table.
-	                if(table === 'experience') loadExp();
-	                if(table === 'education') loadEdu();
-	                if(table === 'credentials') loadCredentials();
-	                if(table === 'skills') loadSkills();
-	                if(table === 'projects') loadProjects();
-	            }
-	        };
+	        window.deleteItem = async (table, id) => {
+	            if(!(await requireAdmin())) return;
+	            if(!confirm('Are you sure you want to delete this item?')) return;
+	            const { error } = await sb.from(table).delete().eq('id', id);
+	            if(error) alert('Error: ' + error.message);
+	            else {
+		                // Reload based on table.
+		                if(table === 'experience') loadExp();
+		                if(table === 'education') loadEdu();
+		                if(table === 'credentials') loadCredentials();
+		                if(table === 'skills') loadSkills();
+		                if(table === 'projects') loadProjects();
+		            }
+		        };
 
         function escapeHtml(value) {
             return String(value == null ? '' : value).replace(/[&<>"']/g, (ch) => ({
@@ -998,9 +998,15 @@
             }
         });
 
-        // ==========================================
-        // 6) CMS PUBLISHING (HTML SNAPSHOTS)
-        // ==========================================
+	        // ==========================================
+	        // 6) BLOG
+	        // ==========================================
+	        // Blog publishing is code-based (each post is its own HTML file under /pages/blog/).
+	        // If you want DB-driven posts again, re-introduce a blog table + UI here.
+
+	        // ==========================================
+	        // 7) CMS PUBLISHING (HTML SNAPSHOTS)
+	        // ==========================================
         const cmsSyncBtn = document.getElementById('cms-sync-btn');
         const cmsSyncStatus = document.getElementById('cms-sync-status');
 
@@ -1014,20 +1020,22 @@
             else cmsSyncStatus.style.color = '#374151';
         }
 
-        function getDefaultCmsSyncPaths() {
-            // Keep this list in sync with the public HTML files you want editable/publishable.
-            return [
-                'index.html',
-                'pages/about.html',
-                'pages/projects.html',
-                'pages/projects/fleet-maintenance-analytics.html',
-                'pages/projects/inventory-control-dashboard.html',
-                'pages/projects/repossession-risk-monitoring.html',
-                'pages/projects/gps-movement-analytics.html',
-                'pages/projects/techloc-fleet-service-control.html',
-                'pages/editor-example.html'
-            ];
-        }
+	        function getDefaultCmsSyncPaths() {
+	            // Keep this list in sync with the public HTML files you want editable/publishable.
+	            return [
+	                'index.html',
+	                'pages/about.html',
+	                'pages/blog.html',
+	                'pages/blog/first-post.html',
+	                'pages/projects.html',
+	                'pages/projects/fleet-maintenance-analytics.html',
+	                'pages/projects/inventory-control-dashboard.html',
+	                'pages/projects/repossession-risk-monitoring.html',
+	                'pages/projects/gps-movement-analytics.html',
+	                'pages/projects/techloc-fleet-service-control.html',
+	                'pages/editor-example.html'
+	            ];
+	        }
 
         async function syncStaticHtmlToCms() {
             if(!(await requireAdmin())) return;
@@ -1087,14 +1095,14 @@
             });
         }
 
-	        function bootData() {
-	            loadGeneral();
-	            loadExp();
-	            loadEdu();
-	            loadCredentials();
-	            loadSkills();
-	            loadProjects();
-	        }
+		        function bootData() {
+		            loadGeneral();
+		            loadExp();
+		            loadEdu();
+		            loadCredentials();
+		            loadSkills();
+		            loadProjects();
+		        }
 
         async function refreshAuthUi() {
             if (isUnsafeMode()) {

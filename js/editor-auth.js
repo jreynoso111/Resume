@@ -756,21 +756,18 @@
     if (!sb) return false;
 
     const table = String(cfg.cms.pagesTable || 'cms_pages');
-    const { data, error, status } = await sb
+    // Use array form (no `.single()`) so "missing row" is a clean 200 + [] (no noisy 406s).
+    const { data, error } = await sb
       .from(table)
       .select('html,updated_at')
       .eq('path', path)
-      .limit(1)
-      .single();
+      .limit(1);
 
-    // PostgREST returns 406 for "no rows" when using single().
-    if (error) {
-      if (status === 406) return false;
-      return false;
-    }
+    if (error) return false;
 
-	    const html = data && data.html ? String(data.html) : '';
-	    if (!html) return false;
+    const row = Array.isArray(data) ? data[0] : null;
+		    const html = row && row.html ? String(row.html) : '';
+		    if (!html) return false;
 
 	    const patchSnapshotShell = (rawHtml, pagePath) => {
 	      const safeHtml = String(rawHtml || '');
@@ -778,10 +775,10 @@
       const depth = Math.max(0, parts.length - 1);
       const rootPrefix = '../'.repeat(depth);
       const footerHost = `<footer id="site-footer" data-root-path="${rootPrefix}"></footer>`;
-	      const STYLES_V = 20;
-	      const HEADER_V = 3;
+	      const STYLES_V = 22;
+	      const HEADER_V = 4;
 	      const FOOTER_V = 19;
-	      const EDITOR_V = 26;
+	      const EDITOR_V = 27;
       const SHELL_V = 4;
       const PROJECTS_V = 4;
       const footerScript = `<script src="${rootPrefix}js/footer.js?v=${FOOTER_V}"></script>`;

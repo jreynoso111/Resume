@@ -40,6 +40,7 @@
               </div>
             </div>
 
+            <a href="${config.blogHref}"${withActiveClass(activePage, 'blog', activeClass)}>Blog</a>
             <a href="${config.aboutHref}"${withActiveClass(activePage, 'about', activeClass)}>About Me</a>
             <a href="${contactHref}">Contact</a>
           </div>
@@ -77,6 +78,7 @@
           <a href="${config.projectsHref}"${projectsAnchorClass ? ` class="${projectsAnchorClass}"` : ''}${withActiveClass(activePage, 'projects', activeClass)}>${projectsLabel}</a>
           ${renderProjectDropdown(config.projectsDropdownPrefix, projectsDropdownClass)}
         </div>
+        <a href="${config.blogHref}"${withActiveClass(activePage, 'blog', activeClass)}>Blog</a>
         <a href="${config.aboutHref}"${withActiveClass(activePage, 'about', activeClass)}>About Me</a>
       </div>`;
     }
@@ -102,6 +104,7 @@
                 projectsDropdownPrefix: 'pages/projects/',
                 projectsWrapperClass: 'nav-item nav-item-projects',
                 projectsDropdownClass: 'nav-dropdown',
+                blogHref: 'pages/blog.html',
                 aboutHref: 'pages/about.html'
             })}
 
@@ -113,6 +116,7 @@
                 overviewHref: 'index.html',
                 projectsHref: 'pages/projects.html',
                 projectsDropdownPrefix: 'pages/projects/',
+                blogHref: 'pages/blog.html',
                 aboutHref: 'pages/about.html'
             })}
         </nav>
@@ -139,6 +143,7 @@
                 projectsWrapperClass: 'dropdown',
                 projectsAnchorClass: 'dropbtn',
                 projectsDropdownClass: 'dropdown-content',
+                blogHref: 'blog.html',
                 aboutHref: 'about.html'
             })}
           </div>
@@ -148,6 +153,7 @@
                 overviewHref: '../index.html',
                 projectsHref: 'projects.html',
                 projectsDropdownPrefix: 'projects/',
+                blogHref: 'blog.html',
                 aboutHref: 'about.html'
             })}
         </nav>
@@ -171,6 +177,7 @@
 
                 projectsHref: 'projects.html',
                 projectsDropdownPrefix: 'projects/',
+                blogHref: 'blog.html',
                 aboutHref: 'about.html',
                 projectsLabel: 'Projects'
             })}
@@ -181,6 +188,7 @@
                 overviewHref: '../index.html',
                 projectsHref: 'projects.html',
                 projectsDropdownPrefix: 'projects/',
+                blogHref: 'blog.html',
                 aboutHref: 'about.html'
             })}
       </div>`;
@@ -204,6 +212,7 @@
             <a href="../projects.html"${withActiveClass(activePage, 'projects')}>Projects ▾</a>
             ${renderProjectDropdown('', 'header-projects-dropdown')}
           </div>
+          <a href="../blog.html"${withActiveClass(activePage, 'blog')}>Blog</a>
           <a href="../about.html"${withActiveClass(activePage, 'about')}>About Me</a>
         </nav>
 
@@ -213,6 +222,7 @@
                 overviewHref: '../../index.html',
                 projectsHref: '../projects.html',
                 projectsDropdownPrefix: '',
+                blogHref: '../blog.html',
                 aboutHref: '../about.html'
             })}
       </div>`;

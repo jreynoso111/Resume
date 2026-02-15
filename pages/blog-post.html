@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Blog Post | Juan R. Reynoso</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/css/styles.css?v=22" />
+</head>
+
+<body class="blog-post-page">
+  <header id="site-header" data-variant="inner" data-active="blog"></header>
+
+  <main id="top">
+    <div class="shell">
+      <div class="blog-empty" style="margin-top: 40px;">
+        This site now publishes blog posts as individual pages under <code>pages/blog/</code>.
+        <br><br>
+        Go to <a href="blog.html">Blog</a>.
+      </div>
+    </div>
+  </main>
+
+  <footer id="site-footer" data-root-path="../">
+    <div class="shell">
+      <div class="footer-row">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span>© <span data-footer-year="1">2026</span> Juan R. Reynoso. All rights reserved.</span>
+          <a href="../admin/" class="dashboard-link" aria-label="Admin Dashboard" title="Open dashboard">Dashboard</a>
+          <a href="javascript:void(0)" class="admin-link" aria-label="Edit page" title="Edit page">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path
+                d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.74v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z">
+              </path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+          </a>
+        </div>
+        <div class="footer-links">
+          <a href="#top">Back to top</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="../js/editor-auth.js?v=27"></script>
+  <script src="../js/header.js?v=4"></script>
+  <script src="../js/footer.js?v=19"></script>
+  <script src="../js/site-shell.js?v=4"></script>
+
+  <script>
+    // Back-compat redirect: blog-post.html?slug=my-post -> blog/my-post.html
+    (function () {
+      try {
+        var params = new URLSearchParams(location.search || '');
+        var slug = String(params.get('slug') || '').trim();
+        if (!slug) return;
+        location.replace('blog/' + encodeURIComponent(slug) + '.html');
+      } catch (e) {}
+    })();
+  </script>
+</body>
+
+</html>

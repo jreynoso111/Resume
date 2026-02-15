@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>First Post (Demo) | Juan R. Reynoso</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="A professional blog post page template that lives in code." />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../../assets/css/styles.css?v=22" />
+</head>
+
+<body class="blog-post-page">
+  <header id="site-header" data-variant="inner" data-active="blog"></header>
+
+  <main id="top">
+    <div class="shell">
+      <div class="page-intro blog-post-header">
+        <div style="margin-bottom: 10px;">
+          <a href="../blog.html" style="color: var(--text-muted); font-size: 13px;">← Back to Blog</a>
+        </div>
+
+        <h1 class="blog-post-title">First Post (Demo)</h1>
+        <div class="blog-post-meta">Feb 15, 2026 · 6 min read</div>
+        <p class="page-subtitle" style="max-width: 760px;">
+          This is a clean, professional template for a blog post page. It lives in code, uses the site’s theme, and is
+          designed to scale from mobile to desktop.
+        </p>
+
+        <div class="skills-strip" style="margin-top: 12px;">
+          <span class="skill-chip">Operations</span>
+          <span class="skill-chip">Analytics</span>
+          <span class="skill-chip">Systems</span>
+        </div>
+      </div>
+
+      <div class="blog-post-cover">
+        <img src="../../assets/images/blog/cover-generic.png" alt="Abstract cover image" loading="lazy" />
+      </div>
+
+      <article class="blog-prose">
+        <h2>Why This Blog Lives in Code</h2>
+        <p>
+          For this site, each post is its own HTML page under <code>pages/blog/</code>. That keeps URLs stable,
+          makes posts easy to version, and avoids runtime dependencies for the public experience.
+        </p>
+
+        <blockquote>
+          The goal is simple: publish pages that load fast, look intentional, and remain easy to maintain.
+        </blockquote>
+
+        <h2>Suggested Post Structure</h2>
+        <p>
+          A good post reads like an operations memo: short sections, clear headings, and a strong summary.
+          Use visuals only when they actually add clarity.
+        </p>
+
+        <h3>Checklist</h3>
+        <ul>
+          <li><b>Title:</b> specific and measurable.</li>
+          <li><b>Lead:</b> 2–3 sentences that set context.</li>
+          <li><b>Body:</b> sections with real examples.</li>
+          <li><b>Close:</b> what to do next.</li>
+        </ul>
+
+        <figure class="blog-figure">
+          <img src="../../assets/images/blog/chapter-1.png" alt="Placeholder figure" loading="lazy" />
+          <figcaption>
+            Example figure slot. Replace this image with a real chart, dashboard screenshot, or workflow diagram.
+          </figcaption>
+        </figure>
+
+        <h2>Publishing New Posts</h2>
+        <p>
+          To publish a new post, duplicate this file, rename it to your slug (for example
+          <code>pages/blog/my-post.html</code>), then add a new card to <code>pages/blog.html</code>.
+        </p>
+      </article>
+
+      <div style="height: 60px;"></div>
+    </div>
+  </main>
+
+  <footer id="site-footer" data-root-path="../../">
+    <div class="shell">
+      <div class="footer-row">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span>© <span data-footer-year="1">2026</span> Juan R. Reynoso. All rights reserved.</span>
+          <a href="../../admin/" class="dashboard-link" aria-label="Admin Dashboard" title="Open dashboard">Dashboard</a>
+          <a href="javascript:void(0)" class="admin-link" aria-label="Edit page" title="Edit page">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path
+                d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.74v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z">
+              </path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+          </a>
+        </div>
+        <div class="footer-links">
+          <a href="#top">Back to top</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="../../js/editor-auth.js?v=27"></script>
+  <script src="../../js/header.js?v=4"></script>
+  <script src="../../js/footer.js?v=19"></script>
+  <script src="../../js/site-shell.js?v=4"></script>
+</body>
+
+</html>
+
