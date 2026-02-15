@@ -37,12 +37,18 @@
         let lastPointerPosition = { x: windowHalfX, y: windowHalfY };
         let isPointerInInteractionZone = false;
         let angularVelocity = { x: 0, y: 0 };
+        let pointerTouchActive = false;
+        let activeTouchId = null;
 
         const BASE_ROTATION_SPEED_Y = 0.0012; // Doubled
         const BASE_ROTATION_SPEED_X = 0.0004; // Doubled
-        const DRAG_FORCE = 0.0003; // Tripled for "accelerator" feel
+        const DRAG_FORCE = 0.0003; // Base drag force (mouse/pen)
+        const TOUCH_DRAG_FORCE_MULT = 4.0; // Stronger response on mobile touch
         const DRAG_DAMPING = 0.97; // Closer to 1 for sustained momentum
         const MAX_POINTER_STEP = 80; // Ignore large jumps when pointer re-enters elsewhere
+        const TOUCH_MAX_POINTER_STEP = 160;
+        const INTERACTION_RADIUS_MULT_DESKTOP = 0.35;
+        const INTERACTION_RADIUS_MULT_TOUCH = 0.60;
 
         // Scene setup
         const scene = new THREE.Scene();
@@ -93,16 +99,26 @@
         const lines = new THREE.LineSegments(wireframeGeometry, materialWire);
         sphereGroup.add(lines);
 
-        function isInInteractionZone(clientX, clientY) {
+        function isInInteractionZone(clientX, clientY, pointerType) {
             const dx = clientX - windowHalfX;
             const dy = clientY - windowHalfY;
-            const interactionRadius = Math.min(window.innerWidth, window.innerHeight) * 0.35;
+            const isTouch = pointerType === 'touch';
+            const mult = isTouch ? INTERACTION_RADIUS_MULT_TOUCH : INTERACTION_RADIUS_MULT_DESKTOP;
+            const interactionRadius = Math.min(window.innerWidth, window.innerHeight) * mult;
 
             return (dx * dx + dy * dy) <= interactionRadius * interactionRadius;
         }
 
+        function applyDragDelta(deltaX, deltaY, pointerType) {
+            const isTouch = pointerType === 'touch';
+            const force = DRAG_FORCE * (isTouch ? TOUCH_DRAG_FORCE_MULT : 1);
+            angularVelocity.y += deltaX * force;
+            angularVelocity.x += deltaY * force;
+        }
+
         document.addEventListener('pointermove', (event) => {
-            const isInsideZone = isInInteractionZone(event.clientX, event.clientY);
+            const pointerType = event.pointerType || 'mouse';
+            const isInsideZone = isInInteractionZone(event.clientX, event.clientY, pointerType);
 
             if (!isInsideZone) {
                 isPointerInInteractionZone = false;
@@ -118,30 +134,82 @@
             const deltaX = event.clientX - lastPointerPosition.x;
             const deltaY = event.clientY - lastPointerPosition.y;
 
+            const maxStep = pointerType === 'touch' ? TOUCH_MAX_POINTER_STEP : MAX_POINTER_STEP;
             // Ignore abrupt pointer teleports (e.g. stylus lifted and re-introduced elsewhere)
-            if (Math.abs(deltaX) > MAX_POINTER_STEP || Math.abs(deltaY) > MAX_POINTER_STEP) {
+            if (Math.abs(deltaX) > maxStep || Math.abs(deltaY) > maxStep) {
                 lastPointerPosition = { x: event.clientX, y: event.clientY };
                 return;
             }
 
             lastPointerPosition = { x: event.clientX, y: event.clientY };
-            angularVelocity.y += deltaX * DRAG_FORCE;
-            angularVelocity.x += deltaY * DRAG_FORCE;
+            applyDragDelta(deltaX, deltaY, pointerType);
         });
 
         document.addEventListener('pointerdown', (event) => {
+            const pointerType = event.pointerType || 'mouse';
+            if (pointerType === 'touch') pointerTouchActive = true;
             lastPointerPosition = { x: event.clientX, y: event.clientY };
-            isPointerInInteractionZone = isInInteractionZone(event.clientX, event.clientY);
+            isPointerInInteractionZone = isInInteractionZone(event.clientX, event.clientY, pointerType);
         });
 
         function resetPointerTracking() {
             isPointerInInteractionZone = false;
+            pointerTouchActive = false;
+            activeTouchId = null;
         }
 
         document.addEventListener('pointerup', resetPointerTracking);
         document.addEventListener('pointercancel', resetPointerTracking);
         document.addEventListener('pointerleave', resetPointerTracking);
         window.addEventListener('blur', resetPointerTracking);
+
+        // Touch fallback (helps on mobile browsers where pointermove may be throttled/canceled during scroll).
+        function getPrimaryTouch(touchList) {
+            if (!touchList || touchList.length === 0) return null;
+            if (activeTouchId == null) return touchList[0];
+            for (let i = 0; i < touchList.length; i++) {
+                if (touchList[i].identifier === activeTouchId) return touchList[i];
+            }
+            return touchList[0];
+        }
+
+        document.addEventListener('touchstart', (event) => {
+            if (pointerTouchActive) return; // Avoid double-counting when pointer events are active.
+            const t = getPrimaryTouch(event.touches);
+            if (!t) return;
+            activeTouchId = t.identifier;
+            lastPointerPosition = { x: t.clientX, y: t.clientY };
+            isPointerInInteractionZone = isInInteractionZone(t.clientX, t.clientY, 'touch');
+        }, { passive: true });
+
+        document.addEventListener('touchmove', (event) => {
+            if (pointerTouchActive) return;
+            const t = getPrimaryTouch(event.touches);
+            if (!t) return;
+            const isInsideZone = isInInteractionZone(t.clientX, t.clientY, 'touch');
+            if (!isInsideZone) {
+                isPointerInInteractionZone = false;
+                lastPointerPosition = { x: t.clientX, y: t.clientY };
+                return;
+            }
+            if (!isPointerInInteractionZone) {
+                lastPointerPosition = { x: t.clientX, y: t.clientY };
+                isPointerInInteractionZone = true;
+                return;
+            }
+
+            const deltaX = t.clientX - lastPointerPosition.x;
+            const deltaY = t.clientY - lastPointerPosition.y;
+            if (Math.abs(deltaX) > TOUCH_MAX_POINTER_STEP || Math.abs(deltaY) > TOUCH_MAX_POINTER_STEP) {
+                lastPointerPosition = { x: t.clientX, y: t.clientY };
+                return;
+            }
+            lastPointerPosition = { x: t.clientX, y: t.clientY };
+            applyDragDelta(deltaX, deltaY, 'touch');
+        }, { passive: true });
+
+        document.addEventListener('touchend', resetPointerTracking, { passive: true });
+        document.addEventListener('touchcancel', resetPointerTracking, { passive: true });
 
         let targetScrollY = 0;
         document.addEventListener('scroll', () => {
@@ -208,4 +276,3 @@
         init();
     }
 })();
-
