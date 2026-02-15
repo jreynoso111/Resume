@@ -14,6 +14,9 @@ window.__SUPABASE_CONFIG__ = {
   // This must match your "UNSAFE grants" SQL setup in Supabase.
   unsafeNoAuth: false,
   cms: {
+    // When false (recommended for a "static is source-of-truth" site), the public pages will NOT
+    // auto-hydrate from `cms_pages`. You can still force hydration with `?cms=1`.
+    autoHydrate: false,
     pagesTable: 'cms_pages',
     assetsBucket: 'resume-cms',
     uploadFunction: 'cms-upload'
