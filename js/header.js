@@ -11,6 +11,42 @@
         return activeKey === key ? ` class="${className}"` : '';
     }
 
+    function renderMobileMenu(activePage, config) {
+        const activeClass = config.activeClass || 'nav-mobile-active';
+        const projectsPrefix = config.projectsDropdownPrefix || '';
+        const contactHref = config.contactHref || 'mailto:jreynoso111@gmail.com';
+
+        return `
+      <button class="nav-toggle" type="button" aria-label="Open menu" aria-expanded="false">
+        <span class="nav-toggle-icon" aria-hidden="true"><span></span><span></span><span></span></span>
+      </button>
+
+      <div class="nav-mobile" hidden>
+        <div class="nav-mobile-overlay" data-nav-close="true" aria-hidden="true"></div>
+        <div class="nav-mobile-panel" role="dialog" aria-modal="true" aria-label="Site menu">
+          <div class="nav-mobile-top">
+            <div class="nav-mobile-title">Menu</div>
+            <button class="nav-mobile-close" type="button" data-nav-close="true">Close</button>
+          </div>
+
+          <div class="nav-mobile-links">
+            <a href="${config.overviewHref}"${withActiveClass(activePage, 'overview', activeClass)}>Overview</a>
+            <a href="${config.projectsHref}"${withActiveClass(activePage, 'projects', activeClass)}>Projects</a>
+
+            <div class="nav-mobile-section">
+              <div class="nav-mobile-section-label">Project Pages</div>
+              <div class="nav-mobile-sub">
+                ${projectLinks.map((item) => `<a href="${projectsPrefix}${item.href}">${item.label}</a>`).join('')}
+              </div>
+            </div>
+
+            <a href="${config.aboutHref}"${withActiveClass(activePage, 'about', activeClass)}>About Me</a>
+            <a href="${contactHref}">Contact</a>
+          </div>
+        </div>
+      </div>`;
+    }
+
     function renderProjectDropdown(prefix, className = '') {
         return `<div${className ? ` class="${className}"` : ''}>${projectLinks
             .map((item) => `<a href="${prefix}${item.href}">${item.label}</a>`)
@@ -72,6 +108,13 @@
           <div class="nav-cta">
             <a href="mailto:jreynoso111@gmail.com" class="btn-primary">Contact<span class="chevron">→</span></a>
           </div>
+
+          ${renderMobileMenu(activePage, {
+                overviewHref: 'index.html',
+                projectsHref: 'pages/projects.html',
+                projectsDropdownPrefix: 'pages/projects/',
+                aboutHref: 'pages/about.html'
+            })}
         </nav>
       </div>`;
         }
@@ -100,6 +143,13 @@
             })}
           </div>
           <a href="mailto:jreynoso111@gmail.com" class="nav-cta">Contact <span aria-hidden="true">→</span></a>
+
+          ${renderMobileMenu(activePage, {
+                overviewHref: '../index.html',
+                projectsHref: 'projects.html',
+                projectsDropdownPrefix: 'projects/',
+                aboutHref: 'about.html'
+            })}
         </nav>
       </div>`;
         }
@@ -126,6 +176,13 @@
             })}
         </nav>
         <div class="header-cta"><a href="mailto:jreynoso111@gmail.com" class="email-btn">Contact →</a></div>
+
+        ${renderMobileMenu(activePage, {
+                overviewHref: '../index.html',
+                projectsHref: 'projects.html',
+                projectsDropdownPrefix: 'projects/',
+                aboutHref: 'about.html'
+            })}
       </div>`;
         }
 
@@ -151,10 +208,103 @@
         </nav>
 
         <a href="mailto:jreynoso111@gmail.com" class="header-cta">Contact →</a>
+
+        ${renderMobileMenu(activePage, {
+                overviewHref: '../../index.html',
+                projectsHref: '../projects.html',
+                projectsDropdownPrefix: '',
+                aboutHref: '../about.html'
+            })}
       </div>`;
         }
 
         return '';
+    }
+
+    function initMobileNav(root) {
+        const toggle = root.querySelector('.nav-toggle');
+        const mobile = root.querySelector('.nav-mobile');
+        if (!toggle || !mobile) return;
+
+        const closeEls = mobile.querySelectorAll('[data-nav-close="true"]');
+        const panel = mobile.querySelector('.nav-mobile-panel');
+
+        let escHandler = null;
+        let hideTimer = null;
+
+        function open() {
+            mobile.hidden = false;
+            // Trigger CSS transitions.
+            requestAnimationFrame(() => {
+                mobile.classList.add('is-open');
+                document.body.classList.add('nav-open');
+                toggle.setAttribute('aria-expanded', 'true');
+            });
+
+            escHandler = (e) => {
+                if (e.key === 'Escape') close();
+            };
+            document.addEventListener('keydown', escHandler);
+
+            // Focus close button for accessibility.
+            const closeBtn = mobile.querySelector('.nav-mobile-close');
+            if (closeBtn) closeBtn.focus();
+        }
+
+        function close() {
+            mobile.classList.remove('is-open');
+            document.body.classList.remove('nav-open');
+            toggle.setAttribute('aria-expanded', 'false');
+
+            if (escHandler) {
+                document.removeEventListener('keydown', escHandler);
+                escHandler = null;
+            }
+
+            let closedOnce = false;
+            const done = () => {
+                if (closedOnce) return;
+                closedOnce = true;
+                if (hideTimer) {
+                    clearTimeout(hideTimer);
+                    hideTimer = null;
+                }
+                mobile.hidden = true;
+                if (panel) panel.removeEventListener('transitionend', done);
+                toggle.focus();
+            };
+
+            // If no panel, just hide immediately.
+            if (!panel) {
+                mobile.hidden = true;
+                toggle.focus();
+                return;
+            }
+
+            panel.addEventListener('transitionend', done);
+            // Fallback in case transitionend doesn't fire.
+            hideTimer = setTimeout(done, 250);
+        }
+
+        toggle.addEventListener('click', () => {
+            const expanded = toggle.getAttribute('aria-expanded') === 'true';
+            if (expanded) close();
+            else open();
+        });
+
+        closeEls.forEach((el) => el.addEventListener('click', close));
+
+        mobile.addEventListener('click', (e) => {
+            // Clicks inside the panel should not close unless a close element is clicked.
+            if (panel && panel.contains(e.target)) return;
+        });
+
+        // If resizing up to desktop, close the mobile menu to avoid stuck state.
+        window.addEventListener('resize', () => {
+            const isMobile = window.matchMedia('(max-width: 860px)').matches;
+            const expanded = toggle.getAttribute('aria-expanded') === 'true';
+            if (!isMobile && expanded) close();
+        });
     }
 
     function initHeader() {
@@ -166,6 +316,7 @@
                 const activePage = headerHost.dataset.active || '';
                 headerHost.innerHTML = renderHeader(variant, activePage);
             }
+            initMobileNav(headerHost);
         }
 
         const sidebarHost = document.getElementById('projects-sidebar');
