@@ -998,9 +998,15 @@ body.about-page .external-links-actions {
 
 
 
-.about-info-card {
-  max-width: 400px;
-  margin-left: auto;
+/* About page: keep the info card closer to the text column (less empty space). */
+body.about-page .hero-grid {
+  gap: 20px;
+}
+
+body.about-page .about-info-card {
+  max-width: 460px;
+  margin-left: 0;
+  margin-right: auto;
 }
 
 .hero-img-frame.about-info-image {
