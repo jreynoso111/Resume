@@ -29,7 +29,9 @@
       cvs.style.left = '0';
       cvs.style.width = '100%';
       cvs.style.height = '100%';
-      cvs.style.zIndex = '-1'; // Place constellation behind satellites
+      // Avoid negative z-index: it can render behind the document background (invisible).
+      // The WebGL canvas above is transparent, so particles still show through.
+      cvs.style.zIndex = '0';
       cvs.style.pointerEvents = 'none';
       document.body.prepend(cvs);
     }

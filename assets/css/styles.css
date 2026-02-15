@@ -222,7 +222,8 @@ img {
 
   height: 100%;
 
-  z-index: -1;
+  /* Keep particles behind page content but above the html background. */
+  z-index: 0;
 
   pointer-events: none;
 
