@@ -778,11 +778,12 @@
       const depth = Math.max(0, parts.length - 1);
       const rootPrefix = '../'.repeat(depth);
       const footerHost = `<footer id="site-footer" data-root-path="${rootPrefix}"></footer>`;
-	      const STYLES_V = 19;
+	      const STYLES_V = 20;
 	      const HEADER_V = 3;
-	      const FOOTER_V = 18;
-	      const EDITOR_V = 25;
+	      const FOOTER_V = 19;
+	      const EDITOR_V = 26;
       const SHELL_V = 4;
+      const PROJECTS_V = 4;
       const footerScript = `<script src="${rootPrefix}js/footer.js?v=${FOOTER_V}"></script>`;
       const headerScript = `<script src="${rootPrefix}js/header.js?v=${HEADER_V}"></script>`;
       const editorScript = `<script src="${rootPrefix}js/editor-auth.js?v=${EDITOR_V}"></script>`;
@@ -807,6 +808,7 @@
       out = out.replace(/(js\/footer\.js\?v=)\d+/gi, `$1${FOOTER_V}`);
       out = out.replace(/(js\/editor-auth\.js\?v=)\d+/gi, `$1${EDITOR_V}`);
       out = out.replace(/(js\/site-shell\.js\?v=)\d+/gi, `$1${SHELL_V}`);
+      out = out.replace(/(js\/projects-page\.js\?v=)\d+/gi, `$1${PROJECTS_V}`);
 
       // Ensure the footer host exists (some snapshots were saved without it).
       if (!/\bid=(['"])site-footer\1/i.test(out)) {
