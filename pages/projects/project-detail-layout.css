@@ -8,14 +8,7 @@
   padding: 0 18px;
 }
 
-header {
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  backdrop-filter: blur(8px);
-  background: rgba(255, 255, 255, 0.96);
-  border-bottom: 1px solid var(--border-subtle);
-}
+/* Header styling is owned by assets/css/styles.css so it stays consistent site-wide. */
 
 .header-row {
   display: flex;
@@ -36,8 +29,8 @@ header {
   height: 40px;
   border-radius: 50%;
   border: 1px solid var(--border-subtle);
-  background: #ffffff;
-  color: var(--accent-strong);
+  background: var(--bg-soft);
+  color: var(--text-main);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -75,7 +68,7 @@ header {
   top: calc(100% + 8px);
   left: 0;
   min-width: 260px;
-  background: #ffffff;
+  background: var(--bg-soft);
   border-radius: 10px;
   box-shadow: 0 10px 30px rgba(15, 23, 42, 0.15);
   border: 1px solid var(--border-subtle);
