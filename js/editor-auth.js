@@ -712,21 +712,42 @@
     notify('Signed out.', 'success');
   }
 
-  async function maybeHydrateFromSupabase() {
-    if (state.cmsHydrated) return false;
+	  async function maybeHydrateFromSupabase() {
+	    if (state.cmsHydrated) return false;
 
-    // If we already loaded a CMS snapshot (document.write), do not re-hydrate or we'll loop.
-    const snapshotMeta = document.querySelector('meta[name="cms-snapshot"][content="1"]');
-    if (snapshotMeta) {
-      state.cmsHydrated = true;
-      return false;
-    }
+	    // If we already loaded a CMS snapshot (document.write), do not re-hydrate or we'll loop.
+	    const snapshotMeta = document.querySelector('meta[name="cms-snapshot"][content="1"]');
+	    if (snapshotMeta) {
+	      state.cmsHydrated = true;
+	      return false;
+	    }
 
-    const path = getPreferredCurrentPagePath();
-    if (path.startsWith('admin/')) return false;
+	    // Local dev should prefer the on-disk HTML so published CMS snapshots don't overwrite edits.
+	    // Add `?cms=1` to force hydration, or `?nocms=1` to disable hydration on any host.
+	    try {
+	      const params = new URLSearchParams(location.search || '');
+	      const noCms = String(params.get('nocms') || '').toLowerCase();
+	      if (noCms === '1' || noCms === 'true') return false;
 
-    const cfg = await getSupabaseConfig();
-    if (!cfg || !cfg.cms || !cfg.cms.pagesTable) return false;
+	      const forceCms = String(params.get('cms') || '').toLowerCase();
+	      const forced = forceCms === '1' || forceCms === 'true';
+	      if (!forced) {
+	        const host = String(location.hostname || '').toLowerCase();
+	        const loopbackV4 = host === '127.0.0.1' || host.startsWith('127.');
+	        const loopbackV6 = host === '::1' || host === '::';
+	        if (location.protocol === 'file:' || host === 'localhost' || host === '0.0.0.0' || loopbackV4 || loopbackV6) {
+	          return false;
+	        }
+	      }
+	    } catch (_e) {
+	      // Ignore URL parsing failures; hydrate if configured.
+	    }
+
+	    const path = getPreferredCurrentPagePath();
+	    if (path.startsWith('admin/')) return false;
+
+	    const cfg = await getSupabaseConfig();
+	    if (!cfg || !cfg.cms || !cfg.cms.pagesTable) return false;
 
     const sb = await getSupabaseClient();
     if (!sb) return false;
@@ -757,7 +778,7 @@
       const STYLES_V = 19;
       const HEADER_V = 3;
       const FOOTER_V = 18;
-      const EDITOR_V = 21;
+	      const EDITOR_V = 23;
       const SHELL_V = 4;
       const footerScript = `<script src="${rootPrefix}js/footer.js?v=${FOOTER_V}"></script>`;
       const headerScript = `<script src="${rootPrefix}js/header.js?v=${HEADER_V}"></script>`;
