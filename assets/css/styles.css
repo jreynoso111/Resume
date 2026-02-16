@@ -1512,23 +1512,6 @@ body.about-page .about-info-card {
   }
 }
 
-/* Touch devices (iPad, etc.): force the mobile drawer because hover-based dropdowns are unreliable. */
-@media (hover: none) and (pointer: coarse) {
-  .nav-links,
-  .nav-main,
-  .nav-cta,
-  .nav-tabs,
-  .nav-tabs-links,
-  .header-nav,
-  .header-cta {
-    display: none !important;
-  }
-
-  .nav-toggle {
-    display: inline-flex !important;
-  }
-}
-
 @media (max-width: 640px) {
   .shell {
     padding: 0 14px;
