@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Profile | Juan R. Reynoso</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/styles.css?v=33" />
+  <style>
+    .auth-wrap { max-width: 560px; margin: 48px auto 24px; }
+    .auth-card { border: 1px solid var(--border-subtle); background: var(--bg-soft); border-radius: 14px; padding: 18px; box-shadow: var(--card-shadow); }
+    .auth-title { margin: 0 0 8px; color: var(--accent-strong); font-size: 24px; }
+    .auth-sub { margin: 0 0 14px; color: var(--text-muted); font-size: 13px; }
+    .auth-grid { display: grid; gap: 8px; margin-bottom: 14px; }
+    .auth-row { display: grid; grid-template-columns: 120px 1fr; gap: 8px; align-items: center; }
+    .auth-label { color: var(--text-muted); font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+    .auth-value { font-size: 14px; color: var(--text-main); }
+    .auth-field { display: grid; gap: 6px; margin-bottom: 10px; }
+    .auth-field label { color: var(--text-muted); font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+    .auth-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .auth-error { margin-top: 10px; color: #b91c1c; font-size: 13px; min-height: 18px; }
+    .auth-ok { margin-top: 10px; color: #065f46; font-size: 13px; min-height: 18px; }
+    .auth-spacer { height: 24px; }
+    @media (max-width: 620px) { .auth-row { grid-template-columns: 1fr; } }
+  </style>
+</head>
+
+<body>
+  <div class="page">
+    <header id="site-header" data-variant="home" data-active=""></header>
+
+    <main id="top">
+      <section class="hero">
+        <div class="shell">
+          <div class="auth-wrap">
+            <article class="auth-card">
+              <h1 class="auth-title">Profile</h1>
+              <p class="auth-sub">Manage your account details.</p>
+
+              <div class="auth-grid">
+                <div class="auth-row">
+                  <div class="auth-label">Email</div>
+                  <div id="profile-email" class="auth-value">—</div>
+                </div>
+                <div class="auth-row">
+                  <div class="auth-label">Role</div>
+                  <div id="profile-role" class="auth-value">viewer</div>
+                </div>
+              </div>
+
+              <form id="profile-form" novalidate>
+                <div class="auth-field">
+                  <label for="profile-full-name">Full name</label>
+                  <input id="profile-full-name" class="cc-input" type="text" autocomplete="name" />
+                </div>
+                <div class="auth-actions">
+                  <button id="profile-save" class="btn-primary" type="submit">Save</button>
+                  <button id="profile-logout" class="cc-btn" type="button">Logout</button>
+                </div>
+                <div id="profile-error" class="auth-error" role="status" aria-live="polite"></div>
+                <div id="profile-ok" class="auth-ok" role="status" aria-live="polite"></div>
+              </form>
+            </article>
+          </div>
+          <div class="auth-spacer"></div>
+        </div>
+      </section>
+    </main>
+
+    <footer id="site-footer" data-root-path=""></footer>
+  </div>
+
+  <script src="assets/js/auth.js?v=2"></script>
+  <script>
+    (function () {
+      const emailEl = document.getElementById('profile-email');
+      const roleEl = document.getElementById('profile-role');
+      const fullNameInput = document.getElementById('profile-full-name');
+      const form = document.getElementById('profile-form');
+      const saveBtn = document.getElementById('profile-save');
+      const logoutBtn = document.getElementById('profile-logout');
+      const errorBox = document.getElementById('profile-error');
+      const okBox = document.getElementById('profile-ok');
+
+      let currentUser = null;
+      let currentRole = 'viewer';
+
+      function setError(message) {
+        errorBox.textContent = String(message || '');
+      }
+
+      function setOk(message) {
+        okBox.textContent = String(message || '');
+      }
+
+      function setBusy(next) {
+        const busy = Boolean(next);
+        saveBtn.disabled = busy;
+        logoutBtn.disabled = busy;
+        saveBtn.textContent = busy ? 'Saving...' : 'Save';
+      }
+
+      async function loadProfile(auth, user) {
+        let profile = await auth.getProfile(user.id);
+        if (!profile) {
+          profile = await auth.ensureProfile({ user: user });
+        }
+
+        currentRole = String((profile && profile.role) || 'viewer');
+        emailEl.textContent = String(user.email || '—');
+        roleEl.textContent = currentRole;
+        fullNameInput.value = profile && profile.full_name ? String(profile.full_name) : '';
+      }
+
+      async function init() {
+        const auth = window.ResumeAuth;
+        if (!auth) {
+          setError('Authentication module failed to load.');
+          return;
+        }
+
+        try {
+          const session = await auth.requireAuth({ redirectTo: auth.getAppHref('login.html') });
+          if (!session || !session.user) return;
+
+          currentUser = session.user;
+          await loadProfile(auth, currentUser);
+        } catch (e) {
+          setError(e && e.message ? e.message : String(e));
+          return;
+        }
+
+        form.addEventListener('submit', async (event) => {
+          event.preventDefault();
+          setError('');
+          setOk('');
+          if (!currentUser) return;
+
+          setBusy(true);
+          try {
+            const auth = window.ResumeAuth;
+            const sb = await auth.getClient();
+            const fullName = String(fullNameInput.value || '').trim() || null;
+            const { error } = await sb
+              .from('profiles')
+              .update({ full_name: fullName })
+              .eq('id', currentUser.id);
+            if (error) {
+              await auth.ensureProfile({ user: currentUser, full_name: fullName });
+              const retry = await sb
+                .from('profiles')
+                .update({ full_name: fullName })
+                .eq('id', currentUser.id);
+              if (retry.error) throw retry.error;
+            }
+
+            await loadProfile(auth, currentUser);
+            setOk('Profile updated.');
+          } catch (e) {
+            setError(e && e.message ? e.message : String(e));
+          } finally {
+            setBusy(false);
+          }
+        });
+
+        logoutBtn.addEventListener('click', async () => {
+          setError('');
+          setOk('');
+          setBusy(true);
+          try {
+            await window.ResumeAuth.logout({ redirectTo: window.ResumeAuth.getAppHref('login.html') });
+          } catch (e) {
+            setError(e && e.message ? e.message : String(e));
+            setBusy(false);
+          }
+        });
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init, { once: true });
+      } else {
+        init();
+      }
+    })();
+  </script>
+  <script src="js/header.js?v=9"></script>
+  <script src="js/footer.js?v=20"></script>
+  <script src="js/site-shell.js?v=6"></script>
+</body>
+
+</html>

@@ -11,6 +11,146 @@
         return activeKey === key ? ` class="${className}"` : '';
     }
 
+    function normalizeRootPrefix(raw) {
+        const s = String(raw || '');
+        if (!s) return '';
+        return s.endsWith('/') ? s : `${s}/`;
+    }
+
+    function inferRootPrefixFromHeaderScript() {
+        const script = Array.from(document.scripts || []).find((s) => {
+            const src = String(s.getAttribute('src') || s.src || '');
+            return /(?:^|\/)js\/header\.js(?:$|[?#])/.test(src);
+        });
+        if (!script) return '';
+        const raw = String(script.getAttribute('src') || script.src || '');
+        const clean = raw.split('?', 1)[0].split('#', 1)[0];
+        const marker = clean.lastIndexOf('js/header.js');
+        if (marker === -1) return '';
+        return normalizeRootPrefix(clean.slice(0, marker));
+    }
+
+    function loadScript(src) {
+        return new Promise((resolve, reject) => {
+            const existing = Array.from(document.scripts || []).find((s) => {
+                const cur = String(s.getAttribute('src') || s.src || '');
+                return cur === src || cur.split('?')[0] === src.split('?')[0];
+            });
+            if (existing) {
+                return resolve();
+            }
+
+            const script = document.createElement('script');
+            script.src = src;
+            script.async = true;
+            script.addEventListener('load', () => resolve(), { once: true });
+            script.addEventListener('error', () => reject(new Error(`Failed to load script: ${src}`)), {
+                once: true
+            });
+            document.head.appendChild(script);
+        });
+    }
+
+    async function ensureAuthModule(rootPrefix) {
+        if (window.ResumeAuth) return window.ResumeAuth;
+        const src = `${normalizeRootPrefix(rootPrefix)}assets/js/auth.js?v=2`;
+        await loadScript(src);
+        return window.ResumeAuth || null;
+    }
+
+    function renderDesktopAuthLinks(rootPrefix, isLoggedIn, buttonClass) {
+        const loginHref = `${rootPrefix}login.html`;
+        const profileHref = `${rootPrefix}profile.html`;
+        const btnClass = String(buttonClass || '').trim() || 'nav-cta';
+        const clsAttr = btnClass ? ` class="${btnClass}"` : '';
+        if (isLoggedIn) {
+            return `<a href="${profileHref}"${clsAttr}>Profile</a> <a href="${loginHref}" data-auth-logout="1">Logout</a>`;
+        }
+        return `<a href="${loginHref}"${clsAttr}>Login</a>`;
+    }
+
+    function renderMobileAuthLinks(rootPrefix, isLoggedIn) {
+        const loginHref = `${rootPrefix}login.html`;
+        const profileHref = `${rootPrefix}profile.html`;
+        if (isLoggedIn) {
+            return `<a href="${profileHref}">Profile</a><a href="${loginHref}" data-auth-logout="1">Logout</a>`;
+        }
+        return `<a href="${loginHref}">Login</a>`;
+    }
+
+    function bindAuthLogout(root, auth, rootPrefix) {
+        root.querySelectorAll('[data-auth-logout="1"]').forEach((el) => {
+            if (el.dataset.boundAuthLogout === '1') return;
+            el.dataset.boundAuthLogout = '1';
+            el.addEventListener('click', async (event) => {
+                event.preventDefault();
+                if (!auth || typeof auth.logout !== 'function') return;
+                try {
+                    await auth.logout({ redirectTo: `${rootPrefix}login.html` });
+                } catch (_e) {
+                    // Ignore logout errors to keep nav non-blocking.
+                }
+            });
+        });
+    }
+
+    async function refreshAuthNav(root, auth, rootPrefix) {
+        let isLoggedIn = false;
+        try {
+            const session = auth && typeof auth.getSession === 'function' ? await auth.getSession() : null;
+            isLoggedIn = Boolean(session && session.user);
+        } catch (_e) {
+            isLoggedIn = false;
+        }
+
+        root.querySelectorAll('[data-auth-desktop="1"]').forEach((slot) => {
+            slot.innerHTML = renderDesktopAuthLinks(
+                rootPrefix,
+                isLoggedIn,
+                slot.getAttribute('data-auth-btn-class') || ''
+            );
+        });
+        root.querySelectorAll('[data-auth-mobile="1"]').forEach((slot) => {
+            slot.innerHTML = renderMobileAuthLinks(rootPrefix, isLoggedIn);
+        });
+        bindAuthLogout(root, auth, rootPrefix);
+    }
+
+    async function initAuthNavigation(root) {
+        if (!root || root.dataset.authNavInitialized === '1') return;
+        root.dataset.authNavInitialized = '1';
+
+        const rootPrefix = inferRootPrefixFromHeaderScript();
+        let auth = null;
+
+        try {
+            auth = await ensureAuthModule(rootPrefix);
+        } catch (_e) {
+            auth = null;
+        }
+
+        if (!auth) {
+            root.querySelectorAll('[data-auth-desktop="1"]').forEach((slot) => {
+                slot.innerHTML = renderDesktopAuthLinks(
+                    rootPrefix,
+                    false,
+                    slot.getAttribute('data-auth-btn-class') || ''
+                );
+            });
+            root.querySelectorAll('[data-auth-mobile="1"]').forEach((slot) => {
+                slot.innerHTML = renderMobileAuthLinks(rootPrefix, false);
+            });
+            return;
+        }
+
+        await refreshAuthNav(root, auth, rootPrefix);
+        if (typeof auth.onAuthStateChange === 'function') {
+            auth.onAuthStateChange(() => {
+                refreshAuthNav(root, auth, rootPrefix);
+            }).catch(() => {});
+        }
+    }
+
     function renderMobileMenu(activePage, config) {
         const activeClass = config.activeClass || 'nav-mobile-active';
         const projectsPrefix = config.projectsDropdownPrefix || '';
@@ -43,6 +183,7 @@
             <a href="${config.blogHref}"${withActiveClass(activePage, 'blog', activeClass)}>Blog</a>
             <a href="${config.aboutHref}"${withActiveClass(activePage, 'about', activeClass)}>About Me</a>
             <a href="${contactHref}">Contact</a>
+            <div data-auth-mobile="1"></div>
           </div>
         </div>
       </div>`;
@@ -108,7 +249,10 @@
                 aboutHref: 'pages/about.html'
             })}
 
-          <a href="mailto:JReynoso111@gmail.com" class="nav-cta">Contact <span aria-hidden="true">→</span></a>
+          <div class="nav-auth-cta">
+            <span data-auth-desktop="1" data-auth-btn-class="nav-cta"></span>
+            <a href="mailto:JReynoso111@gmail.com" class="nav-cta">Contact <span aria-hidden="true">→</span></a>
+          </div>
 
           ${renderMobileMenu(activePage, {
                 overviewHref: 'index.html',
@@ -145,7 +289,10 @@
                 aboutHref: 'about.html'
             })}
           </div>
-          <a href="mailto:JReynoso111@gmail.com" class="nav-cta">Contact <span aria-hidden="true">→</span></a>
+          <div class="nav-auth-cta">
+            <span data-auth-desktop="1" data-auth-btn-class="nav-cta"></span>
+            <a href="mailto:JReynoso111@gmail.com" class="nav-cta">Contact <span aria-hidden="true">→</span></a>
+          </div>
 
           ${renderMobileMenu(activePage, {
                 overviewHref: '../index.html',
@@ -184,7 +331,10 @@
 	                aboutHref: '../about.html'
 	            })}
 	          </div>
-	          <a href="mailto:JReynoso111@gmail.com" class="nav-cta">Contact <span aria-hidden="true">→</span></a>
+		          <div class="nav-auth-cta">
+		            <span data-auth-desktop="1" data-auth-btn-class="nav-cta"></span>
+		            <a href="mailto:JReynoso111@gmail.com" class="nav-cta">Contact <span aria-hidden="true">→</span></a>
+		          </div>
 
 	          ${renderMobileMenu(activePage, {
 	                overviewHref: '../../index.html',
@@ -219,7 +369,10 @@
                 projectsLabel: 'Projects'
             })}
         </nav>
-        <div class="header-cta"><a href="mailto:JReynoso111@gmail.com" class="email-btn">Contact →</a></div>
+	        <div class="header-cta nav-auth-cta">
+            <span data-auth-desktop="1" data-auth-btn-class="nav-cta"></span>
+            <a href="mailto:JReynoso111@gmail.com" class="nav-cta">Contact →</a>
+          </div>
 
         ${renderMobileMenu(activePage, {
                 overviewHref: '../index.html',
@@ -250,10 +403,13 @@
             ${renderProjectDropdown('', 'header-projects-dropdown')}
           </div>
           <a href="../blog.html"${withActiveClass(activePage, 'blog')}>Blog</a>
-          <a href="../about.html"${withActiveClass(activePage, 'about')}>About Me</a>
-        </nav>
+	          <a href="../about.html"${withActiveClass(activePage, 'about')}>About Me</a>
+	        </nav>
 
-        <a href="mailto:JReynoso111@gmail.com" class="header-cta">Contact →</a>
+	        <div class="nav-auth-cta">
+            <span data-auth-desktop="1" data-auth-btn-class="header-cta"></span>
+            <a href="mailto:JReynoso111@gmail.com" class="header-cta">Contact →</a>
+          </div>
 
         ${renderMobileMenu(activePage, {
                 overviewHref: '../../index.html',
@@ -364,6 +520,7 @@
                 headerHost.innerHTML = renderHeader(variant, activePage);
             }
             initMobileNav(headerHost);
+            initAuthNavigation(headerHost);
         }
 
         const sidebarHost = document.getElementById('projects-sidebar');

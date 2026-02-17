@@ -996,6 +996,27 @@ body.nav-open {
 
 }
 
+.nav-auth-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nav-auth-cta [data-auth-desktop="1"] {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nav-auth-cta [data-auth-desktop="1"] a:not(.nav-cta):not(.header-cta):not(.email-btn) {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.nav-auth-cta [data-auth-desktop="1"] a:not(.nav-cta):not(.header-cta):not(.email-btn):hover {
+  color: var(--accent-strong);
+}
+
 .external-links-actions {
 
   flex-direction: row;
@@ -1533,6 +1554,10 @@ body.about-page #philosophy + div + .standard-text + .standard-text {
     display: inline-flex;
     padding: 7px 12px;
     font-size: 12px;
+  }
+
+  .nav-auth-cta [data-auth-desktop="1"] {
+    display: none;
   }
 }
 

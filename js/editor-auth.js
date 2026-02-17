@@ -775,12 +775,12 @@
       const depth = Math.max(0, parts.length - 1);
       const rootPrefix = '../'.repeat(depth);
       const footerHost = `<footer id="site-footer" data-root-path="${rootPrefix}"></footer>`;
-	      const STYLES_V = 32;
-	      const HEADER_V = 6;
+	      const STYLES_V = 33;
+	      const HEADER_V = 9;
 	      const FOOTER_V = 20;
 	      const EDITOR_V = 30;
 	      const SHELL_V = 6;
-	      const COURSES_CERTS_V = 9;
+	      const COURSES_CERTS_V = 11;
 	      const PROJECTS_V = 4;
 	      const PROJECT_DETAIL_LAYOUT_V = 2;
       const footerScript = `<script src="${rootPrefix}js/footer.js?v=${FOOTER_V}"></script>`;

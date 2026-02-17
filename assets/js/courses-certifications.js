@@ -264,6 +264,16 @@
     return null;
   }
 
+  async function getAuthModule(rootPrefix) {
+    if (window.ResumeAuth) return window.ResumeAuth;
+    try {
+      await loadScript(`${rootPrefix}assets/js/auth.js?v=2`);
+    } catch (_e) {
+      return null;
+    }
+    return window.ResumeAuth || null;
+  }
+
   async function ensureSupabaseLibrary() {
     if (window.supabase && typeof window.supabase.createClient === "function") return;
     await loadScript("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2");
@@ -386,6 +396,17 @@
       .trim()
       .toLowerCase();
     return category === "education" || category.includes("education");
+  }
+
+  function normalizeRole(raw) {
+    const role = String(raw || "").trim().toLowerCase();
+    return role || "viewer";
+  }
+
+  function canOpenCertificateProof(role, item) {
+    if (!item || item.kind !== "certification") return true;
+    const normalized = normalizeRole(role);
+    return normalized === "admin" || normalized === "recruiter";
   }
 
   function filterItems(items, activeKind, query) {
@@ -978,6 +999,9 @@
       adminAuthed: false,
       seeded: false,
       modal: null,
+      auth: null,
+      viewerRole: "viewer",
+      viewerLoggedIn: false,
     };
 
     const modal = createModal(section);
@@ -1034,7 +1058,40 @@
         const card = buildCard(item, {
           rootPrefix: state.rootPrefix,
           adminActive,
-          onViewProof: (it) => modal.openView(it, { rootPrefix: state.rootPrefix }),
+          onViewProof: (it) => {
+            Promise.resolve()
+              .then(async () => {
+                await refreshViewerRole();
+
+                if (!state.viewerLoggedIn) {
+                  const nextPath = `${window.location.pathname || "/"}${window.location.search || ""}${window.location.hash || ""}`;
+                  const loginHref =
+                    state.auth && typeof state.auth.getAppHref === "function"
+                      ? state.auth.getAppHref("login.html")
+                      : `${state.rootPrefix}login.html`;
+                  const sep = loginHref.includes("?") ? "&" : "?";
+                  window.location.assign(`${loginHref}${sep}next=${encodeURIComponent(nextPath)}`);
+                  return;
+                }
+
+                if (!canOpenCertificateProof(state.viewerRole, it)) {
+                  modal.openView(
+                    {
+                      ...it,
+                      proof_image_url: "",
+                      proof_url: "",
+                      note: "Certificates available upon request.",
+                    },
+                    { rootPrefix: state.rootPrefix }
+                  );
+                  return;
+                }
+                modal.openView(it, { rootPrefix: state.rootPrefix });
+              })
+              .catch(() => {
+                // Keep UI responsive if auth checks fail unexpectedly.
+              });
+          },
           onEdit: (it) => {
             if (!adminActive) return;
             modal.openEdit(it);
@@ -1103,6 +1160,39 @@
         state.items = DEFAULT_ITEMS.map(normalizeItem);
         state.itemsSource = "defaults";
         state.supabaseReady = false;
+      }
+    }
+
+    async function refreshViewerRole() {
+      if (!state.auth) {
+        state.auth = await getAuthModule(state.rootPrefix);
+      }
+      if (!state.auth || typeof state.auth.getSession !== "function") {
+        state.viewerRole = "viewer";
+        state.viewerLoggedIn = false;
+        return;
+      }
+
+      try {
+        const session = await state.auth.getSession();
+        if (!session || !session.user) {
+          state.viewerRole = "viewer";
+          state.viewerLoggedIn = false;
+          return;
+        }
+        state.viewerLoggedIn = true;
+
+        let profile = null;
+        if (typeof state.auth.getProfile === "function") {
+          profile = await state.auth.getProfile(session.user.id);
+        }
+        if (!profile && typeof state.auth.ensureProfile === "function") {
+          profile = await state.auth.ensureProfile({ user: session.user });
+        }
+        state.viewerRole = normalizeRole(profile && profile.role);
+      } catch (_e) {
+        state.viewerRole = "viewer";
+        state.viewerLoggedIn = false;
       }
     }
 
@@ -1272,6 +1362,13 @@
     }
 
     await loadData();
+    await refreshViewerRole();
+    if (state.auth && typeof state.auth.onAuthStateChange === "function") {
+      state.auth.onAuthStateChange(async () => {
+        await refreshViewerRole();
+        render();
+      });
+    }
     setActiveTab(tabs, state.activeKind);
     updateAdminUi();
     render();
