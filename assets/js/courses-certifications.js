@@ -307,6 +307,27 @@
     return Boolean(document.body && document.body.classList.contains("cms-admin-mode"));
   }
 
+  async function isAuthenticatedAdmin(sb, cfg) {
+    if (!sb || !cfg) return false;
+    const adminEmail = String((cfg && cfg.adminEmail) || "")
+      .trim()
+      .toLowerCase();
+    if (!adminEmail) return false;
+    try {
+      const { data } = await sb.auth.getSession();
+      const userEmail = String(
+        data && data.session && data.session.user && data.session.user.email
+          ? data.session.user.email
+          : ""
+      )
+        .trim()
+        .toLowerCase();
+      return Boolean(userEmail && userEmail === adminEmail);
+    } catch (_e) {
+      return false;
+    }
+  }
+
   function createEl(tag, className, text) {
     const el = document.createElement(tag);
     if (className) el.className = className;
@@ -918,6 +939,7 @@
       sb: null,
       cfg: null,
       supabaseReady: false,
+      adminAuthed: false,
       seeded: false,
       modal: null,
     };
@@ -936,7 +958,7 @@
       addBtn = btn;
 
       btn.addEventListener("click", async () => {
-        if (!isAdminModeActive() || !state.supabaseReady) return;
+        if (!isAdminModeActive() || !state.supabaseReady || !state.adminAuthed) return;
         await maybeSeedOnAdminActive();
         modal.openEdit(null);
       });
@@ -946,7 +968,7 @@
 
     function updateAdminUi() {
       const active = isAdminModeActive();
-      const shouldShow = active && state.supabaseReady;
+      const shouldShow = active && state.supabaseReady && state.adminAuthed;
       adminControls.hidden = !shouldShow;
       if (shouldShow) ensureAdminAddButton();
     }
@@ -954,7 +976,10 @@
     function render() {
       updateAdminUi();
       const adminActive =
-        isAdminModeActive() && state.supabaseReady && state.itemsSource === "supabase";
+        isAdminModeActive() &&
+        state.supabaseReady &&
+        state.adminAuthed &&
+        state.itemsSource === "supabase";
       modal.setAdminActive(adminActive);
 
       const filtered = filterItems(state.items, state.activeKind, state.query);
@@ -1019,6 +1044,15 @@
       state.cfg = cfg;
       state.sb = sb;
       state.supabaseReady = true;
+      state.adminAuthed = await isAuthenticatedAdmin(sb, cfg);
+
+      if (sb && sb.auth && typeof sb.auth.onAuthStateChange === "function") {
+        sb.auth.onAuthStateChange(async () => {
+          state.adminAuthed = await isAuthenticatedAdmin(state.sb, state.cfg);
+          updateAdminUi();
+          render();
+        });
+      }
 
       try {
         const rows = await fetchCredentials(sb);
@@ -1038,6 +1072,7 @@
 
     async function maybeSeedOnAdminActive() {
       if (!state.supabaseReady || state.itemsSource === "supabase") return;
+      if (!state.adminAuthed) return;
       const didSeed = await seedDefaultsIfAdmin({
         sb: state.sb,
         cfg: state.cfg,
@@ -1083,7 +1118,7 @@
     // If an older snapshot already has the button in HTML, wire it up as well.
     if (addBtn) {
       addBtn.addEventListener("click", async () => {
-        if (!isAdminModeActive() || !state.supabaseReady) return;
+        if (!isAdminModeActive() || !state.supabaseReady || !state.adminAuthed) return;
         await maybeSeedOnAdminActive();
         modal.openEdit(null);
       });
@@ -1091,7 +1126,7 @@
 
     modal.getEditForm().addEventListener("submit", async (event) => {
       event.preventDefault();
-      if (!isAdminModeActive() || !state.supabaseReady) return;
+      if (!isAdminModeActive() || !state.supabaseReady || !state.adminAuthed) return;
 
       const current = modal.getCurrentItem();
       const isEdit = Boolean(current && current.id);
@@ -1189,7 +1224,10 @@
 
     // Update admin UI when editor mode toggles.
     if (document.body) {
-      const observer = new MutationObserver(() => {
+      const observer = new MutationObserver(async () => {
+        if (state.supabaseReady) {
+          state.adminAuthed = await isAuthenticatedAdmin(state.sb, state.cfg);
+        }
         updateAdminUi();
         maybeSeedOnAdminActive();
         render();

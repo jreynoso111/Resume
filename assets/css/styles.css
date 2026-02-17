@@ -2271,6 +2271,10 @@ footer {
   justify-content: flex-end;
 }
 
+.cc-admin-controls[hidden] {
+  display: none !important;
+}
+
 .cc-btn {
   padding: 8px 12px;
   border-radius: 12px;
