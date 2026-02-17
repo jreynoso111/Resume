@@ -208,6 +208,7 @@
   ];
 
   const KINDS = /** @type {const} */ (["all", "certification", "course"]);
+  const SORTS = /** @type {const} */ (["year", "alphabet", "type"]);
 
   function getRootPrefix() {
     const footer = document.getElementById("site-footer");
@@ -323,6 +324,16 @@
     });
   }
 
+  function setActiveSort(buttons, sortBy) {
+    buttons.forEach((btn) => {
+      const btnSort = String(btn.dataset.ccSort || "year");
+      const active = btnSort === sortBy;
+      btn.classList.toggle("is-active", active);
+      btn.setAttribute("aria-selected", active ? "true" : "false");
+      btn.tabIndex = active ? 0 : -1;
+    });
+  }
+
   function buildEmptyState(emptyEl, message) {
     if (!emptyEl) return;
     emptyEl.textContent = String(message || "No items found.");
@@ -343,6 +354,44 @@
       if (activeKind !== "all" && item.kind !== activeKind) return false;
       return matchesQuery(item, query);
     });
+  }
+
+  function sortItems(items, sortBy) {
+    const sorted = [...items];
+
+    if (sortBy === "alphabet") {
+      sorted.sort((a, b) => {
+        const titleCmp = a.title.localeCompare(b.title, undefined, { sensitivity: "base" });
+        if (titleCmp !== 0) return titleCmp;
+        const issuerCmp = a.issuer.localeCompare(b.issuer, undefined, { sensitivity: "base" });
+        if (issuerCmp !== 0) return issuerCmp;
+        return (a.sort_order || 0) - (b.sort_order || 0);
+      });
+      return sorted;
+    }
+
+    if (sortBy === "type") {
+      sorted.sort((a, b) => {
+        const typeCmp = a.kind.localeCompare(b.kind, undefined, { sensitivity: "base" });
+        if (typeCmp !== 0) return typeCmp;
+        const yearA = Number.isFinite(a.year) ? a.year : -Infinity;
+        const yearB = Number.isFinite(b.year) ? b.year : -Infinity;
+        if (yearA !== yearB) return yearB - yearA;
+        return a.title.localeCompare(b.title, undefined, { sensitivity: "base" });
+      });
+      return sorted;
+    }
+
+    sorted.sort((a, b) => {
+      const yearA = Number.isFinite(a.year) ? a.year : -Infinity;
+      const yearB = Number.isFinite(b.year) ? b.year : -Infinity;
+      if (yearA !== yearB) return yearB - yearA;
+      const orderA = Number.isFinite(a.sort_order) ? a.sort_order : Number.MAX_SAFE_INTEGER;
+      const orderB = Number.isFinite(b.sort_order) ? b.sort_order : Number.MAX_SAFE_INTEGER;
+      if (orderA !== orderB) return orderA - orderB;
+      return a.title.localeCompare(b.title, undefined, { sensitivity: "base" });
+    });
+    return sorted;
   }
 
   function normalizeAssetUrl(raw, rootPrefix) {
@@ -855,6 +904,7 @@
     const adminControls = section.querySelector('[data-cc-admin-controls="1"]');
     let addBtn = section.querySelector('[data-cc-add="1"]');
     const tabs = Array.from(section.querySelectorAll("[data-cc-tab]"));
+    const sortButtons = Array.from(section.querySelectorAll("[data-cc-sort]"));
 
     if (!grid || !emptyEl || !searchInput || !adminControls || tabs.length === 0) return;
 
@@ -862,6 +912,7 @@
       rootPrefix,
       activeKind: "all",
       query: "",
+      sortBy: "year",
       items: [],
       itemsSource: "defaults", // defaults | supabase
       sb: null,
@@ -907,9 +958,10 @@
       modal.setAdminActive(adminActive);
 
       const filtered = filterItems(state.items, state.activeKind, state.query);
+      const sorted = sortItems(filtered, state.sortBy);
       grid.replaceChildren();
 
-      if (filtered.length === 0) {
+      if (sorted.length === 0) {
         emptyEl.hidden = false;
         buildEmptyState(emptyEl, "No matching items.");
         return;
@@ -917,7 +969,7 @@
 
       emptyEl.hidden = true;
       const frag = document.createDocumentFragment();
-      filtered.forEach((item) => {
+      sorted.forEach((item) => {
         const card = buildCard(item, {
           rootPrefix: state.rootPrefix,
           adminActive,
@@ -1009,6 +1061,16 @@
         if (!KINDS.includes(next)) return;
         state.activeKind = next;
         setActiveTab(tabs, next);
+        render();
+      });
+    });
+
+    sortButtons.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const next = String(btn.dataset.ccSort || "year");
+        if (!SORTS.includes(next)) return;
+        state.sortBy = next;
+        setActiveSort(sortButtons, next);
         render();
       });
     });

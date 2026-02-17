@@ -14,7 +14,7 @@
     function renderMobileMenu(activePage, config) {
         const activeClass = config.activeClass || 'nav-mobile-active';
         const projectsPrefix = config.projectsDropdownPrefix || '';
-        const contactHref = config.contactHref || 'mailto:jreynoso111@gmail.com';
+        const contactHref = config.contactHref || 'mailto:JReynoso111@gmail.com';
 
         return `
       <button class="nav-toggle" type="button" aria-label="Open menu" aria-expanded="false">
@@ -109,7 +109,7 @@
             })}
 
           <div class="nav-cta">
-            <a href="mailto:jreynoso111@gmail.com" class="btn-primary">Contact<span class="chevron">→</span></a>
+            <a href="mailto:JReynoso111@gmail.com" class="btn-primary">Contact<span class="chevron">→</span></a>
           </div>
 
           ${renderMobileMenu(activePage, {
@@ -147,7 +147,7 @@
                 aboutHref: 'about.html'
             })}
           </div>
-          <a href="mailto:jreynoso111@gmail.com" class="nav-cta">Contact <span aria-hidden="true">→</span></a>
+          <a href="mailto:JReynoso111@gmail.com" class="nav-cta">Contact <span aria-hidden="true">→</span></a>
 
           ${renderMobileMenu(activePage, {
                 overviewHref: '../index.html',
@@ -186,7 +186,7 @@
 	                aboutHref: '../about.html'
 	            })}
 	          </div>
-	          <a href="mailto:jreynoso111@gmail.com" class="nav-cta">Contact <span aria-hidden="true">→</span></a>
+	          <a href="mailto:JReynoso111@gmail.com" class="nav-cta">Contact <span aria-hidden="true">→</span></a>
 
 	          ${renderMobileMenu(activePage, {
 	                overviewHref: '../../index.html',
@@ -221,7 +221,7 @@
                 projectsLabel: 'Projects'
             })}
         </nav>
-        <div class="header-cta"><a href="mailto:jreynoso111@gmail.com" class="email-btn">Contact →</a></div>
+        <div class="header-cta"><a href="mailto:JReynoso111@gmail.com" class="email-btn">Contact →</a></div>
 
         ${renderMobileMenu(activePage, {
                 overviewHref: '../index.html',
@@ -255,7 +255,7 @@
           <a href="../about.html"${withActiveClass(activePage, 'about')}>About Me</a>
         </nav>
 
-        <a href="mailto:jreynoso111@gmail.com" class="header-cta">Contact →</a>
+        <a href="mailto:JReynoso111@gmail.com" class="header-cta">Contact →</a>
 
         ${renderMobileMenu(activePage, {
                 overviewHref: '../../index.html',
