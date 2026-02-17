@@ -4,6 +4,7 @@
   function init() {
     initThemeManager();
     initBackgroundAnimation();
+    initWebAnalytics();
   }
 
   function initBackgroundAnimation() {
@@ -72,6 +73,185 @@
       s.src = basePath + 'js/particles.js';
       document.body.appendChild(s);
     }
+  }
+
+  function getShellBasePath() {
+    const shellScript = document.querySelector('script[src*="site-shell.js"]');
+    if (!shellScript) return '';
+    const src = String(shellScript.getAttribute('src') || '');
+    const idx = src.lastIndexOf('js/site-shell.js');
+    if (idx === -1) return '';
+    return src.substring(0, idx);
+  }
+
+  function loadScriptOnce(src, checkReady) {
+    if (typeof checkReady === 'function' && checkReady()) {
+      return Promise.resolve();
+    }
+
+    const existing = Array.from(document.scripts || []).find((s) => {
+      const cur = String(s.getAttribute('src') || s.src || '');
+      return cur === src || cur.split('?')[0] === src.split('?')[0];
+    });
+    if (existing && (!checkReady || checkReady())) {
+      return Promise.resolve();
+    }
+
+    return new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      const scriptSrc = existing ? `${src}${src.includes('?') ? '&' : '?'}cb=${Date.now()}` : src;
+      script.src = scriptSrc;
+      script.async = true;
+      script.addEventListener(
+        'load',
+        () => {
+          if (!checkReady || checkReady()) resolve();
+          else reject(new Error(`Script loaded but dependency is still unavailable: ${src}`));
+        },
+        { once: true }
+      );
+      script.addEventListener('error', () => reject(new Error(`Failed to load script: ${src}`)), {
+        once: true
+      });
+      document.head.appendChild(script);
+    });
+  }
+
+  function randomId(prefix) {
+    try {
+      if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+        return `${prefix}${window.crypto.randomUUID()}`;
+      }
+    } catch (_e) {}
+    const rand = Math.random().toString(36).slice(2, 10);
+    const now = Date.now().toString(36);
+    return `${prefix}${now}${rand}`;
+  }
+
+  function readStorage(storage, key) {
+    try {
+      return storage.getItem(key) || '';
+    } catch (_e) {
+      return '';
+    }
+  }
+
+  function writeStorage(storage, key, value) {
+    try {
+      storage.setItem(key, value);
+    } catch (_e) {}
+  }
+
+  function getOrCreateVisitorId() {
+    const key = 'resume_analytics_visitor_id';
+    let current = readStorage(window.localStorage, key);
+    if (!current) {
+      current = randomId('v_');
+      writeStorage(window.localStorage, key, current);
+    }
+    return current;
+  }
+
+  function getOrCreateSessionId() {
+    const key = 'resume_analytics_session_id';
+    let current = readStorage(window.sessionStorage, key);
+    if (!current) {
+      current = randomId('s_');
+      writeStorage(window.sessionStorage, key, current);
+    }
+    return current;
+  }
+
+  function detectDeviceType() {
+    const width = Math.max(window.innerWidth || 0, document.documentElement.clientWidth || 0);
+    if (width <= 767) return 'mobile';
+    if (width <= 1024) return 'tablet';
+    return 'desktop';
+  }
+
+  async function ensurePublicSupabaseConfig() {
+    const cfg = window.__SUPABASE_CONFIG__;
+    if (cfg && cfg.url && cfg.anonKey) return cfg;
+    const basePath = getShellBasePath();
+    await loadScriptOnce(`${basePath}js/supabase-config.js`, () => {
+      const c = window.__SUPABASE_CONFIG__;
+      return Boolean(c && c.url && c.anonKey);
+    });
+    return window.__SUPABASE_CONFIG__ || null;
+  }
+
+  async function ensureSupabaseLibrary() {
+    if (window.supabase && typeof window.supabase.createClient === 'function') return;
+    await loadScriptOnce(
+      'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
+      () => window.supabase && typeof window.supabase.createClient === 'function'
+    );
+  }
+
+  function buildAnalyticsPayload() {
+    const params = new URLSearchParams(window.location.search || '');
+    const referrer = String(document.referrer || '').trim();
+    const path = String(window.location.pathname || '/');
+    const payload = {
+      event_type: 'page_view',
+      page_path: path || '/',
+      page_title: String(document.title || '').trim() || null,
+      referrer: referrer || null,
+      utm_source: params.get('utm_source') || null,
+      utm_medium: params.get('utm_medium') || null,
+      utm_campaign: params.get('utm_campaign') || null,
+      device_type: detectDeviceType(),
+      session_id: getOrCreateSessionId(),
+      visitor_id: getOrCreateVisitorId(),
+      language: String(navigator.language || '').trim() || null,
+      screen_width: Number(window.screen && window.screen.width ? window.screen.width : 0) || null,
+      screen_height: Number(window.screen && window.screen.height ? window.screen.height : 0) || null,
+      timezone:
+        typeof Intl !== 'undefined' && Intl.DateTimeFormat
+          ? Intl.DateTimeFormat().resolvedOptions().timeZone || null
+          : null,
+      user_agent: String(navigator.userAgent || '').slice(0, 500) || null,
+      metadata: {
+        search: String(window.location.search || ''),
+        hash: String(window.location.hash || '')
+      }
+    };
+    return payload;
+  }
+
+  async function sendPageView() {
+    if (window.__resumeAnalyticsSent) return;
+    window.__resumeAnalyticsSent = true;
+
+    const cfg = await ensurePublicSupabaseConfig();
+    if (!cfg || !cfg.url || !cfg.anonKey) return;
+
+    await ensureSupabaseLibrary();
+    if (!window.supabase || typeof window.supabase.createClient !== 'function') return;
+
+    const client = window.supabase.createClient(cfg.url, cfg.anonKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+        detectSessionInUrl: false
+      }
+    });
+
+    const payload = buildAnalyticsPayload();
+    const { error } = await client.from('site_analytics_events').insert([payload]);
+    if (error) {
+      // Keep this non-fatal for visitors.
+      console.warn('[analytics] page_view insert failed:', error.message || error);
+    }
+  }
+
+  function initWebAnalytics() {
+    const path = String(window.location.pathname || '').toLowerCase();
+    if (window.location.protocol === 'file:') return;
+    if (path.startsWith('/admin/') || path === '/admin' || path.includes('/admin/')) return;
+    sendPageView().catch(() => {
+      // Silent fail by design; analytics should never block rendering.
+    });
   }
 
   // --- THEME MANAGER ---

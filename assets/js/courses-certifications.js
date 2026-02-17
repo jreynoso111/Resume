@@ -205,9 +205,20 @@
       proof_image_url: "",
       proof_url: "",
     },
+    {
+      kind: "course",
+      title: "Higher Technical Degree in Food Technology",
+      issuer: "Autonomous University of Santo Domingo (UASD)",
+      year: null,
+      category: "Education",
+      note:
+        "Completed higher education studies in Food Technology at the Autonomous University of Santo Domingo (UASD), building a technical foundation in food science, quality standards, and process control.",
+      proof_image_url: "",
+      proof_url: "",
+    },
   ];
 
-  const KINDS = /** @type {const} */ (["all", "certification", "course"]);
+  const KINDS = /** @type {const} */ (["all", "certification", "course", "education"]);
   const SORTS = /** @type {const} */ (["year", "alphabet", "type"]);
 
   function getRootPrefix() {
@@ -370,9 +381,20 @@
     return haystack.includes(query);
   }
 
+  function isEducationItem(item) {
+    const category = String(item && item.category ? item.category : "")
+      .trim()
+      .toLowerCase();
+    return category === "education" || category.includes("education");
+  }
+
   function filterItems(items, activeKind, query) {
     return items.filter((item) => {
-      if (activeKind !== "all" && item.kind !== activeKind) return false;
+      if (activeKind === "education") {
+        if (!isEducationItem(item)) return false;
+      } else if (activeKind !== "all" && item.kind !== activeKind) {
+        return false;
+      }
       return matchesQuery(item, query);
     });
   }
@@ -452,7 +474,12 @@
 
     const meta = createEl("div", "cc-meta");
     const issuer = createEl("div", "cc-issuer", textOrDash(item.issuer));
-    const kind = createEl("div", "cc-kind", item.kind === "certification" ? "Certification" : "Course");
+    const kindLabel = isEducationItem(item)
+      ? "Education"
+      : item.kind === "certification"
+        ? "Certification"
+        : "Course";
+    const kind = createEl("div", "cc-kind", kindLabel);
     meta.append(issuer, kind);
 
     const footer = createEl("div", "cc-card-footer");
@@ -924,6 +951,15 @@
     const searchInput = section.querySelector('[data-cc-search="1"]');
     const adminControls = section.querySelector('[data-cc-admin-controls="1"]');
     let addBtn = section.querySelector('[data-cc-add="1"]');
+    const tabsHost = section.querySelector(".cc-tabs");
+    if (tabsHost && !tabsHost.querySelector('[data-cc-tab="education"]')) {
+      const educationTab = createEl("button", "cc-tab", "Education");
+      educationTab.type = "button";
+      educationTab.setAttribute("role", "tab");
+      educationTab.setAttribute("aria-selected", "false");
+      educationTab.dataset.ccTab = "education";
+      tabsHost.appendChild(educationTab);
+    }
     const tabs = Array.from(section.querySelectorAll("[data-cc-tab]"));
     const sortButtons = Array.from(section.querySelectorAll("[data-cc-sort]"));
 
