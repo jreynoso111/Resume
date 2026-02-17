@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Auth Callback | Juan R. Reynoso</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/css/styles.css?v=33" />
+  <style>
+    .callback-wrap { max-width: 520px; margin: 90px auto; }
+    .callback-card { border: 1px solid var(--border-subtle); background: var(--bg-soft); border-radius: 14px; padding: 18px; box-shadow: var(--card-shadow); }
+    .callback-title { margin: 0 0 8px; color: var(--accent-strong); font-size: 22px; }
+    .callback-text { margin: 0; color: var(--text-muted); font-size: 14px; line-height: 1.6; }
+  </style>
+</head>
+
+<body>
+  <div class="page">
+    <main>
+      <section class="hero">
+        <div class="shell">
+          <div class="callback-wrap">
+            <article class="callback-card">
+              <h1 class="callback-title">Completing sign-in</h1>
+              <p id="callback-status" class="callback-text">Please wait while we finish authentication.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="../assets/js/auth.js?v=2"></script>
+  <script>
+    (function () {
+      const statusEl = document.getElementById('callback-status');
+
+      function setStatus(message) {
+        statusEl.textContent = String(message || '');
+      }
+
+      async function init() {
+        const auth = window.ResumeAuth;
+        if (!auth) {
+          setStatus('Authentication module failed to load. Redirecting...');
+          window.location.replace('../login.html');
+          return;
+        }
+
+        const params = new URLSearchParams(window.location.search || '');
+        const rawNext = String(params.get('next') || '');
+        const nextPath = typeof auth.normalizeNextPath === 'function' ? auth.normalizeNextPath(rawNext) : '';
+
+        try {
+          const sb = await auth.getClient();
+          const url = new URL(window.location.href);
+          const code = url.searchParams.get('code');
+
+          if (code) {
+            const { error } = await sb.auth.exchangeCodeForSession(code);
+            if (error) throw error;
+          }
+
+          const session = await auth.getSession();
+          if (!session || !session.user) {
+            throw new Error('No active session found.');
+          }
+
+          await auth.ensureProfile({ user: session.user });
+          if (nextPath) {
+            window.location.replace(nextPath);
+          } else {
+            window.location.replace(auth.getAppHref('profile.html'));
+          }
+        } catch (e) {
+          setStatus(`Authentication failed: ${e && e.message ? e.message : String(e)} Redirecting to login...`);
+          setTimeout(() => {
+            const fallback = `../login.html${nextPath ? `?next=${encodeURIComponent(nextPath)}` : ''}`;
+            window.location.replace(fallback);
+          }, 1600);
+        }
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init, { once: true });
+      } else {
+        init();
+      }
+    })();
+  </script>
+  <script src="../js/site-shell.js?v=6"></script>
+</body>
+
+</html>
