@@ -6,7 +6,7 @@
     <title>Projects | Juan R. Reynoso</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="../assets/css/styles.css?v=29" />
+    <link rel="stylesheet" href="../assets/css/styles.css?v=32" />
     <style>
         .projects-grid {
             display: grid;
@@ -65,14 +65,14 @@
         }
 
         .project-title {
-            font-size: 16px;
+            font-size: var(--font-size-body-lg);
             font-weight: 600;
             margin-bottom: 8px;
             color: var(--text-main);
         }
 
         .project-desc {
-            font-size: 13px;
+            font-size: var(--font-size-base);
             color: var(--text-muted);
             margin-bottom: 16px;
             flex-grow: 1;
@@ -80,7 +80,7 @@
         }
 
         .project-link {
-            font-size: 13px;
+            font-size: var(--font-size-sm);
             font-weight: 500;
             color: var(--accent-strong);
             display: inline-flex;
@@ -109,7 +109,7 @@
             </div>
 
             <div class="projects-grid" id="projects-grid">
-                <div style="color: var(--text-muted); font-size: 13px;">Loading projects...</div>
+                <div style="color: var(--text-muted);">Loading projects...</div>
             </div>
 
             <div style="height: 60px;"></div>

@@ -38,6 +38,14 @@
 
   --radius-pill: 999px;
 
+  --font-family-base: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-size-caption: 12px;
+  --font-size-sm: 13px;
+  --font-size-base: 14px;
+  --font-size-body-lg: 15px;
+  --font-size-title: 18px;
+  --font-size-display: clamp(28px, 3.8vw, 34px);
+
   --max-width: 1120px;
 
 }
@@ -73,7 +81,7 @@ body {
 
   position: relative;
 
-  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--font-family-base);
 
   background: transparent;
 
@@ -81,7 +89,9 @@ body {
 
   color: var(--text-main);
 
-  line-height: 1.5;
+  font-size: var(--font-size-base);
+
+  line-height: 1.6;
 
   -webkit-font-smoothing: antialiased;
 
@@ -998,11 +1008,11 @@ body.nav-open {
 
 /* About page: give the External Links buttons more room before the footer. */
 body.about-page main {
-  padding-bottom: 120px;
+  padding-bottom: 28px;
 }
 
 body.about-page .external-links-actions {
-  margin-bottom: 120px;
+  margin-bottom: 18px;
 }
 
 .social-link-btn {
@@ -1200,9 +1210,15 @@ body.about-page .about-info-card {
   margin-right: auto;
 }
 
+body.about-page #philosophy + div + .standard-text,
+body.about-page #philosophy + div + .standard-text + .standard-text {
+  font-size: var(--font-size-base);
+  line-height: 1.6;
+}
+
 .hero-img-frame.about-info-image {
   aspect-ratio: 4 / 3;
-  max-height: 320px;
+  max-height: 384px;
 }
 
 .hero-img-frame.about-info-image img {
@@ -2929,4 +2945,102 @@ body.cc-modal-open {
   justify-content: flex-end;
   flex-wrap: wrap;
   margin-top: 12px;
+}
+
+/* TYPOGRAPHY CONSISTENCY */
+.page-title {
+  font-size: var(--font-size-display);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--accent-strong);
+  margin-bottom: 10px;
+}
+
+.page-subtitle {
+  font-size: var(--font-size-base);
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+.section-title,
+.standard-h2,
+.blog-chapter-title {
+  font-size: var(--font-size-title);
+  line-height: 1.3;
+}
+
+.hero-subtitle,
+.standard-text,
+.section-sub,
+.highlight-text,
+.exp-details,
+.project-desc,
+.blog-card-excerpt,
+.blog-chapter-body,
+.cc-empty,
+.cc-issuer,
+.cc-modal-note {
+  font-size: var(--font-size-base);
+  line-height: 1.6;
+}
+
+.logo-sub,
+.hero-chip,
+.hero-tagline-chip,
+.pill,
+.nav-mobile-title,
+.nav-mobile-section-label,
+.hero-meta-row,
+.hero-card-footer,
+.section-label,
+.mini-label,
+.mini-meta,
+.skill-chip,
+.exp-meta,
+.exp-tags,
+.cc-year,
+.cc-kind,
+.cc-tag,
+.cc-action-btn,
+.cc-field-label,
+.cc-modal-close,
+.blog-card-meta,
+.blog-figure figcaption,
+footer {
+  font-size: var(--font-size-caption);
+}
+
+.nav-links,
+.nav-mobile-links a,
+.nav-mobile-sub a,
+.nav-mobile-close,
+.nav-cta,
+.btn-primary,
+.project-link,
+.blog-card-link,
+.cc-btn,
+.cc-tab,
+.cc-sort-btn,
+.cc-search,
+.cc-input,
+.cc-modal-link,
+.cc-modal-link-empty {
+  font-size: var(--font-size-sm);
+}
+
+.profile-name,
+.hero-stat-value,
+.project-title,
+.blog-card-title {
+  font-size: var(--font-size-body-lg);
+}
+
+.mini-main,
+.highlight-title,
+.experience-section-title,
+.exp-company,
+.blog-post-meta,
+.cc-title,
+.cc-modal-title {
+  font-size: var(--font-size-sm);
 }
