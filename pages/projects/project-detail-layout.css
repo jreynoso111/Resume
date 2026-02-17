@@ -39,13 +39,13 @@
 }
 
 .header-title {
-  font-size: 18px;
+  font-size: var(--font-size-title);
   font-weight: 700;
   color: var(--accent-strong);
 }
 
 .header-subtitle {
-  font-size: 12px;
+  font-size: var(--font-size-caption);
   color: var(--text-muted);
 }
 
@@ -53,7 +53,7 @@
   display: flex;
   align-items: center;
   gap: 24px;
-  font-size: 14px;
+  font-size: var(--font-size-sm);
   font-weight: 500;
 }
 
@@ -90,7 +90,7 @@
 .header-projects-dropdown a {
   display: block;
   padding: 8px 14px;
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   color: var(--text-main);
   border-bottom: none;
   white-space: nowrap;
@@ -118,7 +118,7 @@
 }
 
 .header-cta {
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   font-weight: 500;
   padding: 10px 22px;
   border-radius: var(--radius-pill);
@@ -153,7 +153,7 @@
 }
 
 .projects-sidebar h3 {
-  font-size: 14px;
+  font-size: var(--font-size-sm);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--text-muted);
@@ -162,7 +162,7 @@
 
 .projects-sidebar a {
   display: block;
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   padding: 8px 10px;
   border-radius: 10px;
   color: var(--text-main);
@@ -200,19 +200,19 @@
 }
 
 .hero p {
-  font-size: 16px;
+  font-size: var(--font-size-base);
   color: var(--text-muted);
   max-width: 820px;
 }
 
 .page-main h2 {
-  font-size: 22px;
+  font-size: 20px;
   color: var(--accent-strong);
   margin-bottom: 12px;
 }
 
 .page-main h3 {
-  font-size: 18px;
+  font-size: var(--font-size-title);
   color: var(--accent-strong);
   margin: 14px 0 8px;
 }
@@ -277,7 +277,7 @@
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 99px;
   color: var(--accent-strong);
-  font-size: 11px;
+  font-size: var(--font-size-caption);
   font-weight: 600;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -367,15 +367,15 @@
   }
 
   .header-title {
-    font-size: 16px;
+    font-size: var(--font-size-body-lg);
   }
 
   .header-subtitle {
-    font-size: 11px;
+    font-size: var(--font-size-caption);
   }
 
   .header-nav {
-    font-size: 13px;
+    font-size: var(--font-size-sm);
   }
 
   .header-cta {
