@@ -413,7 +413,8 @@ body.nav-open .nav-toggle-icon span:nth-child(3) { transform: translateY(-5px) r
   padding: 11px 12px;
   border-radius: 12px;
   border: 1px solid var(--border-subtle);
-  background: rgba(255, 255, 255, 0.55);
+  background: var(--bg-alt);
+  background: color-mix(in srgb, var(--bg-soft) 72%, var(--accent-soft) 28%);
   font-size: 13px;
   font-weight: 700;
   color: var(--text-main);
@@ -449,6 +450,8 @@ body.nav-open .nav-toggle-icon span:nth-child(3) { transform: translateY(-5px) r
   font-weight: 600;
   font-size: 12px;
   padding: 9px 12px;
+  background: var(--bg-alt);
+  background: color-mix(in srgb, var(--bg-soft) 82%, var(--accent-soft) 18%);
 }
 
 body.nav-open {
@@ -1502,13 +1505,18 @@ body.about-page .about-info-card {
 
 @media (max-width: 860px) {
   .nav-links,
-  .nav-main,
-  .nav-cta {
+  .nav-main {
     display: none;
   }
 
   .nav-toggle {
     display: inline-flex;
+  }
+
+  .nav-cta {
+    display: inline-flex;
+    padding: 7px 12px;
+    font-size: 12px;
   }
 }
 

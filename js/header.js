@@ -108,9 +108,7 @@
                 aboutHref: 'pages/about.html'
             })}
 
-          <div class="nav-cta">
-            <a href="mailto:JReynoso111@gmail.com" class="btn-primary">Contact<span class="chevron">→</span></a>
-          </div>
+          <a href="mailto:JReynoso111@gmail.com" class="nav-cta">Contact <span aria-hidden="true">→</span></a>
 
           ${renderMobileMenu(activePage, {
                 overviewHref: 'index.html',
