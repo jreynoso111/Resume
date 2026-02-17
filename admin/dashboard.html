@@ -33,6 +33,102 @@
         /* Small tweaks */
         textarea { font-family: monospace; }
         .mini-list li { background: #f9f9f9; padding: 8px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+
+        /* Analytics */
+        .analytics-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 14px;
+        }
+        .analytics-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .analytics-kpis {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 10px;
+            margin: 14px 0 16px;
+        }
+        .analytics-kpi {
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            background: #f9fafb;
+            padding: 10px 12px;
+        }
+        .analytics-kpi-label {
+            color: #6b7280;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            margin-bottom: 5px;
+        }
+        .analytics-kpi-value {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #111827;
+            line-height: 1.2;
+        }
+        .analytics-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+        .analytics-panel {
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            background: #fff;
+            padding: 12px;
+        }
+        .analytics-panel h3 {
+            margin: 0 0 10px;
+            font-size: 0.95rem;
+            color: #111827;
+        }
+        .analytics-list-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 10px;
+            padding: 6px 0;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        .analytics-list-row:last-child {
+            border-bottom: 0;
+        }
+        .analytics-empty {
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+        .analytics-bars {
+            display: grid;
+            gap: 8px;
+        }
+        .analytics-bar-row {
+            display: grid;
+            grid-template-columns: 88px minmax(0, 1fr) 58px;
+            gap: 8px;
+            align-items: center;
+            font-size: 0.84rem;
+        }
+        .analytics-bar-track {
+            width: 100%;
+            background: #f3f4f6;
+            border-radius: 999px;
+            height: 9px;
+            overflow: hidden;
+        }
+        .analytics-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+        }
+        @media (max-width: 820px) {
+            .analytics-grid { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body>
@@ -120,6 +216,7 @@
 	            <button class="tab-btn" onclick="openTab('tab-education')">Education</button>
 	            <button class="tab-btn" onclick="openTab('tab-skills')">Skills</button>
 	            <button class="tab-btn" onclick="openTab('tab-projects')">Projects</button>
+	            <button class="tab-btn" onclick="openTab('tab-analytics')">Analytics</button>
 	        </div>
 
         <div id="tab-general" class="tab-content active">
@@ -309,6 +406,58 @@
             </section>
         </div>
 
+        <div id="tab-analytics" class="tab-content">
+            <section class="card">
+                <div class="analytics-head">
+                    <div>
+                        <h2 style="margin:0;">Web Analytics</h2>
+                        <p style="margin:6px 0 0; color:#4b5563; font-size:0.9rem;">
+                            Visits, unique visitors, acquisition sources, device mix, and traffic trend.
+                        </p>
+                    </div>
+                    <div class="analytics-controls">
+                        <label for="analytics-range" style="margin:0; font-size:0.85rem;">Range</label>
+                        <select id="analytics-range" style="min-width:130px;">
+                            <option value="7">Last 7 days</option>
+                            <option value="30" selected>Last 30 days</option>
+                            <option value="90">Last 90 days</option>
+                        </select>
+                        <button type="button" class="btn-secondary" id="analytics-refresh-btn">Refresh</button>
+                    </div>
+                </div>
+
+                <div id="analytics-status" style="font-size:0.88rem; color:#4b5563;">
+                    Open this tab and click Refresh to load analytics.
+                </div>
+
+                <div id="analytics-kpis" class="analytics-kpis"></div>
+
+                <div class="analytics-grid">
+                    <div class="analytics-panel">
+                        <h3>Top pages</h3>
+                        <div id="analytics-top-pages"></div>
+                    </div>
+                    <div class="analytics-panel">
+                        <h3>Top referrers</h3>
+                        <div id="analytics-top-referrers"></div>
+                    </div>
+                    <div class="analytics-panel">
+                        <h3>Device mix</h3>
+                        <div id="analytics-device-mix"></div>
+                    </div>
+                    <div class="analytics-panel">
+                        <h3>UTM sources</h3>
+                        <div id="analytics-top-utm"></div>
+                    </div>
+                </div>
+
+                <div class="analytics-panel" style="margin-top:12px;">
+                    <h3>Daily page views</h3>
+                    <div id="analytics-daily-bars" class="analytics-bars"></div>
+                </div>
+            </section>
+        </div>
+
 	    </main>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -338,6 +487,8 @@
 
 	        let booted = false;
 	        let projectsById = new Map();
+        let analyticsLoading = false;
+        let analyticsLoaded = false;
 
         function getAdminEmail() {
             return String((cfg && cfg.adminEmail) || '').trim().toLowerCase();
@@ -402,6 +553,10 @@
                     btn.classList.add('active');
                 }
             });
+
+            if (tabId === 'tab-analytics') {
+                loadAnalytics();
+            }
         }
 
         // --- DELETE HELPERS ---
@@ -433,6 +588,244 @@
         function renderLoadError(entity, error) {
             const msg = error && (error.message || error.toString()) ? (error.message || error.toString()) : 'Unknown error';
             return `<div style="color:#b91c1c; font-size:0.9rem;">Error loading ${escapeHtml(entity)}: ${escapeHtml(msg)}</div>`;
+        }
+
+        // ==========================================
+        // 0) ANALYTICS
+        // ==========================================
+        function formatNumber(value) {
+            const n = Number(value || 0);
+            if (!Number.isFinite(n)) return '0';
+            return n.toLocaleString('en-US');
+        }
+
+        function setAnalyticsStatus(text, tone) {
+            const el = document.getElementById('analytics-status');
+            if (!el) return;
+            el.textContent = String(text || '');
+            if (tone === 'error') el.style.color = '#b91c1c';
+            else if (tone === 'warn') el.style.color = '#92400e';
+            else if (tone === 'success') el.style.color = '#166534';
+            else el.style.color = '#4b5563';
+        }
+
+        function getSelectedAnalyticsDays() {
+            const rangeEl = document.getElementById('analytics-range');
+            const days = parseInt(String(rangeEl && rangeEl.value ? rangeEl.value : '30'), 10);
+            if (!Number.isFinite(days) || days <= 0) return 30;
+            return days;
+        }
+
+        async function fetchAnalyticsRows(days) {
+            const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+            const pageSize = 1000;
+            let from = 0;
+            const rows = [];
+
+            while (true) {
+                const to = from + pageSize - 1;
+                const { data, error } = await sb
+                    .from('site_analytics_events')
+                    .select('created_at, page_path, visitor_id, session_id, referrer, device_type, utm_source')
+                    .gte('created_at', since)
+                    .order('created_at', { ascending: false })
+                    .range(from, to);
+
+                if (error) throw error;
+                if (!data || data.length === 0) break;
+                rows.push(...data);
+                if (data.length < pageSize) break;
+                from += pageSize;
+
+                // Keep the dashboard query bounded.
+                if (from >= 10000) break;
+            }
+
+            return rows;
+        }
+
+        function getHostFromReferrer(referrer) {
+            const raw = String(referrer || '').trim();
+            if (!raw) return '(direct)';
+            try {
+                const host = new URL(raw).hostname.replace(/^www\./, '');
+                return host || '(direct)';
+            } catch (_e) {
+                return '(direct)';
+            }
+        }
+
+        function normalizePath(value) {
+            const path = String(value || '').trim();
+            if (!path) return '/';
+            return path.startsWith('/') ? path : `/${path}`;
+        }
+
+        function renderAnalyticsList(elId, rows, emptyText) {
+            const el = document.getElementById(elId);
+            if (!el) return;
+            if (!rows || rows.length === 0) {
+                el.innerHTML = `<div class="analytics-empty">${escapeHtml(emptyText || 'No data')}</div>`;
+                return;
+            }
+            el.innerHTML = rows
+                .map((row) => `
+                    <div class="analytics-list-row">
+                        <div>${escapeHtml(row.label)}</div>
+                        <div><strong>${escapeHtml(formatNumber(row.value))}</strong></div>
+                    </div>
+                `)
+                .join('');
+        }
+
+        function renderDailyBars(points) {
+            const el = document.getElementById('analytics-daily-bars');
+            if (!el) return;
+            if (!points || points.length === 0) {
+                el.innerHTML = '<div class="analytics-empty">No daily data yet.</div>';
+                return;
+            }
+
+            const max = Math.max(1, ...points.map((p) => Number(p.count || 0)));
+            el.innerHTML = points
+                .map((p) => {
+                    const width = Math.max(2, Math.round((Number(p.count || 0) / max) * 100));
+                    return `
+                        <div class="analytics-bar-row">
+                            <div>${escapeHtml(p.label)}</div>
+                            <div class="analytics-bar-track">
+                                <div class="analytics-bar-fill" style="width:${width}%"></div>
+                            </div>
+                            <div style="text-align:right;">${escapeHtml(formatNumber(p.count))}</div>
+                        </div>
+                    `;
+                })
+                .join('');
+        }
+
+        function renderAnalyticsKpis(metrics) {
+            const el = document.getElementById('analytics-kpis');
+            if (!el) return;
+            const cards = [
+                { label: 'Page views', value: formatNumber(metrics.views) },
+                { label: 'Unique visitors', value: formatNumber(metrics.visitors) },
+                { label: 'Unique sessions', value: formatNumber(metrics.sessions) },
+                { label: 'Views / session', value: metrics.viewsPerSession.toFixed(2) },
+                { label: 'Last 24h views', value: formatNumber(metrics.last24h) },
+                { label: 'Avg daily views', value: metrics.avgDaily.toFixed(1) }
+            ];
+            el.innerHTML = cards
+                .map((c) => `
+                    <div class="analytics-kpi">
+                        <div class="analytics-kpi-label">${escapeHtml(c.label)}</div>
+                        <div class="analytics-kpi-value">${escapeHtml(c.value)}</div>
+                    </div>
+                `)
+                .join('');
+        }
+
+        function buildDailySeries(rows, days) {
+            const dayMap = new Map();
+            const now = new Date();
+            for (let i = days - 1; i >= 0; i--) {
+                const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+                const key = d.toISOString().slice(0, 10);
+                dayMap.set(key, 0);
+            }
+            rows.forEach((row) => {
+                const key = String(row.created_at || '').slice(0, 10);
+                if (!dayMap.has(key)) return;
+                dayMap.set(key, dayMap.get(key) + 1);
+            });
+            return Array.from(dayMap.entries()).map(([day, count]) => ({
+                label: day.slice(5),
+                count
+            }));
+        }
+
+        function rankMap(mapObj, limit) {
+            return Array.from(mapObj.entries())
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, limit)
+                .map(([label, value]) => ({ label, value }));
+        }
+
+        function buildAnalyticsMetrics(rows, days) {
+            const views = rows.length;
+            const visitorsSet = new Set();
+            const sessionsSet = new Set();
+            const pageMap = new Map();
+            const refMap = new Map();
+            const deviceMap = new Map();
+            const utmMap = new Map();
+            const last24hCutoff = Date.now() - 24 * 60 * 60 * 1000;
+            let last24h = 0;
+
+            rows.forEach((row) => {
+                const visitor = String(row.visitor_id || '').trim();
+                const session = String(row.session_id || '').trim();
+                const pagePath = normalizePath(row.page_path);
+                const host = getHostFromReferrer(row.referrer);
+                const device = String(row.device_type || '').trim() || 'unknown';
+                const utm = String(row.utm_source || '').trim() || '(none)';
+                const createdAt = Date.parse(String(row.created_at || ''));
+
+                if (visitor) visitorsSet.add(visitor);
+                if (session) sessionsSet.add(session);
+                pageMap.set(pagePath, (pageMap.get(pagePath) || 0) + 1);
+                refMap.set(host, (refMap.get(host) || 0) + 1);
+                deviceMap.set(device, (deviceMap.get(device) || 0) + 1);
+                utmMap.set(utm, (utmMap.get(utm) || 0) + 1);
+                if (Number.isFinite(createdAt) && createdAt >= last24hCutoff) {
+                    last24h += 1;
+                }
+            });
+
+            const sessions = sessionsSet.size;
+            return {
+                views,
+                visitors: visitorsSet.size,
+                sessions,
+                last24h,
+                viewsPerSession: sessions > 0 ? views / sessions : 0,
+                avgDaily: days > 0 ? views / days : 0,
+                topPages: rankMap(pageMap, 8),
+                topReferrers: rankMap(refMap, 8),
+                deviceMix: rankMap(deviceMap, 8),
+                topUtm: rankMap(utmMap, 8)
+            };
+        }
+
+        async function loadAnalytics(force) {
+            if (analyticsLoading) return;
+            if (!force && analyticsLoaded) return;
+            if (!(await requireAdmin())) return;
+
+            const days = getSelectedAnalyticsDays();
+            analyticsLoading = true;
+            setAnalyticsStatus(`Loading analytics for last ${days} days...`, 'warn');
+
+            try {
+                const rows = await fetchAnalyticsRows(days);
+                const metrics = buildAnalyticsMetrics(rows, days);
+                renderAnalyticsKpis(metrics);
+                renderAnalyticsList('analytics-top-pages', metrics.topPages, 'No pages tracked yet.');
+                renderAnalyticsList('analytics-top-referrers', metrics.topReferrers, 'No referrer data yet.');
+                renderAnalyticsList('analytics-device-mix', metrics.deviceMix, 'No device data yet.');
+                renderAnalyticsList('analytics-top-utm', metrics.topUtm, 'No UTM source data yet.');
+                renderDailyBars(buildDailySeries(rows, days));
+                analyticsLoaded = true;
+                setAnalyticsStatus(
+                    `Loaded ${formatNumber(rows.length)} events. Updated at ${new Date().toLocaleString()}.`,
+                    'success'
+                );
+            } catch (err) {
+                console.error('Supabase loadAnalytics error:', err);
+                const msg = err && err.message ? err.message : String(err);
+                setAnalyticsStatus(`Could not load analytics: ${msg}`, 'error');
+            } finally {
+                analyticsLoading = false;
+            }
         }
 
         // ==========================================
@@ -1104,6 +1497,21 @@
 		            loadProjects();
 		        }
 
+        const analyticsRefreshBtn = document.getElementById('analytics-refresh-btn');
+        const analyticsRange = document.getElementById('analytics-range');
+        if (analyticsRefreshBtn) {
+            analyticsRefreshBtn.addEventListener('click', () => {
+                analyticsLoaded = false;
+                loadAnalytics(true);
+            });
+        }
+        if (analyticsRange) {
+            analyticsRange.addEventListener('change', () => {
+                analyticsLoaded = false;
+                loadAnalytics(true);
+            });
+        }
+
         async function refreshAuthUi() {
             if (isUnsafeMode()) {
                 setAuthStatus('UNSAFE mode');
@@ -1121,6 +1529,7 @@
             const email = session && session.user && session.user.email ? String(session.user.email) : '';
 
             if (!session) {
+                analyticsLoaded = false;
                 setAuthStatus('');
                 if (logoutBtn) logoutBtn.style.display = 'none';
                 setAuthOverlayVisible(true);
@@ -1130,6 +1539,7 @@
             }
 
             if (!isAdminEmail(email)) {
+                analyticsLoaded = false;
                 setAuthStatus('');
                 if (logoutBtn) logoutBtn.style.display = '';
                 setAuthOverlayVisible(true);

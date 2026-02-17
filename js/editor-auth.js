@@ -775,11 +775,12 @@
       const depth = Math.max(0, parts.length - 1);
       const rootPrefix = '../'.repeat(depth);
       const footerHost = `<footer id="site-footer" data-root-path="${rootPrefix}"></footer>`;
-	      const STYLES_V = 25;
+	      const STYLES_V = 29;
 	      const HEADER_V = 6;
-	      const FOOTER_V = 19;
+	      const FOOTER_V = 20;
 	      const EDITOR_V = 30;
-	      const SHELL_V = 5;
+	      const SHELL_V = 6;
+	      const COURSES_CERTS_V = 9;
 	      const PROJECTS_V = 4;
 	      const PROJECT_DETAIL_LAYOUT_V = 2;
       const footerScript = `<script src="${rootPrefix}js/footer.js?v=${FOOTER_V}"></script>`;
@@ -812,6 +813,7 @@
 	      out = out.replace(/(js\/footer\.js\?v=)\d+/gi, `$1${FOOTER_V}`);
 	      out = out.replace(/(js\/editor-auth\.js\?v=)\d+/gi, `$1${EDITOR_V}`);
 	      out = out.replace(/(js\/site-shell\.js\?v=)\d+/gi, `$1${SHELL_V}`);
+	      out = out.replace(/(assets\/js\/courses-certifications\.js\?v=)\d+/gi, `$1${COURSES_CERTS_V}`);
 	      out = out.replace(/(js\/projects-page\.js\?v=)\d+/gi, `$1${PROJECTS_V}`);
 	      out = out.replace(/project-detail-layout\.css(?:\?v=\d+)?/gi, `project-detail-layout.css?v=${PROJECT_DETAIL_LAYOUT_V}`);
 
