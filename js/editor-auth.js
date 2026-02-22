@@ -32,7 +32,9 @@
 	    loginModal: null,
 	    toast: null,
 	    sectionLabel: null,
+	    textLabel: null,
 	    selectedSection: null,
+	    selectedEditable: null,
 	    autosaveEnabled: true,
 		    autosaveTimer: null,
 		    saveInFlight: false,
@@ -798,13 +800,13 @@
 	      const STYLES_V = 33;
 	      const HEADER_V = 9;
 	      const FOOTER_V = 20;
-	      const EDITOR_V = 35;
+	      const EDITOR_V = 36;
 	      const SHELL_V = 6;
 	      const PROJECT_LIGHTBOX_V = 1;
 	      const PROJECT_CAROUSEL_V = 6;
 	      const COURSES_CERTS_V = 11;
 	      const PROJECTS_V = 4;
-	      const PROJECT_DETAIL_LAYOUT_V = 4;
+	      const PROJECT_DETAIL_LAYOUT_V = 5;
       const footerScript = `<script src="${rootPrefix}js/footer.js?v=${FOOTER_V}"></script>`;
       const headerScript = `<script src="${rootPrefix}js/header.js?v=${HEADER_V}"></script>`;
       const editorScript = `<script src="${rootPrefix}js/editor-auth.js?v=${EDITOR_V}"></script>`;
@@ -1001,6 +1003,20 @@
           <button type="button" class="cms-btn-secondary" id="cms-add-section" style="width:100%;">Add section</button>
         </div>
       </details>
+
+      <details class="cms-details">
+        <summary>Text size</summary>
+        <div class="cms-section-box">
+          <div class="cms-section-title">Selected text block</div>
+          <div class="cms-section-label" id="cms-text-label">Click any text to adjust its size</div>
+
+          <div class="cms-row">
+            <button type="button" class="cms-btn-secondary" id="cms-text-smaller">A-</button>
+            <button type="button" class="cms-btn-secondary" id="cms-text-bigger">A+</button>
+          </div>
+          <button type="button" class="cms-btn-secondary" id="cms-text-reset" style="width:100%;">Reset size</button>
+        </div>
+      </details>
     `;
 
     state.toast = document.createElement('div');
@@ -1011,6 +1027,7 @@
     if (!unsafe) createLoginModal();
 
     state.sectionLabel = state.panel.querySelector('#cms-section-label');
+    state.textLabel = state.panel.querySelector('#cms-text-label');
 
     const autosaveToggle = state.panel.querySelector('#cms-autosave');
     autosaveToggle.checked = state.autosaveEnabled;
@@ -1050,6 +1067,9 @@
     state.panel.querySelector('#cms-duplicate').addEventListener('click', duplicateSelectedSection);
     state.panel.querySelector('#cms-delete').addEventListener('click', deleteSelectedSection);
     state.panel.querySelector('#cms-add-section').addEventListener('click', addNewSection);
+    state.panel.querySelector('#cms-text-smaller').addEventListener('click', () => adjustSelectedTextSize(-1));
+    state.panel.querySelector('#cms-text-bigger').addEventListener('click', () => adjustSelectedTextSize(1));
+    state.panel.querySelector('#cms-text-reset').addEventListener('click', resetSelectedTextSize);
   }
 
   function createLoginModal() {
@@ -1181,6 +1201,11 @@
 	      if (section) {
 	        selectSection(section);
 	      }
+
+	      const editableTarget = target.closest('[data-cms-editable="1"]');
+	      if (editableTarget && editableTarget instanceof HTMLElement) {
+	        selectEditable(editableTarget);
+	      }
 	    }, true);
 
     document.addEventListener('input', (event) => {
@@ -1218,11 +1243,14 @@
     });
 
     document.addEventListener('focusin', (event) => {
-      if (isAdmin()) return;
       const target = event.target;
       if (!(target instanceof Element)) return;
       const editable = target.closest('[contenteditable]');
       if (!editable || editable.closest('[data-cms-ui="1"]')) return;
+      if (isAdmin()) {
+        if (editable instanceof HTMLElement) selectEditable(editable);
+        return;
+      }
       lockEditingForNonAdmin();
       if (editable instanceof HTMLElement) editable.blur();
     });
@@ -1283,12 +1311,14 @@
       state.selectedSection.classList.remove('cms-section-selected');
       state.selectedSection = null;
     }
+    state.selectedEditable = null;
 
     document.body.classList.remove('cms-admin-mode');
 
     lockEditingForNonAdmin();
 
     updateSectionLabel();
+    updateTextLabel();
   }
 
 	  function lockEditingForNonAdmin() {
@@ -1414,9 +1444,14 @@
       state.selectedSection = null;
     }
 
+    if (!state.selectedEditable || !document.contains(state.selectedEditable)) {
+      state.selectedEditable = null;
+    }
+
     markEditableImages();
     requestImageControlPositionUpdate();
     updateSectionLabel();
+    updateTextLabel();
   }
 
   function clearImageControls() {
@@ -2052,6 +2087,54 @@
 
     const hasBlockChild = children.some((child) => BLOCK_TAGS.has(child.tagName));
     return !hasBlockChild;
+  }
+
+  function selectEditable(element) {
+    if (!(element instanceof HTMLElement)) return;
+    if (state.selectedEditable === element) return;
+    state.selectedEditable = element;
+    updateTextLabel();
+  }
+
+  function updateTextLabel() {
+    if (!state.textLabel) return;
+    if (!state.selectedEditable || !document.contains(state.selectedEditable)) {
+      state.textLabel.textContent = 'Click any text to adjust its size';
+      return;
+    }
+
+    const tag = state.selectedEditable.tagName.toLowerCase();
+    const text = compactText(state.selectedEditable.textContent || '');
+    const preview = text ? text.slice(0, 36) : '(empty)';
+    state.textLabel.textContent = `<${tag}> ${preview}`;
+  }
+
+  function adjustSelectedTextSize(direction) {
+    if (!isAdmin()) return;
+    if (!state.selectedEditable || !document.contains(state.selectedEditable)) {
+      notify('Select a text block first.', 'warn');
+      return;
+    }
+
+    const currentPx = parseFloat(window.getComputedStyle(state.selectedEditable).fontSize || '16') || 16;
+    const minPx = 10;
+    const maxPx = 64;
+    const step = direction > 0 ? 1 : -1;
+    const next = Math.min(maxPx, Math.max(minPx, Math.round(currentPx + step)));
+    state.selectedEditable.style.fontSize = `${next}px`;
+    scheduleAutosave('text-size');
+    updateTextLabel();
+  }
+
+  function resetSelectedTextSize() {
+    if (!isAdmin()) return;
+    if (!state.selectedEditable || !document.contains(state.selectedEditable)) {
+      notify('Select a text block first.', 'warn');
+      return;
+    }
+    state.selectedEditable.style.removeProperty('font-size');
+    scheduleAutosave('text-size-reset');
+    updateTextLabel();
   }
 
   function selectSection(section) {

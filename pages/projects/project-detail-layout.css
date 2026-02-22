@@ -221,6 +221,11 @@
   margin: 14px 0 8px;
 }
 
+.project-components .standard-h3 {
+  font-size: clamp(15px, 1.25vw, 18px);
+  line-height: 1.25;
+}
+
 .text-muted {
   color: var(--text-muted);
 }
