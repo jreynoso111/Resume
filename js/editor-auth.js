@@ -759,19 +759,36 @@
     if (!sb) return false;
 
     const table = String(cfg.cms.pagesTable || 'cms_pages');
-    // Use array form (no `.single()`) so "missing row" is a clean 200 + [] (no noisy 406s).
+    const pathCandidates = buildCmsPagePathCandidates(path);
     const { data, error } = await sb
       .from(table)
-      .select('html,updated_at')
-      .eq('path', path)
-      .limit(1);
+      .select('path,html,updated_at')
+      .in('path', pathCandidates)
+      .limit(200);
 
     if (error) return false;
 
-    const row = Array.isArray(data) ? data[0] : null;
+    const rankByPath = new Map(pathCandidates.map((candidate, index) => [candidate, index]));
+    const rows = (Array.isArray(data) ? data : [])
+      .filter((item) => item && item.path && item.html)
+      .sort((a, b) => {
+        const aTime = Date.parse(String(a.updated_at || ''));
+        const bTime = Date.parse(String(b.updated_at || ''));
+        const aHasTime = Number.isFinite(aTime);
+        const bHasTime = Number.isFinite(bTime);
+        if (aHasTime && bHasTime && aTime !== bTime) return bTime - aTime;
+        if (aHasTime !== bHasTime) return bHasTime ? 1 : -1;
+        const aRank = rankByPath.has(String(a.path)) ? rankByPath.get(String(a.path)) : Number.MAX_SAFE_INTEGER;
+        const bRank = rankByPath.has(String(b.path)) ? rankByPath.get(String(b.path)) : Number.MAX_SAFE_INTEGER;
+        return aRank - bRank;
+      });
+
+    const row = rows[0] || null;
+
 		    const html = row && row.html ? String(row.html) : '';
 		    if (!html) return false;
 
+	    const resolvedPagePath = row && row.path ? String(row.path) : path;
 	    const patchSnapshotShell = (rawHtml, pagePath) => {
 	      const safeHtml = String(rawHtml || '');
 	      const parts = String(pagePath || '').split('/').filter(Boolean);
@@ -781,7 +798,7 @@
 	      const STYLES_V = 33;
 	      const HEADER_V = 9;
 	      const FOOTER_V = 20;
-	      const EDITOR_V = 32;
+	      const EDITOR_V = 33;
 	      const SHELL_V = 6;
 	      const PROJECT_LIGHTBOX_V = 1;
 	      const PROJECT_CAROUSEL_V = 5;
@@ -887,7 +904,7 @@
       // ignore
     }
     document.open();
-    document.write(patchSnapshotShell(html, path));
+    document.write(patchSnapshotShell(html, resolvedPagePath));
     document.close();
     return true;
   }
@@ -2472,10 +2489,45 @@
   }
 
   function getPreferredCurrentPagePath() {
-    const htmlCandidates = buildRelativePathCandidates()
-      .filter((candidate) => candidate.endsWith('.html'))
-      .sort((a, b) => a.length - b.length);
-    return htmlCandidates[0] || 'index.html';
+    const fullPath = normalizeWebPath(location.pathname || '/index.html');
+    const scriptRoot = normalizeDirectoryPath(getScriptRootPathname());
+
+    if (fullPath.startsWith(scriptRoot)) {
+      const relative = fullPath.slice(scriptRoot.length).replace(/^\/+/, '');
+      if (relative) return relative;
+    }
+
+    return fullPath.replace(/^\/+/, '') || 'index.html';
+  }
+
+  function buildCmsPagePathCandidates(preferredPath) {
+    const ordered = [];
+    const seen = new Set();
+
+    const add = (value) => {
+      const clean = String(value || '')
+        .replace(/^\/+/, '')
+        .replace(/\?.*$/, '')
+        .replace(/#.*$/, '');
+      if (!clean || seen.has(clean)) return;
+      seen.add(clean);
+      ordered.push(clean);
+    };
+
+    add(preferredPath);
+    buildRelativePathCandidates().forEach(add);
+
+    const base = String(preferredPath || '').replace(/^\/+/, '');
+    if (base.startsWith('pages/')) add(base.slice('pages/'.length));
+    else add(`pages/${base}`);
+
+    if (base.startsWith('pages/projects/')) add(base.slice('pages/'.length));
+    if (base.startsWith('projects/')) add(`pages/${base}`);
+
+    if (base === 'index.html') add('pages/index.html');
+    if (base === 'pages/index.html') add('index.html');
+
+    return ordered;
   }
 
   function toPageAssetPath(assetPath) {
@@ -2574,9 +2626,13 @@
       addCandidate(`${compact}/index.html`);
     }
 
-    if (compact === 'index.html') {
-      addCandidate('index.html');
-    }
+    if (compact === 'index.html') addCandidate('index.html');
+
+    if (compact.startsWith('pages/')) addCandidate(compact.slice('pages/'.length));
+    else addCandidate(`pages/${compact}`);
+
+    if (compact.startsWith('pages/projects/')) addCandidate(compact.slice('pages/'.length));
+    if (compact.startsWith('projects/')) addCandidate(`pages/${compact}`);
 
     return Array.from(candidates);
   }
