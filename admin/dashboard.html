@@ -431,6 +431,17 @@
                     Open this tab and click Refresh to load analytics.
                 </div>
 
+                <div class="analytics-panel" style="margin-top:12px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+                        <h3 style="margin:0;">CMS Publish Log</h3>
+                        <button type="button" class="btn-secondary" id="cms-log-refresh-btn">Refresh log</button>
+                    </div>
+                    <div id="cms-log-status" style="margin-top:8px; color:#4b5563; font-size:0.88rem;">
+                        No log loaded yet.
+                    </div>
+                    <div id="cms-log-list" style="margin-top:10px;"></div>
+                </div>
+
                 <div id="analytics-kpis" class="analytics-kpis"></div>
 
                 <div class="analytics-grid">
@@ -495,6 +506,10 @@
             return String((cfg && cfg.adminEmail) || '').trim().toLowerCase();
         }
 
+        function getAdminUserId() {
+            return String((cfg && cfg.adminUserId) || '').trim();
+        }
+
         function isUnsafeMode() {
             return cfg && cfg.unsafeNoAuth === true;
         }
@@ -503,6 +518,14 @@
             const a = getAdminEmail();
             const e = String(email || '').trim().toLowerCase();
             return Boolean(a && e && a === e);
+        }
+
+        function isAdminUser(user) {
+            const email = user && user.email ? user.email : '';
+            if (isAdminEmail(email)) return true;
+            const expectedId = getAdminUserId();
+            const currentId = user && user.id ? String(user.id).trim() : '';
+            return Boolean(expectedId && currentId && expectedId === currentId);
         }
 
         function setAuthOverlayVisible(visible) {
@@ -530,8 +553,8 @@
         async function requireAdmin() {
             if (isUnsafeMode()) return true;
             const { data } = await sb.auth.getSession();
-            const email = data && data.session && data.session.user && data.session.user.email ? data.session.user.email : '';
-            const ok = Boolean(data && data.session && isAdminEmail(email));
+            const user = data && data.session && data.session.user ? data.session.user : null;
+            const ok = Boolean(data && data.session && isAdminUser(user));
             if (!ok) {
                 await refreshAuthUi();
             }
@@ -557,6 +580,7 @@
 
             if (tabId === 'tab-analytics') {
                 loadAnalytics();
+                loadCmsPublishLog();
             }
         }
 
@@ -826,6 +850,89 @@
                 setAnalyticsStatus(`Could not load analytics: ${msg}`, 'error');
             } finally {
                 analyticsLoading = false;
+            }
+        }
+
+        let cmsLogLoading = false;
+        function setCmsLogStatus(text, tone) {
+            const el = document.getElementById('cms-log-status');
+            if (!el) return;
+            el.textContent = String(text || '');
+            if (tone === 'error') el.style.color = '#b91c1c';
+            else if (tone === 'warn') el.style.color = '#92400e';
+            else if (tone === 'success') el.style.color = '#166534';
+            else el.style.color = '#4b5563';
+        }
+
+        function renderCmsLogRows(rows) {
+            const el = document.getElementById('cms-log-list');
+            if (!el) return;
+            if (!rows || rows.length === 0) {
+                el.innerHTML = '<div class="analytics-empty">No publish log entries yet.</div>';
+                return;
+            }
+            el.innerHTML = rows.map((row) => `
+                <div class="analytics-list-row">
+                    <div>
+                        <div><strong>${escapeHtml(row.path || '-')}</strong></div>
+                        <div style="font-size:0.82rem; color:#6b7280;">${escapeHtml(row.reason || '-')}</div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div>${escapeHtml(row.when || '-')}</div>
+                        <div style="font-size:0.82rem; color:#6b7280;">${escapeHtml(row.by || '-')}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function loadCmsPublishLog(force) {
+            if (cmsLogLoading) return;
+            if (!(await requireAdmin())) return;
+            cmsLogLoading = true;
+            setCmsLogStatus('Loading CMS publish log...', 'warn');
+
+            try {
+                const { data: richData, error: richError } = await sb
+                    .from('cms_change_log')
+                    .select('page_path, change_reason, editor_email, created_at')
+                    .order('created_at', { ascending: false })
+                    .limit(80);
+
+                if (!richError && Array.isArray(richData)) {
+                    const rows = richData.map((row) => ({
+                        path: row.page_path || '',
+                        reason: row.change_reason || 'publish',
+                        by: row.editor_email || '(admin)',
+                        when: row.created_at ? new Date(row.created_at).toLocaleString() : '-'
+                    }));
+                    renderCmsLogRows(rows);
+                    setCmsLogStatus(`Loaded ${rows.length} log entries from cms_change_log.`, 'success');
+                    return;
+                }
+
+                const { data, error } = await sb
+                    .from('cms_pages')
+                    .select('path,updated_at')
+                    .order('updated_at', { ascending: false })
+                    .limit(80);
+
+                if (error) throw error;
+
+                const rows = (Array.isArray(data) ? data : []).map((row) => ({
+                    path: row.path || '',
+                    reason: 'publish',
+                    by: '(snapshot)',
+                    when: row.updated_at ? new Date(row.updated_at).toLocaleString() : '-'
+                }));
+                renderCmsLogRows(rows);
+                setCmsLogStatus(`Loaded ${rows.length} entries from cms_pages snapshots.`, 'success');
+            } catch (err) {
+                console.error('Supabase loadCmsPublishLog error:', err);
+                const msg = err && err.message ? err.message : String(err);
+                setCmsLogStatus(`Could not load CMS publish log: ${msg}`, 'error');
+                renderCmsLogRows([]);
+            } finally {
+                cmsLogLoading = false;
             }
         }
 
@@ -1500,6 +1607,7 @@
 
         const analyticsRefreshBtn = document.getElementById('analytics-refresh-btn');
         const analyticsRange = document.getElementById('analytics-range');
+        const cmsLogRefreshBtn = document.getElementById('cms-log-refresh-btn');
         if (analyticsRefreshBtn) {
             analyticsRefreshBtn.addEventListener('click', () => {
                 analyticsLoaded = false;
@@ -1510,6 +1618,11 @@
             analyticsRange.addEventListener('change', () => {
                 analyticsLoaded = false;
                 loadAnalytics(true);
+            });
+        }
+        if (cmsLogRefreshBtn) {
+            cmsLogRefreshBtn.addEventListener('click', () => {
+                loadCmsPublishLog(true);
             });
         }
 
@@ -1527,7 +1640,8 @@
 
             const { data } = await sb.auth.getSession();
             const session = data && data.session ? data.session : null;
-            const email = session && session.user && session.user.email ? String(session.user.email) : '';
+            const user = session && session.user ? session.user : null;
+            const email = user && user.email ? String(user.email) : '';
 
             if (!session) {
                 analyticsLoaded = false;
@@ -1539,12 +1653,12 @@
                 return;
             }
 
-            if (!isAdminEmail(email)) {
+            if (!isAdminUser(user)) {
                 analyticsLoaded = false;
                 setAuthStatus('');
                 if (logoutBtn) logoutBtn.style.display = '';
                 setAuthOverlayVisible(true);
-                showAuthError(`Signed in as ${email} (no admin access).`);
+                showAuthError(`Signed in as ${email || '(unknown)'} (no admin access).`);
                 return;
             }
 
