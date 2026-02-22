@@ -798,7 +798,7 @@
 	      const STYLES_V = 33;
 	      const HEADER_V = 9;
 	      const FOOTER_V = 20;
-	      const EDITOR_V = 33;
+	      const EDITOR_V = 35;
 	      const SHELL_V = 6;
 	      const PROJECT_LIGHTBOX_V = 1;
 	      const PROJECT_CAROUSEL_V = 5;
@@ -1714,6 +1714,7 @@
 	          const publicUrl = await uploadFileViaSupabaseFunction(sb, cfg, fn, { bucket, path: objectPath, file });
 
 	          applyImageValue(target, kind, withAssetVersion(publicUrl));
+	          await syncProjectPreviewImageRecord(target, kind, publicUrl);
 	          requestImageControlPositionUpdate();
 
 	          if (state.autosaveEnabled) {
@@ -1743,6 +1744,7 @@
 
 	          const pageAssetPath = toPageAssetPath(destination);
 	          applyImageValue(target, kind, withAssetVersion(pageAssetPath));
+	          await syncProjectPreviewImageRecord(target, kind, pageAssetPath);
 	          requestImageControlPositionUpdate();
 
           if (state.autosaveEnabled) {
@@ -1757,6 +1759,7 @@
         if (!supportsFileSystemAccessApi()) {
           const dataUrl = await fileToDataUrl(file);
           applyImageValue(target, kind, dataUrl);
+          await syncProjectPreviewImageRecord(target, kind, dataUrl);
           requestImageControlPositionUpdate();
 
           if (state.autosaveEnabled) {
@@ -1779,6 +1782,7 @@
 
 	        const pageAssetPath = toPageAssetPath(destination);
 	        applyImageValue(target, kind, withAssetVersion(pageAssetPath));
+	        await syncProjectPreviewImageRecord(target, kind, pageAssetPath);
 	        requestImageControlPositionUpdate();
 
         if (state.autosaveEnabled) {
@@ -1846,6 +1850,7 @@
     }
 
     applyImageValue(target, kind, url);
+    void syncProjectPreviewImageRecord(target, kind, url);
     requestImageControlPositionUpdate();
     if (target instanceof HTMLElement) {
       delete target.dataset.assetPath;
@@ -1882,6 +1887,89 @@
 
     const safeValue = String(value || '').replace(/"/g, '%22');
     target.style.backgroundImage = `url("${safeValue}")`;
+  }
+
+  function extractProjectSlugFromHref(rawHref) {
+    const href = String(rawHref || '').trim();
+    if (!href) return '';
+    const clean = href.split('#', 1)[0].split('?', 1)[0];
+    const last = clean.split('/').filter(Boolean).pop() || '';
+    return last.replace(/\.html$/i, '');
+  }
+
+  function normalizeProjectHref(rawHref) {
+    const href = String(rawHref || '').trim();
+    if (!href) return '';
+    const clean = href
+      .replace(/^https?:\/\/[^/]+/i, '')
+      .replace(/^\/+/, '')
+      .replace(/^\.\/+/, '')
+      .replace(/^(\.\.\/)+/, '')
+      .split('#', 1)[0]
+      .split('?', 1)[0];
+    return clean;
+  }
+
+  async function syncProjectPreviewImageRecord(target, kind, nextValue) {
+    if (!(target instanceof HTMLElement)) return;
+    if (kind !== 'img') return;
+
+    const grid = target.closest('#projects-grid');
+    const card = target.closest('.project-card');
+    if (!grid || !card) return;
+
+    const primaryLink = card.querySelector('a.project-img-frame') || card.querySelector('a.project-link') || card.querySelector('a[href]');
+    const hrefRaw = primaryLink ? (primaryLink.getAttribute('href') || '') : '';
+    const href = normalizeProjectHref(hrefRaw);
+    const slug = extractProjectSlugFromHref(href);
+    if (!href && !slug) return;
+
+    const cfg = await getSupabaseConfig();
+    const sb = await getSupabaseClient();
+    if (!cfg || !cfg.url || !cfg.anonKey || !sb) return;
+
+    const imageRef = String(nextValue || target.getAttribute('src') || target.src || '').trim();
+    const imagePath = resolveAssetPath(imageRef);
+    const imageUrlForDb = imagePath || imageRef;
+    if (!imageUrlForDb) return;
+
+    const findByHref = async () => {
+      if (!href) return null;
+      const { data, error } = await sb
+        .from('projects')
+        .select('id,href')
+        .eq('href', href)
+        .limit(1);
+      if (error) return null;
+      return Array.isArray(data) && data[0] ? data[0] : null;
+    };
+
+    const findBySlug = async () => {
+      if (!slug) return null;
+      const { data, error } = await sb
+        .from('projects')
+        .select('id,href')
+        .ilike('href', `%${slug}.html`)
+        .limit(10);
+      if (error || !Array.isArray(data) || data.length === 0) return null;
+      const preferred = data.find((row) => normalizeProjectHref(row && row.href) === href);
+      return preferred || data[0] || null;
+    };
+
+    const row = (await findByHref()) || (await findBySlug());
+    if (!row || !row.id) return;
+
+    const { error: updateError } = await sb
+      .from('projects')
+      .update({ image_url: imageUrlForDb })
+      .eq('id', row.id);
+
+    if (updateError) {
+      notify(`Preview image sync failed: ${updateError.message || String(updateError)}`, 'warn');
+      return;
+    }
+
+    notify('Project preview image saved to server.', 'success');
   }
 
   function withAssetVersion(rawUrl) {
@@ -2375,7 +2463,30 @@
       .slice(0, 60) || 'image';
   }
 
+  function getProjectPreviewTargetAssetPath(target, ext) {
+    if (!(target instanceof HTMLElement)) return '';
+    if (target.tagName !== 'IMG') return '';
+
+    const grid = target.closest('#projects-grid');
+    const card = target.closest('.project-card');
+    if (!grid || !card) return '';
+
+    const link = card.querySelector('a.project-img-frame') || card.querySelector('a.project-link') || card.querySelector('a[href]');
+    const hrefRaw = link ? (link.getAttribute('href') || '') : '';
+    const slug = extractProjectSlugFromHref(hrefRaw);
+    if (!slug) return '';
+
+    const safeExt = extensionFromFile({ name: `file.${ext || 'jpg'}` });
+    return `assets/images/projects/previews/${slug}.${safeExt}`;
+  }
+
 	  function inferTargetAssetPath(target, kind, ext) {
+	    const projectPreviewPath = getProjectPreviewTargetAssetPath(target, ext);
+	    if (projectPreviewPath) {
+	      if (target instanceof HTMLElement) target.dataset.assetPath = projectPreviewPath;
+	      return projectPreviewPath;
+	    }
+
 	    if (target instanceof HTMLElement) {
 	      const preset = String(target.dataset.assetPath || '').trim();
 	      if (preset && preset.startsWith('assets/') && !isPlaceholderAssetPath(preset)) return preset;
