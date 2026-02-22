@@ -221,6 +221,22 @@
   margin: 14px 0 8px;
 }
 
+.project-components .standard-h3 {
+  font-size: clamp(15px, 1.25vw, 18px);
+  line-height: 1.25;
+}
+
+.page-main .standard-text,
+.page-main .standard-list li {
+  font-size: var(--font-size-sm);
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+.page-main .standard-list {
+  color: var(--text-muted);
+}
+
 .text-muted {
   color: var(--text-muted);
 }
