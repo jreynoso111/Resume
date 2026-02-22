@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>{{PROJECT_TITLE}} | Juan R. Reynoso</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../../assets/css/styles.css?v=33" />
+  <link rel="stylesheet" href="./project-detail-layout.css?v=4" />
+</head>
+
+<body>
+  <header id="site-header" data-variant="inner-nested" data-active="projects"></header>
+
+  <div class="page-shell">
+    <aside class="projects-sidebar" id="projects-sidebar" data-active-project="{{PROJECT_SLUG}}"></aside>
+
+    <main class="page-main" id="top">
+      <section class="hero">
+        <h1>{{PROJECT_TITLE}}</h1>
+        <p>{{PROJECT_SUMMARY}}</p>
+      </section>
+
+      <section class="project-media-showcase">
+        <div class="project-media-main">
+          <div class="img-placeholder"
+            style="background-image:url('../../assets/images/projects/{{PROJECT_SLUG}}/hero.jpg');"></div>
+        </div>
+      </section>
+
+      <section>
+        <h2 class="standard-h2">Project Overview</h2>
+        <div class="grid-2">
+          <p class="standard-text">{{PROJECT_OVERVIEW}}</p>
+          <div class="img-placeholder"
+            style="background-image:url('../../assets/images/projects/{{PROJECT_SLUG}}/overview.jpg');"></div>
+        </div>
+      </section>
+
+      <section>
+        <h2 class="standard-h2">Key Components</h2>
+        <div class="grid-3">
+          <div class="card">
+            <div class="img-placeholder"
+              style="min-height:140px;background-image:url('../../assets/images/projects/{{PROJECT_SLUG}}/component_1.jpg');">
+            </div>
+            <h3 class="standard-h3">{{COMPONENT_1_TITLE}}</h3>
+            <p class="standard-text">{{COMPONENT_1_DESC}}</p>
+          </div>
+          <div class="card">
+            <div class="img-placeholder"
+              style="min-height:140px;background-image:url('../../assets/images/projects/{{PROJECT_SLUG}}/component_2.jpg');">
+            </div>
+            <h3 class="standard-h3">{{COMPONENT_2_TITLE}}</h3>
+            <p class="standard-text">{{COMPONENT_2_DESC}}</p>
+          </div>
+          <div class="card">
+            <div class="img-placeholder"
+              style="min-height:140px;background-image:url('../../assets/images/projects/{{PROJECT_SLUG}}/component_3.jpg');">
+            </div>
+            <h3 class="standard-h3">{{COMPONENT_3_TITLE}}</h3>
+            <p class="standard-text">{{COMPONENT_3_DESC}}</p>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2 class="standard-h2">Main Features</h2>
+        <ul class="standard-list">
+          <li>{{FEATURE_1}}</li>
+          <li>{{FEATURE_2}}</li>
+          <li>{{FEATURE_3}}</li>
+          <li>{{FEATURE_4}}</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2 class="standard-h2">Operational Impact</h2>
+        <p class="standard-text">{{PROJECT_IMPACT}}</p>
+      </section>
+
+      <section class="project-screenshots">
+        <h2 class="standard-h2">Sample Pictures</h2>
+        <div class="screenshot-carousel" data-screenshot-carousel tabindex="0">
+          <button class="screenshot-carousel__control prev" type="button" aria-label="Previous screenshot">‹</button>
+          <div class="screenshot-carousel__viewport">
+            <div class="screenshot-carousel__track">
+              <div class="screenshot-carousel__slide">
+                <div class="img-placeholder"
+                  style="height:320px;background-image:url('../../assets/images/projects/{{PROJECT_SLUG}}/screenshot_1.jpg');">
+                </div>
+              </div>
+              <div class="screenshot-carousel__slide">
+                <div class="img-placeholder"
+                  style="height:320px;background-image:url('../../assets/images/projects/{{PROJECT_SLUG}}/screenshot_2.jpg');">
+                </div>
+              </div>
+            </div>
+          </div>
+          <button class="screenshot-carousel__control next" type="button" aria-label="Next screenshot">›</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <footer id="site-footer" data-root-path="../../">
+    <div class="shell">
+      <div class="footer-row">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span>© <span data-footer-year="1">2026</span> Juan R. Reynoso. All rights reserved.</span>
+          <a href="javascript:void(0)" class="admin-link" aria-label="Edit page" title="Edit page">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path
+                d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.74v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z">
+              </path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+          </a>
+        </div>
+        <div class="footer-links">
+          <a href="#top">Back to top</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="../../js/editor-auth.js?v=32"></script>
+  <script src="../../js/header.js?v=9"></script>
+  <script src="../../js/footer.js?v=20"></script>
+  <script src="../../js/project-image-lightbox.js?v=1"></script>
+  <script src="../../js/project-screenshots-carousel.js?v=2"></script>
+  <script src="../../js/site-shell.js?v=6"></script>
+</body>
+
+</html>

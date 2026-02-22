@@ -30,6 +30,13 @@ def _write_bytes(root: str, rel: str, data: bytes) -> None:
 class Handler(SimpleHTTPRequestHandler):
     server_version = "ResumeDevServer/1.0"
 
+    def end_headers(self):
+        # Local dev only: disable browser caching so updated assets show immediately.
+        self.send_header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+        self.send_header("Pragma", "no-cache")
+        self.send_header("Expires", "0")
+        super().end_headers()
+
     def _send_json(self, code: int, payload: dict) -> None:
         body = json.dumps(payload).encode("utf-8")
         self.send_response(code)

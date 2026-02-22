@@ -7,7 +7,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="../../assets/css/styles.css?v=33" />
-  <link rel="stylesheet" href="./project-detail-layout.css?v=2" />
+  <link rel="stylesheet" href="./project-detail-layout.css?v=4" />
 
 </head>
 
@@ -94,25 +94,35 @@
       </section>
 
       <section>
-        <h2 class="standard-h2">Sample Screenshots</h2>
-        <div class="grid-2">
-          <div class="img-placeholder"
-            style="height:320px;background-image:url('../../assets/images/projects/gps-movement-analytics/screenshot_1.jpg');">
-          </div>
-          <div class="img-placeholder"
-            style="height:320px;background-image:url('../../assets/images/projects/gps-movement-analytics/screenshot_2.jpg');">
-          </div>
-        </div>
-      </section>
-
-      <section>
-        <h2 class="standard-h2">Impact</h2>
+        <h2 class="standard-h2">Operational Impact</h2>
         <p class="standard-text">
           Before this project, GPS data was checked manually in separate vendor portals, making it slow and inconsistent
           to prepare a single case. With a unified model and dashboards, the team can see location, last movement and
           non-reporting status for every asset in seconds, work from a ranked list of problematic units, and keep a
           movement history that can be revisited during disputes or negotiations.
         </p>
+      </section>
+
+      <section class="project-screenshots">
+        <h2 class="standard-h2">Sample Pictures</h2>
+        <div class="screenshot-carousel" data-screenshot-carousel tabindex="0">
+          <button class="screenshot-carousel__control prev" type="button" aria-label="Previous screenshot">‹</button>
+          <div class="screenshot-carousel__viewport">
+            <div class="screenshot-carousel__track">
+              <div class="screenshot-carousel__slide">
+                <div class="img-placeholder"
+                  style="height:320px;background-image:url('../../assets/images/projects/gps-movement-analytics/screenshot_1.jpg');">
+                </div>
+              </div>
+              <div class="screenshot-carousel__slide">
+                <div class="img-placeholder"
+                  style="height:320px;background-image:url('../../assets/images/projects/gps-movement-analytics/screenshot_2.jpg');">
+                </div>
+              </div>
+            </div>
+          </div>
+          <button class="screenshot-carousel__control next" type="button" aria-label="Next screenshot">›</button>
+        </div>
       </section>
     </main>
   </div>
@@ -140,10 +150,12 @@
 </footer>
 
 
-  <script src="../../js/editor-auth.js?v=30"></script>
+  <script src="../../js/editor-auth.js?v=32"></script>
 
   <script src="../../js/header.js?v=9"></script>
   <script src="../../js/footer.js?v=20"></script>
+  <script src="../../js/project-image-lightbox.js?v=1"></script>
+  <script src="../../js/project-screenshots-carousel.js?v=2"></script>
   <script src="../../js/site-shell.js?v=6"></script>
 </body>
 
