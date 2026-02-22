@@ -22,6 +22,9 @@
     'HEADER', 'HR', 'LI', 'MAIN', 'NAV', 'OL', 'P', 'PRE', 'SECTION', 'TABLE', 'TBODY',
     'THEAD', 'TFOOT', 'TR', 'TD', 'TH', 'UL'
   ]);
+  const EMPTY_EDITABLE_TAGS = new Set([
+    'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'P', 'LI', 'SPAN', 'A', 'STRONG', 'EM', 'SMALL', 'LABEL', 'FIGCAPTION', 'BLOCKQUOTE'
+  ]);
 
 	  const state = {
 	    rootDirHandle: null,
@@ -781,7 +784,7 @@
 	      const EDITOR_V = 32;
 	      const SHELL_V = 6;
 	      const PROJECT_LIGHTBOX_V = 1;
-	      const PROJECT_CAROUSEL_V = 2;
+	      const PROJECT_CAROUSEL_V = 5;
 	      const COURSES_CERTS_V = 11;
 	      const PROJECTS_V = 4;
 	      const PROJECT_DETAIL_LAYOUT_V = 4;
@@ -1169,6 +1172,7 @@
       if (!(target instanceof Element)) return;
       const editable = target.closest('[data-cms-editable="1"]');
       if (!editable) return;
+      if (shouldDeferAutosaveForEmptyEditable(editable)) return;
       scheduleAutosave('text-change');
     });
 
@@ -1178,6 +1182,7 @@
       if (!(target instanceof Element)) return;
       const editable = target.closest('[data-cms-editable="1"]');
       if (!editable) return;
+      if (shouldDeferAutosaveForEmptyEditable(editable)) return;
       scheduleAutosave('text-blur');
     }, true);
 
@@ -1378,8 +1383,7 @@
       if (!(element instanceof HTMLElement)) return false;
       if (element.closest('[data-cms-ui="1"]')) return false;
       if (element.closest('[data-resume-dynamic="1"]')) return false;
-      const text = compactText(element.textContent || '');
-      return text.length >= 12;
+      return true;
     });
 
     sections.forEach((element) => {
@@ -1903,6 +1907,11 @@
     return String(value || '').replace(/\s+/g, ' ').trim();
   }
 
+  function shouldDeferAutosaveForEmptyEditable(element) {
+    if (!(element instanceof HTMLElement)) return false;
+    return compactText(element.textContent || '') === '';
+  }
+
 	  function isEditableTextElement(element) {
 	    if (!(element instanceof HTMLElement)) return false;
 	    if (element.closest('[data-cms-ui="1"]')) return false;
@@ -1921,14 +1930,19 @@
       return false;
     }
 
-	    const text = compactText(element.textContent || '');
-	    if (!text) return false;
-
 	    if (element.querySelector('img, video, audio, canvas, iframe, form, table')) {
 	      return false;
 	    }
 
     const children = Array.from(element.children);
+    const text = compactText(element.textContent || '');
+    if (!text) {
+      if (!EMPTY_EDITABLE_TAGS.has(tag)) return false;
+      if (children.length === 0) return true;
+      const hasNonBreakChild = children.some((child) => child.tagName !== 'BR');
+      return !hasNonBreakChild;
+    }
+
     if (children.length === 0) return true;
 
     const hasBlockChild = children.some((child) => BLOCK_TAGS.has(child.tagName));

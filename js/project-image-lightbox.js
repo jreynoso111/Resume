@@ -1,15 +1,10 @@
 (() => {
-  const placeholders = Array.from(document.querySelectorAll('.img-placeholder'));
-  if (!placeholders.length) return;
-
   const getImageUrl = (element) => {
+    if (!element || !element.classList || !element.classList.contains('img-placeholder')) return '';
     const bg = window.getComputedStyle(element).backgroundImage || '';
     const match = bg.match(/url\((['"]?)(.*?)\1\)/i);
     return match && match[2] ? match[2] : '';
   };
-
-  const zoomable = placeholders.filter((el) => Boolean(getImageUrl(el)));
-  if (!zoomable.length) return;
 
   const modal = document.createElement('div');
   modal.className = 'project-lightbox';
@@ -23,7 +18,21 @@
   const closeButton = modal.querySelector('.project-lightbox__close');
   let opener = null;
 
+  const markExpandable = (element) => {
+    if (!element || !element.classList || !element.classList.contains('img-placeholder')) return;
+    if (!getImageUrl(element)) return;
+    element.classList.add('is-expandable');
+    if (element.getAttribute('tabindex') !== '0') element.setAttribute('tabindex', '0');
+    if (element.getAttribute('role') !== 'button') element.setAttribute('role', 'button');
+    if (element.getAttribute('aria-label') !== 'Expand image') element.setAttribute('aria-label', 'Expand image');
+  };
+
+  const markAllExpandable = () => {
+    Array.from(document.querySelectorAll('.img-placeholder')).forEach(markExpandable);
+  };
+
   const openModal = (element) => {
+    markExpandable(element);
     const src = getImageUrl(element);
     if (!src) return;
     opener = element;
@@ -42,19 +51,24 @@
     opener = null;
   };
 
-  zoomable.forEach((element) => {
-    element.classList.add('is-expandable');
-    element.setAttribute('tabindex', '0');
-    element.setAttribute('role', 'button');
-    element.setAttribute('aria-label', 'Expand image');
+  markAllExpandable();
 
-    element.addEventListener('click', () => openModal(element));
-    element.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter' || event.key === ' ') {
-        event.preventDefault();
-        openModal(element);
-      }
-    });
+  document.addEventListener('click', (event) => {
+    const target = event.target;
+    const placeholder = target && target.closest ? target.closest('.img-placeholder') : null;
+    if (!placeholder) return;
+    if (!getImageUrl(placeholder)) return;
+    openModal(placeholder);
+  });
+
+  document.addEventListener('keydown', (event) => {
+    const target = event.target;
+    const isPlaceholder = target && target.classList && target.classList.contains('img-placeholder');
+    if (!isPlaceholder) return;
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      openModal(target);
+    }
   });
 
   closeButton.addEventListener('click', closeModal);
@@ -68,6 +82,9 @@
       closeModal();
     }
   });
+
+  const observer = new MutationObserver(() => markAllExpandable());
+  observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['style'] });
 
   document.body.appendChild(modal);
 })();
