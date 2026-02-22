@@ -155,20 +155,63 @@
       addButton.style.display = isAdminMode() ? 'inline-flex' : 'none';
       addButton.onclick = () => {
         if (!isAdminMode()) return;
-        const imageUrl = window.prompt('Paste image URL for this screenshot:');
-        if (!imageUrl) return;
-        const label = window.prompt('Optional label/caption:', 'Sample Picture') || 'Sample Picture';
-        const cleanUrl = imageUrl.trim();
-        if (!cleanUrl) return;
+        const createSlide = (sourceUrl, labelText) => {
+          const slide = document.createElement('div');
+          slide.className = 'screenshot-carousel__slide';
+          const safeLabel = String(labelText || 'Sample Picture').replace(/"/g, '&quot;');
+          const safeUrl = String(sourceUrl || '').replace(/'/g, '%27');
+          slide.innerHTML = `
+            <div class="img-placeholder" data-label="${safeLabel}" style="height:320px;background-image:url('${safeUrl}');"></div>
+          `;
+          track.appendChild(slide);
+          index = getSlides().length - 1;
+          updateAfterInteraction();
+        };
 
-        const slide = document.createElement('div');
-        slide.className = 'screenshot-carousel__slide';
-        slide.innerHTML = `
-          <div class="img-placeholder" data-label="${label.replace(/"/g, '&quot;')}" style="height:320px;background-image:url('${cleanUrl.replace(/'/g, '%27')}');"></div>
-        `;
-        track.appendChild(slide);
-        index = getSlides().length - 1;
-        updateAfterInteraction();
+        const openFilePicker = () => {
+          const picker = document.createElement('input');
+          picker.type = 'file';
+          picker.accept = 'image/*';
+          picker.multiple = true;
+          picker.style.position = 'fixed';
+          picker.style.left = '-9999px';
+          picker.style.width = '1px';
+          picker.style.height = '1px';
+          picker.style.opacity = '0';
+          picker.setAttribute('aria-hidden', 'true');
+          document.body.appendChild(picker);
+
+          picker.addEventListener('change', () => {
+            const files = Array.from(picker.files || []);
+            picker.remove();
+            if (!files.length) return;
+
+            files.forEach((file, fileIndex) => {
+              const reader = new FileReader();
+              reader.onload = () => {
+                const dataUrl = String(reader.result || '');
+                if (!dataUrl) return;
+                const defaultLabel = file && file.name ? file.name.replace(/\.[a-z0-9]+$/i, '') : `Sample Picture ${fileIndex + 1}`;
+                const label = window.prompt('Optional label/caption:', defaultLabel) || defaultLabel;
+                createSlide(dataUrl, label);
+              };
+              reader.readAsDataURL(file);
+            });
+          }, { once: true });
+
+          picker.click();
+        };
+
+        const entry = window.prompt('Paste an image URL, or type "upload" to choose from your device:', 'upload');
+        if (entry === null) return;
+        const raw = entry.trim();
+        if (!raw || raw.toLowerCase() === 'upload') {
+          openFilePicker();
+          return;
+        }
+
+        const label = window.prompt('Optional label/caption:', 'Sample Picture') || 'Sample Picture';
+        createSlide(raw, label);
       };
     };
 
