@@ -601,8 +601,14 @@
     }
     const cfg = await getSupabaseConfig();
     const adminEmail = cfg && cfg.adminEmail ? String(cfg.adminEmail).trim().toLowerCase() : '';
+    const adminUserId = cfg && cfg.adminUserId ? String(cfg.adminUserId).trim() : '';
     const currentEmail = String(state.authEmail || '').trim().toLowerCase();
-    state.authIsAdmin = Boolean(adminEmail && currentEmail && adminEmail === currentEmail);
+    const currentUserId = state.authSession && state.authSession.user && state.authSession.user.id
+      ? String(state.authSession.user.id).trim()
+      : '';
+    const byEmail = Boolean(adminEmail && currentEmail && adminEmail === currentEmail);
+    const byUserId = Boolean(adminUserId && currentUserId && adminUserId === currentUserId);
+    state.authIsAdmin = byEmail || byUserId;
   }
 
 	  function updateStatusLine() {
@@ -800,7 +806,7 @@
 	      const STYLES_V = 33;
 	      const HEADER_V = 9;
 	      const FOOTER_V = 20;
-	      const EDITOR_V = 41;
+	      const EDITOR_V = 43;
 	      const SHELL_V = 6;
 	      const PROJECT_LIGHTBOX_V = 2;
 	      const PROJECT_CAROUSEL_V = 6;
@@ -925,18 +931,11 @@
   }
 
   function loadSettings() {
-    try {
-      const parsed = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
-      if (typeof parsed.autosaveEnabled === 'boolean') {
-        state.autosaveEnabled = parsed.autosaveEnabled;
-      }
-    } catch (error) {
-      state.autosaveEnabled = true;
-    }
+    state.autosaveEnabled = true;
   }
 
   function saveSettings() {
-    const payload = { autosaveEnabled: state.autosaveEnabled };
+    const payload = { autosaveEnabled: true };
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(payload));
   }
 
@@ -987,7 +986,7 @@
 
       <label class="cms-inline">
         <input id="cms-autosave" type="checkbox" />
-        <span id="cms-autosave-label">Auto-publish changes</span>
+        <span id="cms-autosave-label">Auto-publish changes (always on)</span>
       </label>
 
       <details class="cms-details">
@@ -1036,11 +1035,13 @@
     state.textLabel = state.panel.querySelector('#cms-text-label');
 
     const autosaveToggle = state.panel.querySelector('#cms-autosave');
-    autosaveToggle.checked = state.autosaveEnabled;
+    state.autosaveEnabled = true;
+    autosaveToggle.checked = true;
+    autosaveToggle.disabled = true;
     autosaveToggle.addEventListener('change', () => {
-      state.autosaveEnabled = autosaveToggle.checked;
+      state.autosaveEnabled = true;
       saveSettings();
-      notify(state.autosaveEnabled ? 'Auto-publish enabled.' : 'Auto-publish disabled.', 'success');
+      notify('Auto-publish is always enabled.', 'success');
     });
 
     state.panel.querySelector('#cms-save-now').addEventListener('click', () => {
@@ -2496,12 +2497,31 @@
   }
 
   function scheduleAutosave(reason) {
-    if (!isAdmin() || !state.autosaveEnabled) return;
+    if (!isAdmin()) return;
 
     if (state.autosaveTimer) clearTimeout(state.autosaveTimer);
     state.autosaveTimer = setTimeout(() => {
       saveCurrentPage({ silent: true, reason, allowPicker: false });
     }, 900);
+  }
+
+  async function tryInsertCmsPublishLog(sb, path, reason, html) {
+    try {
+      if (!sb) return;
+      const email = String(state.authEmail || '').trim().toLowerCase() || null;
+      const htmlText = String(html || '');
+      const charCount = htmlText.length;
+      const payload = {
+        page_path: String(path || ''),
+        change_reason: String(reason || 'manual'),
+        editor_email: email,
+        char_count: charCount
+      };
+      const { error } = await sb.from('cms_change_log').insert(payload);
+      if (error) return;
+    } catch (_e) {
+      // Optional audit table; ignore if not configured.
+    }
   }
 
   async function ensureProjectRootHandle(allowPicker) {
@@ -2573,6 +2593,7 @@
         }
         const { error } = await sb.from(table).upsert({ path, html }, { onConflict: 'path' });
         if (error) throw error;
+        await tryInsertCmsPublishLog(sb, path, reason, html);
         let localSynced = false;
         try {
           localSynced = await persistToLocalServer(path);
