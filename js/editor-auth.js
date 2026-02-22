@@ -778,15 +778,19 @@
 	      const STYLES_V = 33;
 	      const HEADER_V = 9;
 	      const FOOTER_V = 20;
-	      const EDITOR_V = 30;
+	      const EDITOR_V = 32;
 	      const SHELL_V = 6;
+	      const PROJECT_LIGHTBOX_V = 1;
+	      const PROJECT_CAROUSEL_V = 2;
 	      const COURSES_CERTS_V = 11;
 	      const PROJECTS_V = 4;
-	      const PROJECT_DETAIL_LAYOUT_V = 2;
+	      const PROJECT_DETAIL_LAYOUT_V = 4;
       const footerScript = `<script src="${rootPrefix}js/footer.js?v=${FOOTER_V}"></script>`;
       const headerScript = `<script src="${rootPrefix}js/header.js?v=${HEADER_V}"></script>`;
       const editorScript = `<script src="${rootPrefix}js/editor-auth.js?v=${EDITOR_V}"></script>`;
       const shellScript = `<script src="${rootPrefix}js/site-shell.js?v=${SHELL_V}"></script>`;
+      const lightboxScript = `<script src="${rootPrefix}js/project-image-lightbox.js?v=${PROJECT_LIGHTBOX_V}"></script>`;
+      const carouselScript = `<script src="${rootPrefix}js/project-screenshots-carousel.js?v=${PROJECT_CAROUSEL_V}"></script>`;
 
       let out = safeHtml;
 
@@ -813,6 +817,8 @@
 	      out = out.replace(/(js\/footer\.js\?v=)\d+/gi, `$1${FOOTER_V}`);
 	      out = out.replace(/(js\/editor-auth\.js\?v=)\d+/gi, `$1${EDITOR_V}`);
 	      out = out.replace(/(js\/site-shell\.js\?v=)\d+/gi, `$1${SHELL_V}`);
+	      out = out.replace(/(js\/project-image-lightbox\.js\?v=)\d+/gi, `$1${PROJECT_LIGHTBOX_V}`);
+	      out = out.replace(/(js\/project-screenshots-carousel\.js\?v=)\d+/gi, `$1${PROJECT_CAROUSEL_V}`);
 	      out = out.replace(/(assets\/js\/courses-certifications\.js\?v=)\d+/gi, `$1${COURSES_CERTS_V}`);
 	      out = out.replace(/(js\/projects-page\.js\?v=)\d+/gi, `$1${PROJECTS_V}`);
 	      out = out.replace(/project-detail-layout\.css(?:\?v=\d+)?/gi, `project-detail-layout.css?v=${PROJECT_DETAIL_LAYOUT_V}`);
@@ -851,6 +857,18 @@
       if (!/js\/site-shell\.js/i.test(out)) {
         out = out.replace(/<\/body>/i, `${shellScript}\n</body>`);
         if (!/js\/site-shell\.js/i.test(out)) out = `${out}\n${shellScript}\n`;
+      }
+
+      // Ensure project detail image expansion script exists after hydration.
+      if (!/js\/project-image-lightbox\.js/i.test(out)) {
+        out = out.replace(/<\/body>/i, `${lightboxScript}\n</body>`);
+        if (!/js\/project-image-lightbox\.js/i.test(out)) out = `${out}\n${lightboxScript}\n`;
+      }
+
+      // Ensure project screenshots carousel script exists after hydration.
+      if (!/js\/project-screenshots-carousel\.js/i.test(out)) {
+        out = out.replace(/<\/body>/i, `${carouselScript}\n</body>`);
+        if (!/js\/project-screenshots-carousel\.js/i.test(out)) out = `${out}\n${carouselScript}\n`;
       }
 
       return out;
@@ -2115,6 +2133,19 @@
 
     try {
       const html = buildCleanHtmlSnapshot();
+      const persistToLocalServer = async (relativePath) => {
+        if (!(await detectServerMode())) return false;
+        const res = await fetch('/__cms/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ path: relativePath, html })
+        });
+        const payload = await res.json().catch(() => ({}));
+        if (!res.ok || !payload || payload.ok !== true) {
+          throw new Error(payload && payload.error ? payload.error : 'Local save failed');
+        }
+        return true;
+      };
 
       // Primary: publish to Supabase (CMS snapshots).
       const cfg = await getSupabaseConfig();
@@ -2128,22 +2159,27 @@
         }
         const { error } = await sb.from(table).upsert({ path, html }, { onConflict: 'path' });
         if (error) throw error;
+        let localSynced = false;
+        try {
+          localSynced = await persistToLocalServer(path);
+        } catch (localError) {
+          console.warn('Local mirror save failed after Supabase publish:', localError);
+        }
         persistLocalDraft(html, reason);
-        if (!silent) notify(`Published: ${path}`, 'success');
+        if (!silent) {
+          notify(
+            localSynced
+              ? `Published: ${path} (Supabase + local file)`
+              : `Published: ${path}`,
+            'success'
+          );
+        }
         return;
       }
 
       if (await detectServerMode()) {
         const relativePath = getPreferredCurrentPagePath();
-        const res = await fetch('/__cms/save', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ path: relativePath, html })
-        });
-        const payload = await res.json().catch(() => ({}));
-        if (!res.ok || !payload || payload.ok !== true) {
-          throw new Error(payload && payload.error ? payload.error : 'Save failed');
-        }
+        await persistToLocalServer(relativePath);
         if (!silent) notify(`Changes saved to ${relativePath}`, 'success');
         return;
       }

@@ -7,7 +7,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="../../assets/css/styles.css?v=33" />
-  <link rel="stylesheet" href="./project-detail-layout.css?v=2" />
+  <link rel="stylesheet" href="./project-detail-layout.css?v=4" />
 
 </head>
 
@@ -92,20 +92,28 @@
       </section>
 
       <section>
-        <h2 class="standard-h2">Sample Screenshots</h2>
-        <div class="grid-2">
-          <div class="img-placeholder" data-label="Live System View" style="height:320px;">
-          </div>
-          <div class="img-placeholder" data-label="Analytical Model" style="height:320px;">
-          </div>
-        </div>
-      </section>
-
-      <section>
-        <h2 class="standard-h2">Impact</h2>
+        <h2 class="standard-h2">Operational Impact</h2>
         <p class="standard-text">This system reduced manual report preparation by over 90%, standardized daily fleet
           oversight, and enabled rapid detection of operational anomalies and financial risk. It also established a
           reliable backbone for future predictive maintenance modeling.</p>
+      </section>
+
+      <section class="project-screenshots">
+        <h2 class="standard-h2">Sample Pictures</h2>
+        <div class="screenshot-carousel" data-screenshot-carousel tabindex="0">
+          <button class="screenshot-carousel__control prev" type="button" aria-label="Previous screenshot">‹</button>
+          <div class="screenshot-carousel__viewport">
+            <div class="screenshot-carousel__track">
+              <div class="screenshot-carousel__slide">
+                <div class="img-placeholder" data-label="Live System View" style="height:320px;"></div>
+              </div>
+              <div class="screenshot-carousel__slide">
+                <div class="img-placeholder" data-label="Analytical Model" style="height:320px;"></div>
+              </div>
+            </div>
+          </div>
+          <button class="screenshot-carousel__control next" type="button" aria-label="Next screenshot">›</button>
+        </div>
       </section>
     </main>
   </div>
@@ -133,10 +141,12 @@
 </footer>
 
 
-  <script src="../../js/editor-auth.js?v=30"></script>
+  <script src="../../js/editor-auth.js?v=32"></script>
 
   <script src="../../js/header.js?v=9"></script>
   <script src="../../js/footer.js?v=20"></script>
+  <script src="../../js/project-image-lightbox.js?v=1"></script>
+  <script src="../../js/project-screenshots-carousel.js?v=2"></script>
   <script src="../../js/site-shell.js?v=6"></script>
 </body>
 
