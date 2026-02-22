@@ -31,6 +31,12 @@
     Array.from(document.querySelectorAll('.img-placeholder')).forEach(markExpandable);
   };
 
+  const hasExpandable = () => {
+    return Array.from(document.querySelectorAll('.img-placeholder')).some((el) => Boolean(getImageUrl(el)));
+  };
+
+  if (!hasExpandable()) return;
+
   const openModal = (element) => {
     markExpandable(element);
     const src = getImageUrl(element);

@@ -102,6 +102,7 @@
         const href = String(p.href || "").trim() || "#";
         const title = String(p.title || "").trim() || "Untitled project";
         const desc = String(p.description || "").trim();
+        const projectId = p && p.id != null ? String(p.id) : "";
         const slug = hrefToSlug(href);
         const fallbackPreview = slug && LOCAL_PREVIEW_SLUGS.has(slug)
           ? `${rootPrefix || ""}assets/images/projects/previews/${slug}.jpg`
@@ -114,7 +115,7 @@
           : "";
 
         return `
-          <article class="project-card">
+          <article class="project-card"${projectId ? ` data-project-id="${escapeHtml(projectId)}"` : ''}>
             <a href="${escapeHtml(href)}" class="project-img-frame">${imgHtml}</a>
             <div class="project-content">
               <h2 class="project-title"><a href="${escapeHtml(href)}">${escapeHtml(title)}</a></h2>
