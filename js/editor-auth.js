@@ -800,12 +800,12 @@
 	      const STYLES_V = 33;
 	      const HEADER_V = 9;
 	      const FOOTER_V = 20;
-	      const EDITOR_V = 37;
+	      const EDITOR_V = 41;
 	      const SHELL_V = 6;
-	      const PROJECT_LIGHTBOX_V = 1;
+	      const PROJECT_LIGHTBOX_V = 2;
 	      const PROJECT_CAROUSEL_V = 6;
 	      const COURSES_CERTS_V = 11;
-	      const PROJECTS_V = 4;
+	      const PROJECTS_V = 6;
 	      const PROJECT_DETAIL_LAYOUT_V = 7;
       const footerScript = `<script src="${rootPrefix}js/footer.js?v=${FOOTER_V}"></script>`;
       const headerScript = `<script src="${rootPrefix}js/header.js?v=${HEADER_V}"></script>`;
@@ -881,16 +881,22 @@
         if (!/js\/site-shell\.js/i.test(out)) out = `${out}\n${shellScript}\n`;
       }
 
-      // Ensure project detail image expansion script exists after hydration.
-      if (!/js\/project-image-lightbox\.js/i.test(out)) {
-        out = out.replace(/<\/body>/i, `${lightboxScript}\n</body>`);
-        if (!/js\/project-image-lightbox\.js/i.test(out)) out = `${out}\n${lightboxScript}\n`;
-      }
+      const isProjectDetailPage = /(?:^|\/)projects\/[^/]+\.html$/i.test(pagePath) && !/(?:^|\/)projects\.html$/i.test(pagePath);
 
-      // Ensure project screenshots carousel script exists after hydration.
-      if (!/js\/project-screenshots-carousel\.js/i.test(out)) {
-        out = out.replace(/<\/body>/i, `${carouselScript}\n</body>`);
-        if (!/js\/project-screenshots-carousel\.js/i.test(out)) out = `${out}\n${carouselScript}\n`;
+      // Ensure project-detail-only scripts exist after hydration.
+      if (isProjectDetailPage) {
+        if (!/js\/project-image-lightbox\.js/i.test(out)) {
+          out = out.replace(/<\/body>/i, `${lightboxScript}\n</body>`);
+          if (!/js\/project-image-lightbox\.js/i.test(out)) out = `${out}\n${lightboxScript}\n`;
+        }
+
+        if (!/js\/project-screenshots-carousel\.js/i.test(out)) {
+          out = out.replace(/<\/body>/i, `${carouselScript}\n</body>`);
+          if (!/js\/project-screenshots-carousel\.js/i.test(out)) out = `${out}\n${carouselScript}\n`;
+        }
+      } else {
+        out = out.replace(/<script\b[^>]*\bsrc=(['"])[^'"]*js\/project-image-lightbox\.js(?:\?[^'"]*)?\1[^>]*>\s*<\/script>/gi, '');
+        out = out.replace(/<script\b[^>]*\bsrc=(['"])[^'"]*js\/project-screenshots-carousel\.js(?:\?[^'"]*)?\1[^>]*>\s*<\/script>/gi, '');
       }
 
       return out;
@@ -1247,6 +1253,36 @@
     document.addEventListener('keydown', (event) => {
       if (!isAdmin()) return;
       const key = event.key.toLowerCase();
+
+      const target = event.target;
+      const editable = target instanceof Element ? target.closest('[data-cms-editable="1"]') : null;
+      if (editable instanceof HTMLElement) {
+        if (key === 'tab') {
+          event.preventDefault();
+          insertTabAtCursor();
+          sanitizeEditableFormatting(editable);
+          scheduleAutosave('text-tab');
+          return;
+        }
+
+        if (key === 'enter' && !event.metaKey && !event.ctrlKey && !event.altKey) {
+          event.preventDefault();
+          insertLineBreakAtCursor();
+          sanitizeEditableFormatting(editable);
+          scheduleAutosave('text-linebreak');
+          return;
+        }
+
+        if (key === 'backspace' && isCaretAtStart(editable)) {
+          const merged = mergeEditableWithPrevious(editable);
+          if (merged) {
+            event.preventDefault();
+            scheduleAutosave('text-merge');
+            return;
+          }
+        }
+      }
+
       if ((event.metaKey || event.ctrlKey) && key === 's') {
         event.preventDefault();
         saveCurrentPage({ silent: false, reason: 'shortcut' });
@@ -1984,6 +2020,18 @@
     const imageUrlForDb = imagePath || imageRef;
     if (!imageUrlForDb) return;
 
+    const explicitProjectId = Number(card.getAttribute('data-project-id') || '');
+    if (Number.isFinite(explicitProjectId) && explicitProjectId > 0) {
+      const { error: idUpdateError } = await sb
+        .from('projects')
+        .update({ image_url: imageUrlForDb })
+        .eq('id', explicitProjectId);
+      if (!idUpdateError) {
+        notify('Project preview image saved to server.', 'success');
+        return;
+      }
+    }
+
     const findByHref = async () => {
       if (!href) return null;
       const { data, error } = await sb
@@ -2088,8 +2136,76 @@
     selection.addRange(range);
   }
 
+  function insertLineBreakAtCursor() {
+    const selection = window.getSelection ? window.getSelection() : null;
+    if (!selection || selection.rangeCount === 0) return;
+    const range = selection.getRangeAt(0);
+    range.deleteContents();
+    const br = document.createElement('br');
+    range.insertNode(br);
+    range.setStartAfter(br);
+    range.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(range);
+  }
+
+  function insertTabAtCursor() {
+    // Keep tabulation inside the same editable block.
+    insertPlainTextAtCursor('\u00a0\u00a0\u00a0\u00a0');
+  }
+
+  function isCaretAtStart(element) {
+    if (!(element instanceof HTMLElement)) return false;
+    const selection = window.getSelection ? window.getSelection() : null;
+    if (!selection || selection.rangeCount === 0) return false;
+    if (!selection.isCollapsed) return false;
+
+    const range = selection.getRangeAt(0);
+    if (!element.contains(range.startContainer)) return false;
+
+    const probe = range.cloneRange();
+    probe.selectNodeContents(element);
+    probe.setEnd(range.startContainer, range.startOffset);
+    return compactText(probe.toString()) === '';
+  }
+
+  function mergeEditableWithPrevious(editable) {
+    if (!(editable instanceof HTMLElement)) return false;
+    const prev = editable.previousElementSibling;
+    if (!(prev instanceof HTMLElement)) return false;
+    if (prev.getAttribute('data-cms-editable') !== '1') return false;
+    if (prev.tagName !== editable.tagName) return false;
+
+    const currentHtml = editable.innerHTML || '';
+    if (currentHtml && currentHtml !== '<br>' && compactText(currentHtml) !== '') {
+      const prevEndsWithBreak = /<br\s*\/?>\s*$/i.test(prev.innerHTML || '');
+      if (!prevEndsWithBreak && compactText(prev.textContent || '') !== '') {
+        prev.insertAdjacentHTML('beforeend', '<br>');
+      }
+      prev.insertAdjacentHTML('beforeend', currentHtml);
+    }
+
+    editable.remove();
+    selectEditable(prev);
+    placeCaretAtEnd(prev);
+    return true;
+  }
+
+  function placeCaretAtEnd(element) {
+    if (!(element instanceof HTMLElement)) return;
+    element.focus();
+    const selection = window.getSelection ? window.getSelection() : null;
+    if (!selection) return;
+    const range = document.createRange();
+    range.selectNodeContents(element);
+    range.collapse(false);
+    selection.removeAllRanges();
+    selection.addRange(range);
+  }
+
   function sanitizeEditableFormatting(editable) {
     if (!(editable instanceof HTMLElement)) return;
+    flattenEditableBlockChildren(editable);
     const rootTag = editable.tagName;
     if (rootTag === 'H1' || rootTag === 'H2' || rootTag === 'H3' || rootTag === 'H4' || rootTag === 'H5' || rootTag === 'H6') {
       editable.innerHTML = editable.textContent || '';
@@ -2115,6 +2231,36 @@
 
       node.removeAttribute('style');
       node.removeAttribute('class');
+    });
+  }
+
+  function flattenEditableBlockChildren(editable) {
+    if (!(editable instanceof HTMLElement)) return;
+    const blockTags = new Set(['DIV', 'P', 'SECTION', 'ARTICLE', 'LI', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6']);
+    const nestedBlocks = Array.from(editable.querySelectorAll('div, p, section, article, li, h1, h2, h3, h4, h5, h6'));
+
+    nestedBlocks.forEach((node) => {
+      if (!(node instanceof HTMLElement)) return;
+      if (node === editable) return;
+      if (!blockTags.has(node.tagName)) return;
+      const parent = node.parentNode;
+      if (!parent) return;
+
+      const frag = document.createDocumentFragment();
+      const before = node.previousSibling;
+      const after = node.nextSibling;
+
+      if (before && !(before.nodeType === 1 && before.tagName === 'BR')) {
+        frag.appendChild(document.createElement('br'));
+      }
+
+      while (node.firstChild) frag.appendChild(node.firstChild);
+
+      if (after && !(after.nodeType === 1 && after.tagName === 'BR')) {
+        frag.appendChild(document.createElement('br'));
+      }
+
+      parent.replaceChild(frag, node);
     });
   }
 
@@ -2486,8 +2632,28 @@
     }
   }
 
-	  function buildCleanHtmlSnapshot() {
-	    const root = document.documentElement.cloneNode(true);
+  function buildCleanHtmlSnapshot() {
+    const root = document.documentElement.cloneNode(true);
+
+    // If an editable text block is left empty when publishing, remove it from the saved snapshot.
+    // This keeps editing resilient (you can clear and retype), but persists intentional deletions.
+    const isEmptyEditableNode = (el) => {
+      if (!(el instanceof HTMLElement)) return false;
+      const text = String(el.textContent || '').replace(/\s+/g, ' ').trim();
+      if (text) return false;
+      if (el.querySelector('img, video, audio, canvas, iframe, form, table')) return false;
+      const children = Array.from(el.children || []);
+      return children.every((child) => child.tagName === 'BR');
+    };
+
+    root.querySelectorAll('[data-cms-editable="1"]').forEach((el) => {
+      if (!isEmptyEditableNode(el)) return;
+      // Preserve page structure wrappers; remove only actual text blocks.
+      const tag = el.tagName;
+      if (tag === 'H1' || tag === 'H2' || tag === 'H3' || tag === 'H4' || tag === 'H5' || tag === 'H6' || tag === 'P' || tag === 'LI' || tag === 'SPAN' || tag === 'A' || tag === 'SMALL' || tag === 'BLOCKQUOTE') {
+        el.remove();
+      }
+    });
 
 	    const head = root.querySelector('head');
 	    if (head && !head.querySelector('meta[name="cms-snapshot"]')) {
