@@ -800,13 +800,13 @@
 	      const STYLES_V = 33;
 	      const HEADER_V = 9;
 	      const FOOTER_V = 20;
-	      const EDITOR_V = 36;
+	      const EDITOR_V = 37;
 	      const SHELL_V = 6;
 	      const PROJECT_LIGHTBOX_V = 1;
 	      const PROJECT_CAROUSEL_V = 6;
 	      const COURSES_CERTS_V = 11;
 	      const PROJECTS_V = 4;
-	      const PROJECT_DETAIL_LAYOUT_V = 5;
+	      const PROJECT_DETAIL_LAYOUT_V = 7;
       const footerScript = `<script src="${rootPrefix}js/footer.js?v=${FOOTER_V}"></script>`;
       const headerScript = `<script src="${rootPrefix}js/header.js?v=${HEADER_V}"></script>`;
       const editorScript = `<script src="${rootPrefix}js/editor-auth.js?v=${EDITOR_V}"></script>`;
@@ -1218,12 +1218,28 @@
       scheduleAutosave('text-change');
     });
 
+    document.addEventListener('paste', (event) => {
+      if (!isAdmin()) return;
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const editable = target.closest('[data-cms-editable="1"]');
+      if (!(editable instanceof HTMLElement)) return;
+
+      const text = event.clipboardData ? String(event.clipboardData.getData('text/plain') || '') : '';
+      if (!text) return;
+      event.preventDefault();
+      insertPlainTextAtCursor(text);
+      sanitizeEditableFormatting(editable);
+      scheduleAutosave('text-paste');
+    });
+
     document.addEventListener('blur', (event) => {
       if (!isAdmin()) return;
       const target = event.target;
       if (!(target instanceof Element)) return;
       const editable = target.closest('[data-cms-editable="1"]');
       if (!editable) return;
+      if (editable instanceof HTMLElement) sanitizeEditableFormatting(editable);
       if (shouldDeferAutosaveForEmptyEditable(editable)) return;
       scheduleAutosave('text-blur');
     }, true);
@@ -2050,6 +2066,56 @@
   function shouldDeferAutosaveForEmptyEditable(element) {
     if (!(element instanceof HTMLElement)) return false;
     return compactText(element.textContent || '') === '';
+  }
+
+  function insertPlainTextAtCursor(text) {
+    const safeText = String(text || '');
+    const selection = window.getSelection ? window.getSelection() : null;
+    if (!selection || selection.rangeCount === 0) {
+      try {
+        document.execCommand('insertText', false, safeText);
+      } catch (_e) {}
+      return;
+    }
+
+    const range = selection.getRangeAt(0);
+    range.deleteContents();
+    const textNode = document.createTextNode(safeText);
+    range.insertNode(textNode);
+    range.setStartAfter(textNode);
+    range.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(range);
+  }
+
+  function sanitizeEditableFormatting(editable) {
+    if (!(editable instanceof HTMLElement)) return;
+    const rootTag = editable.tagName;
+    if (rootTag === 'H1' || rootTag === 'H2' || rootTag === 'H3' || rootTag === 'H4' || rootTag === 'H5' || rootTag === 'H6') {
+      editable.innerHTML = editable.textContent || '';
+      return;
+    }
+
+    const unwrapTags = new Set(['SPAN', 'FONT']);
+    const descendants = Array.from(editable.querySelectorAll('*'));
+    descendants.forEach((node) => {
+      const tag = node.tagName;
+      if (tag === 'SCRIPT' || tag === 'STYLE') {
+        node.remove();
+        return;
+      }
+
+      if (unwrapTags.has(tag)) {
+        const parent = node.parentNode;
+        if (!parent) return;
+        while (node.firstChild) parent.insertBefore(node.firstChild, node);
+        node.remove();
+        return;
+      }
+
+      node.removeAttribute('style');
+      node.removeAttribute('class');
+    });
   }
 
 	  function isEditableTextElement(element) {

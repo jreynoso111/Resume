@@ -226,6 +226,17 @@
   line-height: 1.25;
 }
 
+.page-main .standard-text,
+.page-main .standard-list li {
+  font-size: var(--font-size-sm);
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+.page-main .standard-list {
+  color: var(--text-muted);
+}
+
 .text-muted {
   color: var(--text-muted);
 }
