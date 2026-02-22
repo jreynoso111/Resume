@@ -194,9 +194,13 @@
 }
 
 .hero h1 {
-  font-size: clamp(28px, 4vw, 40px);
+  font-size: clamp(22px, 2.4vw, 30px);
+  line-height: 1.15;
   color: var(--accent-strong);
   margin-bottom: 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .hero p {
@@ -343,7 +347,7 @@
 
 .screenshot-carousel__track {
   display: flex;
-  transition: transform 0.28s ease;
+  transition: transform 0.78s cubic-bezier(0.22, 1, 0.36, 1);
   will-change: transform;
 }
 
@@ -354,6 +358,17 @@
 
 .screenshot-carousel__slide .img-placeholder {
   min-height: 320px;
+  transition: transform 0.78s cubic-bezier(0.22, 1, 0.36, 1), filter 0.78s ease;
+}
+
+.screenshot-carousel__slide:not(.is-active) .img-placeholder {
+  transform: scale(0.985);
+  filter: saturate(0.92);
+}
+
+.screenshot-carousel__slide.is-active .img-placeholder {
+  transform: scale(1);
+  filter: saturate(1);
 }
 
 .screenshot-carousel__control {
@@ -487,6 +502,12 @@ body.lightbox-open {
 
   .project-media-main .img-placeholder {
     min-height: 280px;
+  }
+
+  .hero h1 {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
   }
 
   .project-lightbox {
