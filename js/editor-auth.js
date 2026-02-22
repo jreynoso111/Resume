@@ -801,7 +801,7 @@
 	      const EDITOR_V = 35;
 	      const SHELL_V = 6;
 	      const PROJECT_LIGHTBOX_V = 1;
-	      const PROJECT_CAROUSEL_V = 5;
+	      const PROJECT_CAROUSEL_V = 6;
 	      const COURSES_CERTS_V = 11;
 	      const PROJECTS_V = 4;
 	      const PROJECT_DETAIL_LAYOUT_V = 4;
