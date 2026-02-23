@@ -197,15 +197,6 @@
         return `<a href="${loginHref}"${clsAttr}>Login</a>`;
     }
 
-    function renderMobileAuthLinks(rootPrefix, isLoggedIn) {
-        const loginHref = `${rootPrefix}login.html`;
-        const profileHref = `${rootPrefix}profile.html`;
-        if (isLoggedIn) {
-            return `<a href="${profileHref}">Profile</a><a href="${loginHref}" data-auth-logout="1">Logout</a>`;
-        }
-        return `<a href="${loginHref}">Login</a>`;
-    }
-
     function bindAuthLogout(root, auth, rootPrefix) {
         const candidates = new Set([
             ...Array.from(root.querySelectorAll('[data-auth-logout="1"]')),
@@ -249,7 +240,7 @@
             );
         });
         mobileSlots.forEach((slot) => {
-            slot.innerHTML = renderMobileAuthLinks(rootPrefix, isLoggedIn);
+            slot.innerHTML = '';
         });
         bindAuthLogout(root, auth, rootPrefix);
     }
@@ -291,7 +282,7 @@
                 ...Array.from(document.querySelectorAll('.nav-mobile [data-auth-mobile="1"]'))
             ]);
             mobileSlots.forEach((slot) => {
-                slot.innerHTML = renderMobileAuthLinks(rootPrefix, false);
+                slot.innerHTML = '';
             });
             return;
         }
@@ -325,18 +316,23 @@
           <div class="nav-mobile-links">
             <a href="${config.overviewHref}"${withActiveClass(activePage, 'overview', activeClass)}>Overview</a>
             <a href="${config.projectsHref}"${withActiveClass(activePage, 'projects', activeClass)}>Projects</a>
-
-            <div class="nav-mobile-section">
-              <div class="nav-mobile-section-label">Project Pages</div>
-              <div class="nav-mobile-sub">
-                ${projectLinks.map((item) => `<a href="${projectsPrefix}${item.href}">${item.label}</a>`).join('')}
-              </div>
-            </div>
-
             <a href="${config.blogHref}"${withActiveClass(activePage, 'blog', activeClass)}>Blog</a>
             <a href="${config.aboutHref}"${withActiveClass(activePage, 'about', activeClass)}>About Me</a>
             <a href="${contactHref}">Contact</a>
-            <div data-auth-mobile="1"></div>
+
+            <div class="nav-mobile-section">
+              <div class="nav-mobile-section-label">Inside Projects</div>
+              <div class="nav-mobile-sub">
+                ${projectLinks
+                    .map(
+                        (item) => `<a href="${projectsPrefix}${item.href}">
+                  <span class="nav-mobile-sub-arrow" aria-hidden="true">&rarr;</span>
+                  <span>${item.label}</span>
+                </a>`
+                    )
+                    .join('')}
+              </div>
+            </div>
           </div>
         </div>
       </div>`;
