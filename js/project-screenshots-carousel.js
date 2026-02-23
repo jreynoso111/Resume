@@ -1,4 +1,77 @@
 (() => {
+  const getBackgroundImageUrl = (element) => {
+    if (!element || !element.classList || !element.classList.contains('img-placeholder')) return '';
+    const bg = window.getComputedStyle(element).backgroundImage || '';
+    const match = bg.match(/url\((['"]?)(.*?)\1\)/i);
+    return match && match[2] ? match[2] : '';
+  };
+
+  const aspectRatioCache = new Map();
+  const aspectRatioPending = new Set();
+
+  const markAdaptivePlaceholders = (root = document) => {
+    const selectors = [
+      '.project-media-main .img-placeholder',
+      '.grid-2 > .img-placeholder',
+      '.screenshot-carousel__slide .img-placeholder'
+    ];
+    selectors.forEach((selector) => {
+      Array.from(root.querySelectorAll(selector)).forEach((element) => {
+        element.classList.add('img-placeholder--adaptive');
+      });
+    });
+  };
+
+  const setPlaceholderAspectRatio = (element, ratio) => {
+    if (!element || !ratio) return;
+    if (element.style.getPropertyValue('--media-aspect-ratio') !== ratio) {
+      element.style.setProperty('--media-aspect-ratio', ratio);
+    }
+    if (element.getAttribute('data-has-media-ratio') !== '1') {
+      element.setAttribute('data-has-media-ratio', '1');
+    }
+  };
+
+  const applyAdaptiveMedia = () => {
+    markAdaptivePlaceholders();
+    const placeholders = Array.from(document.querySelectorAll('.img-placeholder.img-placeholder--adaptive'));
+    placeholders.forEach((element) => {
+      const url = getBackgroundImageUrl(element);
+      if (!url) {
+        if (element.hasAttribute('data-has-media-ratio')) element.removeAttribute('data-has-media-ratio');
+        if (element.style.getPropertyValue('--media-aspect-ratio')) {
+          element.style.removeProperty('--media-aspect-ratio');
+        }
+        return;
+      }
+
+      const cachedRatio = aspectRatioCache.get(url);
+      if (cachedRatio) {
+        setPlaceholderAspectRatio(element, cachedRatio);
+        return;
+      }
+
+      if (aspectRatioPending.has(url)) return;
+
+      aspectRatioPending.add(url);
+      const image = new Image();
+      image.onload = () => {
+        const width = Number(image.naturalWidth) || 0;
+        const height = Number(image.naturalHeight) || 0;
+        if (width > 0 && height > 0) {
+          const ratio = `${width} / ${height}`;
+          aspectRatioCache.set(url, ratio);
+        }
+        aspectRatioPending.delete(url);
+        window.requestAnimationFrame(() => applyAdaptiveMedia());
+      };
+      image.onerror = () => {
+        aspectRatioPending.delete(url);
+      };
+      image.src = url;
+    });
+  };
+
   const ensureStandardSamplePicturesSection = () => {
     const path = String(window.location.pathname || '').toLowerCase();
     const isProjectsIndex = /\/projects\.html$/.test(path);
@@ -32,16 +105,47 @@
   };
 
   ensureStandardSamplePicturesSection();
+  applyAdaptiveMedia();
+
+  const nodeContainsPlaceholder = (node) => {
+    if (!(node instanceof Element)) return false;
+    if (node.classList.contains('img-placeholder')) return true;
+    return Boolean(node.querySelector('.img-placeholder'));
+  };
+
+  const mediaObserver = new MutationObserver((mutations) => {
+    const shouldRefresh = mutations.some((mutation) => {
+      if (mutation.type === 'childList') {
+        const added = Array.from(mutation.addedNodes || []).some(nodeContainsPlaceholder);
+        const removed = Array.from(mutation.removedNodes || []).some(nodeContainsPlaceholder);
+        return added || removed;
+      }
+      if (mutation.type === 'attributes') {
+        const target = mutation.target;
+        return target instanceof Element && target.classList.contains('img-placeholder');
+      }
+      return false;
+    });
+    if (!shouldRefresh) return;
+    window.requestAnimationFrame(() => applyAdaptiveMedia());
+  });
+  mediaObserver.observe(document.body, {
+    subtree: true,
+    childList: true,
+    attributes: true,
+    attributeFilter: ['style']
+  });
 
   const carousels = Array.from(document.querySelectorAll('[data-screenshot-carousel]'));
   if (!carousels.length) return;
 
   carousels.forEach((carousel) => {
     const track = carousel.querySelector('.screenshot-carousel__track');
+    const viewport = carousel.querySelector('.screenshot-carousel__viewport');
     const prevButton = carousel.querySelector('.screenshot-carousel__control.prev');
     const nextButton = carousel.querySelector('.screenshot-carousel__control.next');
 
-    if (!track || !prevButton || !nextButton) return;
+    if (!track || !viewport || !prevButton || !nextButton) return;
 
     let index = 0;
     let autoTimer = null;
@@ -51,25 +155,81 @@
     let pausedByUser = false;
 
     const getSlides = () => Array.from(track.querySelectorAll('.screenshot-carousel__slide'));
+    const getRealSlides = () => getSlides().filter((slide) => slide.getAttribute('data-carousel-clone') !== '1');
     const isAdminMode = () => document.body.classList.contains('cms-admin-mode');
 
-    const render = () => {
+    const rebuildTrackClones = () => {
+      const realSlides = getRealSlides();
+      realSlides.forEach((slide, slideIndex) => {
+        slide.dataset.carouselSourceIndex = String(slideIndex);
+        slide.removeAttribute('data-carousel-clone');
+      });
+      Array.from(track.querySelectorAll('.screenshot-carousel__slide[data-carousel-clone="1"]'))
+        .forEach((clone) => clone.remove());
+
+      if (realSlides.length <= 1) return realSlides.length;
+
+      const firstClone = realSlides[0].cloneNode(true);
+      firstClone.setAttribute('data-carousel-clone', '1');
+      firstClone.dataset.carouselSourceIndex = '0';
+
+      const lastClone = realSlides[realSlides.length - 1].cloneNode(true);
+      lastClone.setAttribute('data-carousel-clone', '1');
+      lastClone.dataset.carouselSourceIndex = String(realSlides.length - 1);
+
+      track.insertBefore(lastClone, realSlides[0]);
+      track.appendChild(firstClone);
+      return realSlides.length;
+    };
+
+    const setTransformX = (valuePx, skipTransition = false) => {
+      if (!skipTransition) {
+        track.style.transform = `translateX(${valuePx}px)`;
+        return;
+      }
+      track.style.transition = 'none';
+      track.style.transform = `translateX(${valuePx}px)`;
+      // Force layout before restoring transition
+      void track.offsetWidth;
+      track.style.removeProperty('transition');
+    };
+
+    const getCenteredTranslate = (visualIndex) => {
       const slides = getSlides();
-      const max = slides.length;
-      if (max === 0) {
+      const slide = slides[visualIndex];
+      if (!slide) return 0;
+      const viewportWidth = viewport.clientWidth || 0;
+      const slideWidth = slide.getBoundingClientRect().width || 0;
+      const targetLeft = Math.max(0, (viewportWidth - slideWidth) / 2);
+      return -(slide.offsetLeft - targetLeft);
+    };
+
+    const render = (options = {}) => {
+      const { skipTransition = false } = options;
+      const realCount = rebuildTrackClones();
+      const slides = getSlides();
+
+      if (realCount === 0) {
         prevButton.disabled = true;
         nextButton.disabled = true;
-        track.style.transform = 'translateX(0)';
+        carousel.classList.add('is-single');
+        setTransformX(0, skipTransition);
         return;
       }
 
-      if (index >= max) index = max - 1;
-      if (index < 0) index = 0;
-      slides.forEach((slide, slideIndex) => {
-        slide.classList.toggle('is-active', slideIndex === index);
+      index = ((index % realCount) + realCount) % realCount;
+      const visualIndex = realCount > 1 ? index + 1 : index;
+
+      slides.forEach((slide) => {
+        const sourceIndex = Number(slide.dataset.carouselSourceIndex || '-1');
+        slide.classList.toggle('is-active', sourceIndex === index);
       });
-      track.style.transform = `translateX(-${index * 100}%)`;
-      const disabled = max <= 1;
+
+      const translateX = getCenteredTranslate(visualIndex);
+      setTransformX(translateX, skipTransition);
+
+      const disabled = realCount <= 1;
+      carousel.classList.toggle('is-single', disabled);
       prevButton.disabled = disabled;
       nextButton.disabled = disabled;
     };
@@ -84,12 +244,13 @@
       clearAuto();
       if (pausedByUser) return;
       if (isAdminMode()) return;
-      if (getSlides().length <= 1) return;
+      if (getRealSlides().length <= 1) return;
       autoTimer = window.setInterval(() => {
-        const max = getSlides().length;
+        const max = getRealSlides().length;
         if (max <= 1) return;
-        index = (index + 1) % max;
-        render();
+        const wrapped = index >= max - 1;
+        index = wrapped ? 0 : index + 1;
+        render({ skipTransition: wrapped });
       }, autoInterval);
     };
 
@@ -99,24 +260,39 @@
     };
 
     const updateAfterInteraction = () => {
-      render();
+      render({ skipTransition: true });
       if (!pausedByUser) startAuto();
     };
 
     prevButton.addEventListener('click', () => {
-      const max = getSlides().length;
+      const max = getRealSlides().length;
       if (max <= 1) return;
-      index = (index - 1 + max) % max;
+      const wrapped = index <= 0;
+      index = wrapped ? max - 1 : index - 1;
       stopAndPause();
-      render();
+      render({ skipTransition: wrapped });
     });
 
     nextButton.addEventListener('click', () => {
-      const max = getSlides().length;
+      const max = getRealSlides().length;
       if (max <= 1) return;
-      index = (index + 1) % max;
+      const wrapped = index >= max - 1;
+      index = wrapped ? 0 : index + 1;
       stopAndPause();
-      render();
+      render({ skipTransition: wrapped });
+    });
+
+    track.addEventListener('click', (event) => {
+      const target = event.target;
+      const placeholder = target && target.closest ? target.closest('.img-placeholder') : null;
+      if (!placeholder) return;
+      if (!placeholder.closest('.screenshot-carousel__slide')) return;
+      const max = getRealSlides().length;
+      if (max <= 1) return;
+      const wrapped = index >= max - 1;
+      index = wrapped ? 0 : index + 1;
+      stopAndPause();
+      render({ skipTransition: wrapped });
     });
 
     carousel.addEventListener('keydown', (event) => {
@@ -139,6 +315,9 @@
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) clearAuto();
       else startAuto();
+    });
+    window.addEventListener('resize', () => {
+      window.requestAnimationFrame(() => render({ skipTransition: true }));
     });
 
     const ensureAddButton = () => {
@@ -164,7 +343,8 @@
             <div class="img-placeholder" data-label="${safeLabel}" style="height:320px;background-image:url('${safeUrl}');"></div>
           `;
           track.appendChild(slide);
-          index = getSlides().length - 1;
+          index = getRealSlides().length - 1;
+          applyAdaptiveMedia();
           updateAfterInteraction();
         };
 

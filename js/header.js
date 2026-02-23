@@ -1,11 +1,13 @@
 (function () {
-    const projectLinks = [
-        { href: 'fleet-maintenance-analytics.html', label: 'Fleet Maintenance Analytics System', key: 'fleet-maintenance-analytics' },
+    const SUPABASE_CDN = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+    const fallbackProjectLinks = [
+        { href: 'fleet-maintenance-analytics.html', label: 'Corrective Maintenance Analytics', key: 'fleet-maintenance-analytics' },
         { href: 'inventory-control-dashboard.html', label: 'Inventory Control Dashboard', key: 'inventory-control-dashboard' },
-        { href: 'repossession-risk-monitoring.html', label: 'Repo & Risk Monitoring System', key: 'repossession-risk-monitoring' },
         { href: 'gps-movement-analytics.html', label: 'GPS Tracking & Movement Analysis', key: 'gps-movement-analytics' },
         { href: 'techloc-fleet-service-control.html', label: 'TechLoc Fleet & Service Control Platform', key: 'techloc-fleet-service-control' }
     ];
+    let projectLinks = fallbackProjectLinks.slice();
+    let projectLinksPromise = null;
 
     function withActiveClass(activeKey, key, className = 'active') {
         return activeKey === key ? ` class="${className}"` : '';
@@ -37,7 +39,25 @@
                 return cur === src || cur.split('?')[0] === src.split('?')[0];
             });
             if (existing) {
-                return resolve();
+                const ready = Boolean(window.ResumeAuth);
+                if (ready) return resolve();
+
+                let settled = false;
+                const finish = (err) => {
+                    if (settled) return;
+                    settled = true;
+                    existing.removeEventListener('load', onLoad);
+                    existing.removeEventListener('error', onError);
+                    clearTimeout(timer);
+                    if (err) reject(err);
+                    else resolve();
+                };
+                const onLoad = () => finish();
+                const onError = () => finish(new Error(`Failed to load script: ${src}`));
+                const timer = setTimeout(() => finish(), 2500);
+                existing.addEventListener('load', onLoad, { once: true });
+                existing.addEventListener('error', onError, { once: true });
+                return;
             }
 
             const script = document.createElement('script');
@@ -55,7 +75,115 @@
         if (window.ResumeAuth) return window.ResumeAuth;
         const src = `${normalizeRootPrefix(rootPrefix)}assets/js/auth.js?v=2`;
         await loadScript(src);
+        if (window.ResumeAuth) return window.ResumeAuth;
+
+        // If the script existed but loaded asynchronously, give it a brief chance to attach globals.
+        const started = Date.now();
+        while (!window.ResumeAuth && Date.now() - started < 2500) {
+            await new Promise((resolve) => setTimeout(resolve, 50));
+        }
         return window.ResumeAuth || null;
+    }
+
+    async function ensureSupabaseConfig(rootPrefix) {
+        const current = window.__SUPABASE_CONFIG__;
+        if (current && current.url && current.anonKey) return current;
+        const src = `${normalizeRootPrefix(rootPrefix)}js/supabase-config.js`;
+        try {
+            await loadScript(src);
+        } catch (_e) {
+            return null;
+        }
+        const cfg = window.__SUPABASE_CONFIG__;
+        if (!cfg || !cfg.url || !cfg.anonKey) return null;
+        return cfg;
+    }
+
+    async function ensureSupabaseLibrary() {
+        if (window.supabase && typeof window.supabase.createClient === 'function') return true;
+        try {
+            await loadScript(SUPABASE_CDN);
+        } catch (_e) {
+            return false;
+        }
+        return Boolean(window.supabase && typeof window.supabase.createClient === 'function');
+    }
+
+    function toProjectFilename(rawHref) {
+        const value = String(rawHref || '').trim();
+        if (!value) return '';
+
+        let pathname = value;
+        if (/^https?:\/\//i.test(value)) {
+            try {
+                pathname = new URL(value).pathname || '';
+            } catch (_e) {
+                return '';
+            }
+        }
+
+        let clean = String(pathname)
+            .split('#', 1)[0]
+            .split('?', 1)[0]
+            .replace(/^\/+/, '')
+            .replace(/^\.\/+/, '')
+            .replace(/^pages\/projects\//i, '')
+            .replace(/^projects\//i, '');
+
+        const parts = clean.split('/').filter(Boolean);
+        clean = parts.length > 0 ? parts[parts.length - 1] : '';
+        if (!clean || !/\.html$/i.test(clean)) return '';
+        return clean;
+    }
+
+    function mapProjectRowsToLinks(rows) {
+        const items = [];
+        for (const row of Array.isArray(rows) ? rows : []) {
+            const href = toProjectFilename(row && row.href ? row.href : '');
+            if (!href) continue;
+            const label = String(row && row.title ? row.title : '').trim() || href.replace(/\.html$/i, '');
+            const key = href.replace(/\.html$/i, '');
+            items.push({ href, label, key });
+        }
+        return items;
+    }
+
+    async function ensureProjectLinks(rootPrefix) {
+        if (projectLinksPromise) return projectLinksPromise;
+        projectLinksPromise = (async () => {
+            const cfg = await ensureSupabaseConfig(rootPrefix);
+            if (!cfg || !cfg.url || !cfg.anonKey) {
+                return projectLinks;
+            }
+            const hasLib = await ensureSupabaseLibrary();
+            if (!hasLib) return projectLinks;
+
+            try {
+                const sb = window.supabase.createClient(cfg.url, cfg.anonKey, {
+                    auth: {
+                        autoRefreshToken: false,
+                        persistSession: false,
+                        detectSessionInUrl: false
+                    }
+                });
+                const { data, error } = await sb
+                    .from('projects')
+                    .select('title, href, is_published, sort_order, id')
+                    .eq('is_published', true)
+                    .order('sort_order', { ascending: true })
+                    .order('id', { ascending: true });
+
+                if (!error) {
+                    projectLinks = mapProjectRowsToLinks(data);
+                }
+            } catch (_e) {
+                // Keep fallback links when remote fetch fails.
+            }
+            return projectLinks;
+        })().finally(() => {
+            projectLinksPromise = null;
+        });
+        return projectLinksPromise;
     }
 
     function renderDesktopAuthLinks(rootPrefix, isLoggedIn, buttonClass) {
@@ -79,7 +207,11 @@
     }
 
     function bindAuthLogout(root, auth, rootPrefix) {
-        root.querySelectorAll('[data-auth-logout="1"]').forEach((el) => {
+        const candidates = new Set([
+            ...Array.from(root.querySelectorAll('[data-auth-logout="1"]')),
+            ...Array.from(document.querySelectorAll('.nav-mobile [data-auth-logout="1"]'))
+        ]);
+        candidates.forEach((el) => {
             if (el.dataset.boundAuthLogout === '1') return;
             el.dataset.boundAuthLogout = '1';
             el.addEventListener('click', async (event) => {
@@ -103,21 +235,38 @@
             isLoggedIn = false;
         }
 
-        root.querySelectorAll('[data-auth-desktop="1"]').forEach((slot) => {
+        const desktopSlots = Array.from(root.querySelectorAll('[data-auth-desktop="1"]'));
+        const mobileSlots = new Set([
+            ...Array.from(root.querySelectorAll('[data-auth-mobile="1"]')),
+            ...Array.from(document.querySelectorAll('.nav-mobile [data-auth-mobile="1"]'))
+        ]);
+
+        desktopSlots.forEach((slot) => {
             slot.innerHTML = renderDesktopAuthLinks(
                 rootPrefix,
                 isLoggedIn,
                 slot.getAttribute('data-auth-btn-class') || ''
             );
         });
-        root.querySelectorAll('[data-auth-mobile="1"]').forEach((slot) => {
+        mobileSlots.forEach((slot) => {
             slot.innerHTML = renderMobileAuthLinks(rootPrefix, isLoggedIn);
         });
         bindAuthLogout(root, auth, rootPrefix);
     }
 
     async function initAuthNavigation(root) {
-        if (!root || root.dataset.authNavInitialized === '1') return;
+        if (!root) return;
+
+        // Recover from stale CMS snapshots that persisted this runtime flag.
+        const desktopSlots = root.querySelectorAll('[data-auth-desktop="1"]');
+        const mobileSlots = new Set([
+            ...Array.from(root.querySelectorAll('[data-auth-mobile="1"]')),
+            ...Array.from(document.querySelectorAll('.nav-mobile [data-auth-mobile="1"]'))
+        ]);
+        const hasAuthSlots = desktopSlots.length > 0 || mobileSlots.length > 0;
+        const hasRenderedAuthLinks = Array.from(desktopSlots).some((slot) => /<a\b/i.test(String(slot.innerHTML || '')))
+            || Array.from(mobileSlots).some((slot) => /<a\b/i.test(String(slot.innerHTML || '')));
+        if (root.dataset.authNavInitialized === '1' && hasAuthSlots && hasRenderedAuthLinks) return;
         root.dataset.authNavInitialized = '1';
 
         const rootPrefix = inferRootPrefixFromHeaderScript();
@@ -137,7 +286,11 @@
                     slot.getAttribute('data-auth-btn-class') || ''
                 );
             });
-            root.querySelectorAll('[data-auth-mobile="1"]').forEach((slot) => {
+            const mobileSlots = new Set([
+                ...Array.from(root.querySelectorAll('[data-auth-mobile="1"]')),
+                ...Array.from(document.querySelectorAll('.nav-mobile [data-auth-mobile="1"]'))
+            ]);
+            mobileSlots.forEach((slot) => {
                 slot.innerHTML = renderMobileAuthLinks(rootPrefix, false);
             });
             return;
@@ -429,6 +582,11 @@
         const mobile = root.querySelector('.nav-mobile');
         if (!toggle || !mobile) return;
 
+        // Keep the mobile drawer outside sticky/filtered headers so it can overlay the full viewport.
+        if (mobile.parentElement !== document.body) {
+            document.body.appendChild(mobile);
+        }
+
         const closeEls = mobile.querySelectorAll('[data-nav-close="true"]');
         const panel = mobile.querySelector('.nav-mobile-panel');
 
@@ -510,7 +668,12 @@
         });
     }
 
-    function initHeader() {
+    async function initHeader() {
+        const rootPrefix = inferRootPrefixFromHeaderScript();
+        if (document.getElementById('site-header') || document.getElementById('projects-sidebar')) {
+            await ensureProjectLinks(rootPrefix);
+        }
+
         const headerHost = document.getElementById('site-header');
         if (headerHost) {
             const hasContent = (headerHost.innerHTML || '').trim().length > 0;
@@ -534,8 +697,10 @@
     }
 
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initHeader);
+        document.addEventListener('DOMContentLoaded', () => {
+            void initHeader();
+        });
     } else {
-        initHeader();
+        void initHeader();
     }
 })();

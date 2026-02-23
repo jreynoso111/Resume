@@ -263,7 +263,7 @@
 
 .img-placeholder {
   position: relative;
-  min-height: 220px;
+  min-height: 0;
   border-radius: 12px;
   background: var(--accent-soft);
   overflow: hidden;
@@ -272,6 +272,10 @@
   justify-content: center;
   border: 1px solid var(--border-subtle);
   transition: transform 0.3s ease;
+}
+
+.img-placeholder:not([data-has-media-ratio="1"]) {
+  min-height: 220px;
 }
 
 .img-placeholder.is-expandable {
@@ -328,6 +332,12 @@
   background-color: #f7f9fc;
 }
 
+.img-placeholder.img-placeholder--adaptive[style*="background-image"] {
+  aspect-ratio: var(--media-aspect-ratio, 1 / 1);
+  height: auto !important;
+  min-height: 0;
+}
+
 .project-media-showcase {
   display: grid;
   gap: 14px;
@@ -336,9 +346,10 @@
 }
 
 .project-media-main .img-placeholder {
-  min-height: 360px;
+  width: min(100%, 760px);
+  margin-inline: auto;
   border-radius: 14px;
-  background-size: cover;
+  background-size: contain;
   background-position: center;
   background-repeat: no-repeat;
   border: 1px solid var(--border-subtle);
@@ -350,6 +361,8 @@
 }
 
 .screenshot-carousel {
+  --carousel-gap: 14px;
+  --carousel-peek: clamp(32px, 10vw, 96px);
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 10px;
@@ -363,18 +376,24 @@
 
 .screenshot-carousel__track {
   display: flex;
+  gap: var(--carousel-gap);
   transition: transform 0.78s cubic-bezier(0.22, 1, 0.36, 1);
   will-change: transform;
 }
 
 .screenshot-carousel__slide {
-  flex: 0 0 100%;
-  min-width: 100%;
+  flex: 0 0 calc(100% - (var(--carousel-peek) * 2));
+  min-width: calc(100% - (var(--carousel-peek) * 2));
 }
 
 .screenshot-carousel__slide .img-placeholder {
-  min-height: 320px;
+  min-height: 0;
   transition: transform 0.78s cubic-bezier(0.22, 1, 0.36, 1), filter 0.78s ease;
+}
+
+.screenshot-carousel__slide .img-placeholder[data-has-media-ratio="1"] {
+  aspect-ratio: var(--media-aspect-ratio, 1 / 1);
+  height: auto !important;
 }
 
 .screenshot-carousel__slide:not(.is-active) .img-placeholder {
@@ -385,6 +404,15 @@
 .screenshot-carousel__slide.is-active .img-placeholder {
   transform: scale(1);
   filter: saturate(1);
+}
+
+.screenshot-carousel.is-single .screenshot-carousel__track {
+  gap: 0;
+}
+
+.screenshot-carousel.is-single .screenshot-carousel__slide {
+  flex: 0 0 100%;
+  min-width: 100%;
 }
 
 .screenshot-carousel__control {
@@ -517,7 +545,7 @@ body.lightbox-open {
   }
 
   .project-media-main .img-placeholder {
-    min-height: 280px;
+    width: 100%;
   }
 
   .hero h1 {
@@ -531,6 +559,7 @@ body.lightbox-open {
   }
 
   .screenshot-carousel {
+    --carousel-peek: clamp(24px, 14vw, 62px);
     grid-template-columns: 1fr;
     gap: 8px;
   }

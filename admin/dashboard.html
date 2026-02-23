@@ -528,6 +528,35 @@
             return Boolean(expectedId && currentId && expectedId === currentId);
         }
 
+        function sleep(ms) {
+            return new Promise((resolve) => setTimeout(resolve, ms));
+        }
+
+        async function getStableSession(maxAttempts = 4, delayMs = 180) {
+            let lastSession = null;
+            for (let i = 0; i < maxAttempts; i++) {
+                try {
+                    const { data, error } = await sb.auth.getSession();
+                    if (!error && data && data.session) return data.session;
+                    lastSession = data && data.session ? data.session : null;
+                } catch (_e) {
+                    // continue retries
+                }
+                if (i < maxAttempts - 1) await sleep(delayMs);
+            }
+
+            // Fallback: sometimes getUser resolves when getSession is still stale.
+            try {
+                const { data, error } = await sb.auth.getUser();
+                if (!error && data && data.user) {
+                    const { data: sessionData } = await sb.auth.getSession();
+                    if (sessionData && sessionData.session) return sessionData.session;
+                }
+            } catch (_e) {}
+
+            return lastSession;
+        }
+
         function setAuthOverlayVisible(visible) {
             if (authOverlay) authOverlay.style.display = visible ? 'flex' : 'none';
             if (appShell) appShell.style.display = visible ? 'none' : '';
@@ -552,9 +581,9 @@
 
         async function requireAdmin() {
             if (isUnsafeMode()) return true;
-            const { data } = await sb.auth.getSession();
-            const user = data && data.session && data.session.user ? data.session.user : null;
-            const ok = Boolean(data && data.session && isAdminUser(user));
+            const session = await getStableSession();
+            const user = session && session.user ? session.user : null;
+            const ok = Boolean(session && isAdminUser(user));
             if (!ok) {
                 await refreshAuthUi();
             }
@@ -652,6 +681,7 @@
                 const { data, error } = await sb
                     .from('site_analytics_events')
                     .select('created_at, page_path, visitor_id, session_id, referrer, device_type, utm_source')
+                    .eq('event_type', 'page_view')
                     .gte('created_at', since)
                     .order('created_at', { ascending: false })
                     .range(from, to);
@@ -907,6 +937,35 @@
                     }));
                     renderCmsLogRows(rows);
                     setCmsLogStatus(`Loaded ${rows.length} log entries from cms_change_log.`, 'success');
+                    return;
+                }
+
+                const { data: analyticsData, error: analyticsError } = await sb
+                    .from('site_analytics_events')
+                    .select('created_at, page_path, visitor_id, metadata')
+                    .eq('event_type', 'cms_publish')
+                    .order('created_at', { ascending: false })
+                    .limit(80);
+
+                if (!analyticsError && Array.isArray(analyticsData) && analyticsData.length > 0) {
+                    const rows = analyticsData.map((row) => {
+                        const meta = row && typeof row.metadata === 'object' && row.metadata ? row.metadata : {};
+                        const reason = meta && meta.reason ? String(meta.reason) : 'publish';
+                        const by = meta && meta.editor_email
+                            ? String(meta.editor_email)
+                            : (row && row.visitor_id ? String(row.visitor_id) : '(admin)');
+                        return {
+                            path: row && row.page_path ? String(row.page_path) : '',
+                            reason,
+                            by,
+                            when: row && row.created_at ? new Date(row.created_at).toLocaleString() : '-'
+                        };
+                    });
+                    renderCmsLogRows(rows);
+                    setCmsLogStatus(
+                        `Loaded ${rows.length} log entries from site_analytics_events fallback (cms_change_log missing).`,
+                        'warn'
+                    );
                     return;
                 }
 
@@ -1638,8 +1697,7 @@
                 return;
             }
 
-            const { data } = await sb.auth.getSession();
-            const session = data && data.session ? data.session : null;
+            const session = await getStableSession();
             const user = session && session.user ? session.user : null;
             const email = user && user.email ? String(user.email) : '';
 
@@ -1708,6 +1766,8 @@
                         const { error } = await sb.auth.signInWithPassword({ email, password });
                         if (error) throw error;
                         authPassword.value = '';
+                        // Ensure session is persisted before UI gate checks.
+                        await getStableSession(6, 200);
                     } catch (err) {
                         showAuthError(err && err.message ? err.message : String(err));
                     } finally {

@@ -63,7 +63,6 @@
     const LOCAL_PREVIEW_SLUGS = new Set([
       "fleet-maintenance-analytics",
       "inventory-control-dashboard",
-      "repossession-risk-monitoring",
       "gps-movement-analytics",
       "techloc-fleet-service-control",
     ]);
@@ -71,18 +70,13 @@
     const LOCAL_FALLBACK_PROJECTS = [
       {
         href: "projects/fleet-maintenance-analytics.html",
-        title: "Fleet Maintenance Analytics System",
+        title: "Corrective Maintenance Analytics",
         description: "Fleet maintenance KPIs, downtime visibility, and readiness reporting.",
       },
       {
         href: "projects/inventory-control-dashboard.html",
         title: "Inventory Control Dashboard",
         description: "Stock-level controls, usage monitoring, and cost exposure visibility.",
-      },
-      {
-        href: "projects/repossession-risk-monitoring.html",
-        title: "Repo & Risk Monitoring System",
-        description: "Operational risk signals and asset recovery workflow tracking.",
       },
       {
         href: "projects/gps-movement-analytics.html",
@@ -137,6 +131,7 @@
     const { data, error } = await sb
       .from("projects")
       .select("*")
+      .eq("is_published", true)
       .order("sort_order", { ascending: true })
       .order("id", { ascending: true });
 
@@ -171,10 +166,10 @@
         <div style="color: var(--text-muted); font-size: 12px; margin-bottom: 12px;">Showing local previews instead.</div>
         <article class="project-card">
           <a href="projects/fleet-maintenance-analytics.html" class="project-img-frame">
-            <img src="${rootPrefix}assets/images/projects/previews/fleet-maintenance-analytics.jpg" alt="Fleet Maintenance Analytics System" loading="lazy">
+            <img src="${rootPrefix}assets/images/projects/previews/fleet-maintenance-analytics.jpg" alt="Corrective Maintenance Analytics" loading="lazy">
           </a>
           <div class="project-content">
-            <h2 class="project-title"><a href="projects/fleet-maintenance-analytics.html">Fleet Maintenance Analytics System</a></h2>
+            <h2 class="project-title"><a href="projects/fleet-maintenance-analytics.html">Corrective Maintenance Analytics</a></h2>
             <p class="project-desc">Fleet maintenance KPIs, downtime visibility, and readiness reporting.</p>
             <a href="projects/fleet-maintenance-analytics.html" class="project-link">View Case Study →</a>
           </div>
@@ -187,16 +182,6 @@
             <h2 class="project-title"><a href="projects/inventory-control-dashboard.html">Inventory Control Dashboard</a></h2>
             <p class="project-desc">Stock-level controls, usage monitoring, and cost exposure visibility.</p>
             <a href="projects/inventory-control-dashboard.html" class="project-link">View Case Study →</a>
-          </div>
-        </article>
-        <article class="project-card">
-          <a href="projects/repossession-risk-monitoring.html" class="project-img-frame">
-            <img src="${rootPrefix}assets/images/projects/previews/repossession-risk-monitoring.jpg" alt="Repo & Risk Monitoring System" loading="lazy">
-          </a>
-          <div class="project-content">
-            <h2 class="project-title"><a href="projects/repossession-risk-monitoring.html">Repo & Risk Monitoring System</a></h2>
-            <p class="project-desc">Operational risk signals and asset recovery workflow tracking.</p>
-            <a href="projects/repossession-risk-monitoring.html" class="project-link">View Case Study →</a>
           </div>
         </article>
         <article class="project-card">
