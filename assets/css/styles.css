@@ -454,14 +454,25 @@ body.nav-open .nav-toggle-icon span:nth-child(3) { transform: translateY(-5px) r
 .nav-mobile-sub {
   display: grid;
   gap: 6px;
+  padding-left: 8px;
 }
 
-.nav-mobile-sub a {
+.nav-mobile .nav-mobile-sub a {
+  display: flex;
+  align-items: center;
+  gap: 7px;
   font-weight: 600;
-  font-size: 12px;
-  padding: 9px 12px;
+  font-size: 11px;
+  padding: 7px 10px;
+  border-style: dashed;
   background: var(--bg-alt);
   background: color-mix(in srgb, var(--bg-soft) 82%, var(--accent-soft) 18%);
+}
+
+.nav-mobile-sub-arrow {
+  color: var(--text-muted);
+  font-size: 10px;
+  line-height: 1;
 }
 
 body.nav-open {
