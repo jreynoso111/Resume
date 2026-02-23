@@ -15,6 +15,14 @@
     'main .highlight-item',
     'main .hero-card'
   ].join(',');
+  const CARD_RESIZE_SELECTOR = [
+    'main .card',
+    'main .mini-card',
+    'main .project-card',
+    'main .experience-card',
+    'main .highlight-item',
+    'main .hero-card'
+  ].join(',');
 
   const BLOCK_TAGS = new Set([
     'ADDRESS', 'ARTICLE', 'ASIDE', 'BLOCKQUOTE', 'CANVAS', 'DD', 'DIV', 'DL', 'DT',
@@ -44,15 +52,19 @@
 		    editorDomRefreshTimer: null,
 		    imageControls: new Map(),
 		    imageRepositionRaf: null,
-	    serverMode: false,
+		    resizeControls: new Map(),
+		    resizeRepositionRaf: null,
+		    activeResize: null,
+		    serverMode: false,
 	    serverModeChecked: false,
 	    supabaseClient: null,
     supabaseInitPromise: null,
-    authSession: null,
-    authEmail: '',
-    authIsAdmin: false,
-    cmsHydrated: false
-  };
+	    authSession: null,
+	    authEmail: '',
+	    authIsAdmin: false,
+	    cmsHydrated: false,
+	    projectsGridSyncSignature: ''
+	  };
 
   // Marker for smoke tests / footer loader. If this isn't set after the script loads,
   // the browser likely received non-JS content (HTML fallback) or hit a parse error.
@@ -421,6 +433,64 @@
       filter: brightness(0.96);
     }
 
+    .cms-resize-handle {
+      position: fixed;
+      z-index: 10044;
+      display: none;
+      border: 1px solid rgba(59, 130, 246, 0.78);
+      background: rgba(255, 255, 255, 0.96);
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.2);
+      touch-action: none;
+    }
+
+    body.cms-admin-mode .cms-resize-handle {
+      display: block;
+    }
+
+    .cms-resize-handle[data-cms-resize-dir="right"] {
+      width: 10px;
+      height: 44px;
+      border-radius: 8px;
+      cursor: ew-resize;
+    }
+
+    .cms-resize-handle[data-cms-resize-dir="bottom"] {
+      width: 44px;
+      height: 10px;
+      border-radius: 8px;
+      cursor: ns-resize;
+    }
+
+    .cms-resize-handle[data-cms-resize-dir="corner"] {
+      width: 14px;
+      height: 14px;
+      border-radius: 5px;
+      cursor: nwse-resize;
+    }
+
+    body.cms-resizing {
+      user-select: none !important;
+    }
+
+    body.cms-resizing * {
+      user-select: none !important;
+    }
+
+    body.cms-resizing[data-cms-resize-dir="right"],
+    body.cms-resizing[data-cms-resize-dir="right"] * {
+      cursor: ew-resize !important;
+    }
+
+    body.cms-resizing[data-cms-resize-dir="bottom"],
+    body.cms-resizing[data-cms-resize-dir="bottom"] * {
+      cursor: ns-resize !important;
+    }
+
+    body.cms-resizing[data-cms-resize-dir="corner"],
+    body.cms-resizing[data-cms-resize-dir="corner"] * {
+      cursor: nwse-resize !important;
+    }
+
     @media (max-width: 720px) {
       .cms-panel {
         top: auto;
@@ -531,6 +601,42 @@
     if (!window.supabase || typeof window.supabase.createClient !== 'function') return null;
     state.supabaseClient = window.supabase.createClient(cfg.url, cfg.anonKey);
     return state.supabaseClient;
+  }
+
+  async function fallbackPasswordAuth(email, password) {
+    const cfg = await getSupabaseConfig();
+    if (!cfg || !cfg.url || !cfg.anonKey) return { ok: false, message: 'Supabase is not configured.' };
+    const endpoint = `${String(cfg.url).replace(/\/$/, '')}/auth/v1/token?grant_type=password`;
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          apikey: String(cfg.anonKey),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email: String(email || ''), password: String(password || '') })
+      });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const msg = payload && payload.msg ? payload.msg : (payload && payload.error_description ? payload.error_description : 'Invalid login credentials');
+        return { ok: false, message: String(msg || 'Invalid login credentials') };
+      }
+
+      const accessToken = payload && payload.access_token ? String(payload.access_token) : '';
+      const refreshToken = payload && payload.refresh_token ? String(payload.refresh_token) : '';
+      if (!accessToken || !refreshToken) return { ok: false, message: 'Auth succeeded but session tokens were missing.' };
+
+      const sb = await getSupabaseClient();
+      if (!sb) return { ok: false, message: 'Supabase client unavailable after auth fallback.' };
+      const { error: setError } = await sb.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken
+      });
+      if (setError) return { ok: false, message: setError.message || 'Could not store session.' };
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, message: e && e.message ? e.message : String(e) };
+    }
   }
 
   async function uploadFileViaSupabaseFunction(sb, cfg, functionName, { bucket, path, file }) {
@@ -661,7 +767,7 @@
     const passInput = state.loginModal.querySelector('#cms-login-password');
     const submitBtn = state.loginModal.querySelector('#cms-login-submit');
     const email = String(emailInput.value || '').trim();
-    const password = String(passInput.value || '');
+    const password = String(passInput.value || '').trim();
 
     if (!email || !password) {
       showLoginError('Email and password are required.');
@@ -672,8 +778,32 @@
     submitBtn.textContent = 'Signing in...';
 
     try {
-      const { error } = await sb.auth.signInWithPassword({ email, password });
-      if (error) throw error;
+      let session = null;
+      const { data, error } = await sb.auth.signInWithPassword({ email, password });
+      if (error) {
+        const fallback = await fallbackPasswordAuth(email, password);
+        if (!fallback.ok) throw new Error(fallback.message || error.message || 'Invalid login credentials');
+      } else {
+        session = data && data.session ? data.session : null;
+      }
+
+      if (!session) {
+        // Wait briefly for persisted session hydration.
+        const maxAttempts = 6;
+        for (let i = 0; i < maxAttempts; i++) {
+          const { data: sessionData } = await sb.auth.getSession();
+          session = sessionData && sessionData.session ? sessionData.session : null;
+          if (session && session.user) break;
+          if (i < maxAttempts - 1) {
+            await new Promise((resolve) => setTimeout(resolve, 180));
+          }
+        }
+      }
+
+      state.authSession = session || null;
+      state.authEmail = session && session.user && session.user.email
+        ? String(session.user.email)
+        : '';
 
       await initSupabase();
       await refreshAdminFlag();
@@ -804,15 +934,15 @@
       const rootPrefix = '../'.repeat(depth);
       const footerHost = `<footer id="site-footer" data-root-path="${rootPrefix}"></footer>`;
 	      const STYLES_V = 33;
-	      const HEADER_V = 9;
+	      const HEADER_V = 11;
 	      const FOOTER_V = 20;
-	      const EDITOR_V = 43;
+	      const EDITOR_V = 45;
 	      const SHELL_V = 6;
-	      const PROJECT_LIGHTBOX_V = 2;
-	      const PROJECT_CAROUSEL_V = 6;
+	      const PROJECT_LIGHTBOX_V = 3;
+	      const PROJECT_CAROUSEL_V = 9;
 	      const COURSES_CERTS_V = 11;
 	      const PROJECTS_V = 6;
-	      const PROJECT_DETAIL_LAYOUT_V = 7;
+	      const PROJECT_DETAIL_LAYOUT_V = 10;
       const footerScript = `<script src="${rootPrefix}js/footer.js?v=${FOOTER_V}"></script>`;
       const headerScript = `<script src="${rootPrefix}js/header.js?v=${HEADER_V}"></script>`;
       const editorScript = `<script src="${rootPrefix}js/editor-auth.js?v=${EDITOR_V}"></script>`;
@@ -1318,10 +1448,12 @@
 
     window.addEventListener('resize', () => {
       requestImageControlPositionUpdate();
+      requestResizeControlPositionUpdate();
     });
 
     window.addEventListener('scroll', () => {
       requestImageControlPositionUpdate();
+      requestResizeControlPositionUpdate();
     }, true);
   }
 
@@ -1376,6 +1508,7 @@
 
 	  function lockEditingForNonAdmin() {
 	    clearImageControls();
+	    clearResizeControls();
 
 	    document.querySelectorAll('[contenteditable], [data-cms-editable="1"]').forEach((el) => {
       if (el.closest('[data-cms-ui="1"]')) return;
@@ -1450,6 +1583,7 @@
 
 	  function refreshEditorTargets() {
 	    clearImageControls();
+	    clearResizeControls();
 
 	    document.querySelectorAll('[data-cms-editable="1"]').forEach((el) => {
       el.removeAttribute('contenteditable');
@@ -1501,11 +1635,13 @@
       state.selectedEditable = null;
     }
 
-    markEditableImages();
-    requestImageControlPositionUpdate();
-    updateSectionLabel();
-    updateTextLabel();
-  }
+	    markEditableImages();
+	    refreshResizeControls();
+	    requestImageControlPositionUpdate();
+	    requestResizeControlPositionUpdate();
+	    updateSectionLabel();
+	    updateTextLabel();
+	  }
 
   function clearImageControls() {
     state.imageControls.forEach((control) => {
@@ -1517,6 +1653,257 @@
       cancelAnimationFrame(state.imageRepositionRaf);
       state.imageRepositionRaf = null;
     }
+  }
+
+  function clearResizeControls() {
+    finishResizeDrag(false);
+    state.resizeControls.forEach((control, key) => {
+      removeResizeControl(key);
+    });
+    state.resizeControls.clear();
+    if (state.resizeRepositionRaf) {
+      cancelAnimationFrame(state.resizeRepositionRaf);
+      state.resizeRepositionRaf = null;
+    }
+  }
+
+  function refreshResizeControls() {
+    if (!isAdmin()) {
+      clearResizeControls();
+      return;
+    }
+
+    const nextTargets = new Map();
+    const selectedEditable = state.selectedEditable && document.contains(state.selectedEditable)
+      ? state.selectedEditable
+      : null;
+    if (isResizableTextTarget(selectedEditable)) {
+      nextTargets.set('text', { target: selectedEditable, kind: 'text' });
+    }
+
+    const selectedSection = state.selectedSection && document.contains(state.selectedSection)
+      ? state.selectedSection
+      : null;
+    if (isCardResizeTarget(selectedSection)) {
+      nextTargets.set('card', { target: selectedSection, kind: 'card' });
+    }
+
+    Array.from(state.resizeControls.keys()).forEach((key) => {
+      const next = nextTargets.get(key);
+      const current = state.resizeControls.get(key);
+      if (!current) return;
+      if (!next || current.target !== next.target) {
+        removeResizeControl(key);
+      }
+    });
+
+    nextTargets.forEach((cfg, key) => {
+      if (state.resizeControls.has(key)) return;
+      createResizeControl(key, cfg.target, cfg.kind);
+    });
+
+    requestResizeControlPositionUpdate();
+  }
+
+  function isResizableTextTarget(element) {
+    if (!(element instanceof HTMLElement)) return false;
+    if (element.closest('[data-cms-ui="1"]')) return false;
+    if (element.getAttribute('data-cms-editable') !== '1') return false;
+    const rect = element.getBoundingClientRect();
+    if (rect.width < 36 || rect.height < 14) return false;
+    const display = String(window.getComputedStyle(element).display || '').toLowerCase();
+    if (display === 'inline') return false;
+    return true;
+  }
+
+  function isCardResizeTarget(element) {
+    if (!(element instanceof HTMLElement)) return false;
+    if (element.closest('[data-cms-ui="1"]')) return false;
+    if (element.closest('[data-resume-dynamic="1"]')) return false;
+    return element.matches(CARD_RESIZE_SELECTOR);
+  }
+
+  function createResizeControl(controlKey, target, kind) {
+    if (!(target instanceof HTMLElement)) return;
+    const dirs = kind === 'text' ? ['right', 'bottom', 'corner'] : ['bottom'];
+    const handles = dirs.map((dir) => createResizeHandle(controlKey, dir));
+    state.resizeControls.set(controlKey, { key: controlKey, target, kind, handles });
+    target.setAttribute('data-cms-resize-control', controlKey);
+  }
+
+  function createResizeHandle(controlKey, dir) {
+    const handle = document.createElement('button');
+    handle.type = 'button';
+    handle.className = 'cms-resize-handle cms-ui';
+    handle.setAttribute('data-cms-ui', '1');
+    handle.dataset.cmsResizeControl = controlKey;
+    handle.dataset.cmsResizeDir = dir;
+    handle.title = dir === 'right'
+      ? 'Resize width'
+      : dir === 'bottom'
+        ? 'Resize height'
+        : 'Resize width and height';
+    handle.addEventListener('pointerdown', (event) => {
+      beginResizeDrag(event, controlKey, dir);
+    });
+    document.body.appendChild(handle);
+    return handle;
+  }
+
+  function removeResizeControl(controlKey) {
+    const control = state.resizeControls.get(controlKey);
+    if (!control) return;
+    control.handles.forEach((handle) => {
+      if (handle) handle.remove();
+    });
+    if (control.target instanceof HTMLElement) {
+      const marker = control.target.getAttribute('data-cms-resize-control');
+      if (marker === controlKey) {
+        control.target.removeAttribute('data-cms-resize-control');
+      }
+    }
+    state.resizeControls.delete(controlKey);
+  }
+
+  function requestResizeControlPositionUpdate() {
+    if (!isAdmin() || state.resizeControls.size === 0) return;
+    if (state.resizeRepositionRaf) return;
+    state.resizeRepositionRaf = requestAnimationFrame(() => {
+      state.resizeRepositionRaf = null;
+      updateResizeControlPositions();
+    });
+  }
+
+  function updateResizeControlPositions() {
+    if (!isAdmin()) return;
+    const viewportW = window.innerWidth || document.documentElement.clientWidth || 0;
+    const viewportH = window.innerHeight || document.documentElement.clientHeight || 0;
+
+    state.resizeControls.forEach((control, key) => {
+      if (!control || !(control.target instanceof HTMLElement) || !document.contains(control.target)) {
+        removeResizeControl(key);
+        return;
+      }
+
+      const rect = control.target.getBoundingClientRect();
+      const hidden = rect.width < 10
+        || rect.height < 10
+        || rect.bottom < 0
+        || rect.top > viewportH
+        || rect.right < 0
+        || rect.left > viewportW;
+      if (hidden) {
+        control.handles.forEach((handle) => { handle.style.display = 'none'; });
+        return;
+      }
+
+      control.handles.forEach((handle) => {
+        const dir = handle.dataset.cmsResizeDir || '';
+        handle.style.display = 'block';
+        if (dir === 'right') {
+          const top = Math.round(rect.top + (rect.height / 2) - 22);
+          const left = Math.round(rect.right - 5);
+          handle.style.top = `${top}px`;
+          handle.style.left = `${left}px`;
+        } else if (dir === 'bottom') {
+          const top = Math.round(rect.bottom - 5);
+          const left = Math.round(rect.left + (rect.width / 2) - 22);
+          handle.style.top = `${top}px`;
+          handle.style.left = `${left}px`;
+        } else {
+          const top = Math.round(rect.bottom - 7);
+          const left = Math.round(rect.right - 7);
+          handle.style.top = `${top}px`;
+          handle.style.left = `${left}px`;
+        }
+      });
+    });
+  }
+
+  function beginResizeDrag(event, controlKey, dir) {
+    if (!isAdmin()) return;
+    if (!event || typeof event.clientX !== 'number' || typeof event.clientY !== 'number') return;
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+
+    const control = state.resizeControls.get(controlKey);
+    if (!control || !(control.target instanceof HTMLElement) || !document.contains(control.target)) return;
+    if (control.kind === 'text' && !isResizableTextTarget(control.target)) return;
+    if (control.kind === 'card' && !isCardResizeTarget(control.target)) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (control.kind === 'text') selectEditable(control.target);
+    if (control.kind === 'card') selectSection(control.target);
+
+    const rect = control.target.getBoundingClientRect();
+    const currentMinHeight = parseFloat(String(control.target.style.minHeight || ''));
+    state.activeResize = {
+      controlKey,
+      dir,
+      kind: control.kind,
+      target: control.target,
+      startX: event.clientX,
+      startY: event.clientY,
+      startWidth: rect.width,
+      startHeight: rect.height,
+      startMinHeight: Number.isFinite(currentMinHeight) ? currentMinHeight : rect.height
+    };
+
+    document.body.classList.add('cms-resizing');
+    document.body.setAttribute('data-cms-resize-dir', dir);
+    window.addEventListener('pointermove', onResizePointerMove, true);
+    window.addEventListener('pointerup', onResizePointerUp, true);
+    window.addEventListener('pointercancel', onResizePointerUp, true);
+  }
+
+  function onResizePointerMove(event) {
+    const active = state.activeResize;
+    if (!active) return;
+    if (!(active.target instanceof HTMLElement) || !document.contains(active.target)) {
+      finishResizeDrag(false);
+      return;
+    }
+    if (!event || typeof event.clientX !== 'number' || typeof event.clientY !== 'number') return;
+    event.preventDefault();
+
+    const dx = event.clientX - active.startX;
+    const dy = event.clientY - active.startY;
+
+    if (active.kind === 'text' && (active.dir === 'right' || active.dir === 'corner')) {
+      const nextWidth = Math.max(80, Math.round(active.startWidth + dx));
+      active.target.style.width = `${nextWidth}px`;
+    }
+
+    if (active.dir === 'bottom' || active.dir === 'corner') {
+      const minBase = Math.max(active.startMinHeight, active.startHeight);
+      const minAllowed = active.kind === 'card' ? 48 : 20;
+      const nextMinHeight = Math.max(minAllowed, Math.round(minBase + dy));
+      active.target.style.minHeight = `${nextMinHeight}px`;
+    }
+
+    requestImageControlPositionUpdate();
+    requestResizeControlPositionUpdate();
+  }
+
+  function onResizePointerUp(event) {
+    if (!state.activeResize) return;
+    if (event) event.preventDefault();
+    finishResizeDrag(true);
+  }
+
+  function finishResizeDrag(shouldAutosave) {
+    const active = state.activeResize;
+    window.removeEventListener('pointermove', onResizePointerMove, true);
+    window.removeEventListener('pointerup', onResizePointerUp, true);
+    window.removeEventListener('pointercancel', onResizePointerUp, true);
+    document.body.classList.remove('cms-resizing');
+    document.body.removeAttribute('data-cms-resize-dir');
+    state.activeResize = null;
+
+    if (!active || !shouldAutosave) return;
+    const reason = active.kind === 'card' ? 'card-resize' : 'text-container-resize';
+    scheduleAutosave(reason);
   }
 
   function requestImageControlPositionUpdate() {
@@ -1814,71 +2201,7 @@
 	          return;
 	        }
 
-	        if (await detectServerMode()) {
-	          const ext = extensionFromFile(file);
-	          let destination = inferTargetAssetPath(target, kind, ext);
-	          destination = normalizeDestinationExtension(destination, ext);
-	          target.dataset.assetPath = destination;
-
-          const form = new FormData();
-          form.append('path', destination);
-          form.append('file', file, file.name || `upload.${ext || 'jpg'}`);
-
-          const res = await fetch('/__cms/upload', { method: 'POST', body: form });
-          const payload = await res.json().catch(() => ({}));
-          if (!res.ok || !payload || payload.ok !== true) {
-            throw new Error(payload && payload.error ? payload.error : 'Upload failed');
-          }
-
-	          const pageAssetPath = toPageAssetPath(destination);
-	          applyImageValue(target, kind, withAssetVersion(pageAssetPath));
-	          await syncProjectPreviewImageRecord(target, kind, pageAssetPath);
-	          requestImageControlPositionUpdate();
-
-          if (state.autosaveEnabled) {
-            scheduleAutosave('image-upload');
-            notify(`Image saved to ${destination}.`, 'success');
-          } else {
-            notify(`Image saved to ${destination}. Click "Publish" to persist HTML changes.`, 'success');
-          }
-          return;
-        }
-
-        if (!supportsFileSystemAccessApi()) {
-          const dataUrl = await fileToDataUrl(file);
-          applyImageValue(target, kind, dataUrl);
-          await syncProjectPreviewImageRecord(target, kind, dataUrl);
-          requestImageControlPositionUpdate();
-
-          if (state.autosaveEnabled) {
-            scheduleAutosave('image-upload-inline');
-            notify('Image embedded and queued for local backup.', 'success');
-          } else {
-            notify('Image embedded. Click "Publish" to keep this change.', 'success');
-          }
-          return;
-        }
-
-        const rootHandle = await ensureProjectRootHandle(true);
-        if (!rootHandle) return;
-
-	        const ext = extensionFromFile(file);
-	        let destination = inferTargetAssetPath(target, kind, ext);
-	        destination = normalizeDestinationExtension(destination, ext);
-	        target.dataset.assetPath = destination;
-	        await writeBlobToRepo(rootHandle, destination, file);
-
-	        const pageAssetPath = toPageAssetPath(destination);
-	        applyImageValue(target, kind, withAssetVersion(pageAssetPath));
-	        await syncProjectPreviewImageRecord(target, kind, pageAssetPath);
-	        requestImageControlPositionUpdate();
-
-        if (state.autosaveEnabled) {
-          scheduleAutosave('image-upload');
-          notify(`Image uploaded and applied from ${destination}.`, 'success');
-        } else {
-          notify(`Image uploaded from ${destination}. Click \"Publish\" to persist HTML changes.`, 'success');
-        }
+        throw new Error('Supabase Storage is required for image uploads. Check js/supabase-config.js and your admin session.');
 	      } catch (error) {
 	        console.error(error);
 	        const msg = error && error.message ? error.message : String(error);
@@ -1996,6 +2319,157 @@
       .split('#', 1)[0]
       .split('?', 1)[0];
     return clean;
+  }
+
+  function isProjectsIndexPath(pathValue) {
+    const clean = String(pathValue || '').replace(/^\/+/, '').toLowerCase();
+    return clean === 'pages/projects.html' || clean === 'projects.html';
+  }
+
+  function toProjectsPageHref(rawHref) {
+    const normalized = normalizeProjectHref(rawHref);
+    if (!normalized) return '';
+    if (/^projects\/[^/]+\.html$/i.test(normalized)) return normalized;
+    if (/^pages\/projects\/[^/]+\.html$/i.test(normalized)) return normalized.slice('pages/'.length);
+    const slug = extractProjectSlugFromHref(normalized);
+    if (!slug) return '';
+    return `projects/${slug}.html`;
+  }
+
+  function collectProjectsGridRowsForSync() {
+    const grid = document.getElementById('projects-grid');
+    if (!(grid instanceof HTMLElement)) return { rows: [], signature: '' };
+
+    const cards = Array.from(grid.querySelectorAll('.project-card'));
+    if (cards.length === 0) return { rows: [], signature: '' };
+
+    const rows = [];
+    cards.forEach((card, index) => {
+      if (!(card instanceof HTMLElement)) return;
+      const link =
+        card.querySelector('a.project-img-frame') ||
+        card.querySelector('.project-title a') ||
+        card.querySelector('a.project-link') ||
+        card.querySelector('a[href]');
+      const hrefRaw = link ? link.getAttribute('href') || '' : '';
+      const href = toProjectsPageHref(hrefRaw);
+      if (!href) return;
+
+      const slug = extractProjectSlugFromHref(href);
+      const idValue = Number(card.getAttribute('data-project-id') || '');
+      const titleNode = card.querySelector('.project-title a') || card.querySelector('.project-title') || link;
+      const descNode = card.querySelector('.project-desc');
+      const imageNode = card.querySelector('.project-img-frame img') || card.querySelector('img');
+      const imageRaw = imageNode ? imageNode.getAttribute('src') || imageNode.src || '' : '';
+      const imagePath = resolveAssetPath(imageRaw);
+
+      rows.push({
+        id: Number.isFinite(idValue) && idValue > 0 ? idValue : null,
+        href,
+        title: compactText(titleNode ? titleNode.textContent : '') || slug || 'Untitled project',
+        description: compactText(descNode ? descNode.textContent : '') || null,
+        image_url: imagePath || String(imageRaw || '').trim() || null,
+        sort_order: (index + 1) * 10,
+        is_published: true,
+        cardEl: card
+      });
+    });
+
+    if (rows.length === 0) return { rows: [], signature: '' };
+
+    const signature = JSON.stringify(
+      rows.map((row) => ({
+        id: row.id || null,
+        href: row.href,
+        title: row.title,
+        description: row.description || null,
+        image_url: row.image_url || null,
+        sort_order: row.sort_order,
+        is_published: row.is_published === true
+      }))
+    );
+
+    return { rows, signature };
+  }
+
+  async function syncProjectsGridRecords(sb, pathValue) {
+    if (!isProjectsIndexPath(pathValue)) return;
+    if (!sb || typeof sb.from !== 'function') return;
+
+    const collected = collectProjectsGridRowsForSync();
+    if (!collected || !Array.isArray(collected.rows) || collected.rows.length === 0) return;
+    if (!collected.signature) return;
+    if (state.projectsGridSyncSignature === collected.signature) return;
+
+    const { data: existing, error: existingError } = await sb.from('projects').select('id,href,is_published');
+    if (existingError) throw existingError;
+
+    const existingByHref = new Map();
+    const existingById = new Map();
+    for (const row of Array.isArray(existing) ? existing : []) {
+      const idNum = Number(row && row.id);
+      if (!Number.isFinite(idNum) || idNum <= 0) continue;
+      const hrefKey = normalizeProjectHref(row && row.href ? row.href : '');
+      existingById.set(idNum, row);
+      if (hrefKey) existingByHref.set(hrefKey, row);
+    }
+
+    const touchedIds = new Set();
+
+    for (const row of collected.rows) {
+      const payload = {
+        title: row.title,
+        href: row.href,
+        description: row.description || null,
+        image_url: row.image_url || null,
+        sort_order: Number(row.sort_order || 0) || 0,
+        is_published: true
+      };
+
+      let targetId = Number(row.id || '');
+      if (!Number.isFinite(targetId) || targetId <= 0) {
+        const existingRow = existingByHref.get(normalizeProjectHref(row.href));
+        targetId = existingRow && Number.isFinite(Number(existingRow.id)) ? Number(existingRow.id) : NaN;
+      }
+
+      if (Number.isFinite(targetId) && targetId > 0 && existingById.has(targetId)) {
+        const { error: updateError } = await sb.from('projects').update(payload).eq('id', targetId);
+        if (updateError) throw updateError;
+        touchedIds.add(targetId);
+        if (row.cardEl instanceof HTMLElement) row.cardEl.setAttribute('data-project-id', String(targetId));
+        continue;
+      }
+
+      const { data: inserted, error: insertError } = await sb
+        .from('projects')
+        .insert([payload])
+        .select('id')
+        .limit(1);
+      if (insertError) throw insertError;
+      const insertedId =
+        Array.isArray(inserted) && inserted[0] && Number.isFinite(Number(inserted[0].id))
+          ? Number(inserted[0].id)
+          : NaN;
+      if (Number.isFinite(insertedId) && insertedId > 0) {
+        touchedIds.add(insertedId);
+        if (row.cardEl instanceof HTMLElement) row.cardEl.setAttribute('data-project-id', String(insertedId));
+      }
+    }
+
+    const idsToHide = [];
+    for (const row of Array.isArray(existing) ? existing : []) {
+      const idNum = Number(row && row.id);
+      if (!Number.isFinite(idNum) || idNum <= 0) continue;
+      if (row && row.is_published === true && !touchedIds.has(idNum)) {
+        idsToHide.push(idNum);
+      }
+    }
+    if (idsToHide.length > 0) {
+      const { error: hideError } = await sb.from('projects').update({ is_published: false }).in('id', idsToHide);
+      if (hideError) throw hideError;
+    }
+
+    state.projectsGridSyncSignature = collected.signature;
   }
 
   async function syncProjectPreviewImageRecord(target, kind, nextValue) {
@@ -2307,6 +2781,7 @@
     if (state.selectedEditable === element) return;
     state.selectedEditable = element;
     updateTextLabel();
+    refreshResizeControls();
   }
 
   function updateTextLabel() {
@@ -2360,6 +2835,7 @@
     state.selectedSection = section;
     state.selectedSection.classList.add('cms-section-selected');
     updateSectionLabel();
+    refreshResizeControls();
   }
 
   function updateSectionLabel() {
@@ -2501,7 +2977,7 @@
 
     if (state.autosaveTimer) clearTimeout(state.autosaveTimer);
     state.autosaveTimer = setTimeout(() => {
-      saveCurrentPage({ silent: true, reason, allowPicker: false });
+      saveCurrentPage({ silent: true, reason });
     }, 900);
   }
 
@@ -2518,7 +2994,43 @@
         char_count: charCount
       };
       const { error } = await sb.from('cms_change_log').insert(payload);
-      if (error) return;
+      if (!error) return;
+
+      // Fallback when cms_change_log is missing: store publish events server-side.
+      const normalizedPath = String(path || '').trim();
+      const pagePath = normalizedPath
+        ? (normalizedPath.startsWith('/') ? normalizedPath : `/${normalizedPath}`)
+        : '/';
+      const nonce = Math.random().toString(36).slice(2, 10);
+      const stamp = Date.now();
+      const analyticsPayload = {
+        event_type: 'cms_publish',
+        page_path: pagePath,
+        page_title: 'CMS Publish',
+        referrer: null,
+        utm_source: null,
+        utm_medium: null,
+        utm_campaign: null,
+        device_type: 'admin',
+        session_id: `cms_publish_${stamp}_${nonce}`,
+        visitor_id: email ? `admin:${email}` : `admin:${nonce}`,
+        language: typeof navigator !== 'undefined' ? String(navigator.language || '') || null : null,
+        screen_width: typeof window !== 'undefined' ? Number(window.innerWidth || 0) || null : null,
+        screen_height: typeof window !== 'undefined' ? Number(window.innerHeight || 0) || null : null,
+        timezone:
+          typeof Intl !== 'undefined' && Intl.DateTimeFormat
+            ? Intl.DateTimeFormat().resolvedOptions().timeZone || null
+            : null,
+        user_agent:
+          typeof navigator !== 'undefined' ? String(navigator.userAgent || '').slice(0, 500) || null : null,
+        metadata: {
+          reason: String(reason || 'manual'),
+          editor_email: email,
+          char_count: charCount,
+          source: 'editor-auth'
+        }
+      };
+      await sb.from('site_analytics_events').insert([analyticsPayload]);
     } catch (_e) {
       // Optional audit table; ignore if not configured.
     }
@@ -2552,7 +3064,7 @@
   }
 
   async function saveCurrentPage(options) {
-    const { silent = false, reason = 'manual', allowPicker = true } = options || {};
+    const { silent = false, reason = 'manual' } = options || {};
     if (!isAdmin()) {
       if (!silent) notify('Sign in to edit and publish changes.', 'warn');
       return;
@@ -2567,79 +3079,31 @@
 
     try {
       const html = buildCleanHtmlSnapshot();
-      const persistToLocalServer = async (relativePath) => {
-        if (!(await detectServerMode())) return false;
-        const res = await fetch('/__cms/save', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ path: relativePath, html })
-        });
-        const payload = await res.json().catch(() => ({}));
-        if (!res.ok || !payload || payload.ok !== true) {
-          throw new Error(payload && payload.error ? payload.error : 'Local save failed');
-        }
-        return true;
-      };
-
-      // Primary: publish to Supabase (CMS snapshots).
       const cfg = await getSupabaseConfig();
       const sb = await getSupabaseClient();
-      if (sb && cfg && cfg.cms && cfg.cms.pagesTable) {
-        const table = String(cfg.cms.pagesTable || 'cms_pages');
-        const path = getPreferredCurrentPagePath();
-        if (path.startsWith('admin/')) {
-          if (!silent) notify('Publishing admin pages is disabled.', 'warn');
-          return;
-        }
-        const { error } = await sb.from(table).upsert({ path, html }, { onConflict: 'path' });
-        if (error) throw error;
-        await tryInsertCmsPublishLog(sb, path, reason, html);
-        let localSynced = false;
-        try {
-          localSynced = await persistToLocalServer(path);
-        } catch (localError) {
-          console.warn('Local mirror save failed after Supabase publish:', localError);
-        }
-        persistLocalDraft(html, reason);
-        if (!silent) {
-          notify(
-            localSynced
-              ? `Published: ${path} (Supabase + local file)`
-              : `Published: ${path}`,
-            'success'
-          );
-        }
-        return;
+      if (!sb || !cfg || !cfg.cms || !cfg.cms.pagesTable) {
+        throw new Error('Supabase CMS is required. Check js/supabase-config.js and sign in as admin.');
       }
 
-      if (await detectServerMode()) {
-        const relativePath = getPreferredCurrentPagePath();
-        await persistToLocalServer(relativePath);
-        if (!silent) notify(`Changes saved to ${relativePath}`, 'success');
+      const table = String(cfg.cms.pagesTable || 'cms_pages');
+      const path = getPreferredCurrentPagePath();
+      if (path.startsWith('admin/')) {
+        if (!silent) notify('Publishing admin pages is disabled.', 'warn');
         return;
       }
-
-      if (!supportsFileSystemAccessApi()) {
-        persistLocalDraft(html, reason);
-        if (!silent) {
-          const preferredPath = getPreferredCurrentPagePath();
-          downloadHtmlSnapshot(preferredPath, html);
-          notify('Browser fallback active: downloaded updated HTML with your latest edits.', 'success');
-        }
-        return;
+      try {
+        await syncProjectsGridRecords(sb, path);
+      } catch (syncError) {
+        const msg = syncError && syncError.message ? syncError.message : String(syncError);
+        console.warn('projects sync warning:', syncError);
+        if (!silent) notify(`Projects sync warning: ${msg}`, 'warn');
       }
-
-      const rootHandle = await ensureProjectRootHandle(allowPicker);
-      if (!rootHandle) return;
-
-      const { fileHandle, relativePath } = await resolveCurrentFileHandle(rootHandle);
-
-      const writable = await fileHandle.createWritable();
-      await writable.write(html);
-      await writable.close();
+      const { error } = await sb.from(table).upsert({ path, html }, { onConflict: 'path' });
+      if (error) throw error;
+      await tryInsertCmsPublishLog(sb, path, reason, html);
 
       if (!silent) {
-        notify(`Changes saved to ${relativePath}`, 'success');
+        notify(`Published: ${path}`, 'success');
       }
     } catch (error) {
       console.error(error);
@@ -2648,7 +3112,7 @@
       state.saveInFlight = false;
       if (state.saveQueued) {
         state.saveQueued = false;
-        saveCurrentPage({ silent: true, reason: `${reason}-queued`, allowPicker: false });
+        saveCurrentPage({ silent: true, reason: `${reason}-queued` });
       }
     }
   }
@@ -2700,7 +3164,10 @@
 	    // These elements are rendered by scripts (header/footer/site shell) and should stay code-driven.
 	    root.removeAttribute('style'); // theme variables are applied at runtime (localStorage)
 	    const headerHost = root.querySelector('#site-header');
-	    if (headerHost) headerHost.innerHTML = '';
+	    if (headerHost) {
+	      headerHost.innerHTML = '';
+	      headerHost.removeAttribute('data-auth-nav-initialized');
+	    }
 	    const footerHost = root.querySelector('#site-footer');
 	    if (footerHost) footerHost.innerHTML = '';
 	    const projectsSidebar = root.querySelector('#projects-sidebar');
@@ -2716,7 +3183,7 @@
         }
       });
 
-      el.classList.remove('cms-admin-mode', 'cms-text-target', 'cms-section-target', 'cms-section-selected', 'cc-modal-open');
+      el.classList.remove('cms-admin-mode', 'cms-text-target', 'cms-section-target', 'cms-section-selected', 'cms-resizing', 'cc-modal-open');
 
       if (el.classList && el.classList.contains('cc-modal-overlay')) {
         el.classList.remove('is-open');
