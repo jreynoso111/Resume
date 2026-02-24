@@ -831,6 +831,7 @@
       setAdminActive,
       getCurrentItem: () => currentItem,
       getEditForm: () => editPanel,
+      getFileInput: () => fileInput,
       setEditError: (message) => {
         const msg = String(message || "").trim();
         if (!msg) {
@@ -1243,6 +1244,38 @@
       } catch (_e) {}
     }
 
+    async function uploadCredentialProofImage(credentialId, file) {
+      if (!credentialId || !file) return;
+      const ext = safeExtFromFile(file);
+      const path = `credentials/${credentialId}/proof${ext || ""}`;
+      const bucket =
+        state.cfg && state.cfg.cms && state.cfg.cms.assetsBucket
+          ? String(state.cfg.cms.assetsBucket)
+          : "resume-cms";
+      const fn =
+        state.cfg && state.cfg.cms && state.cfg.cms.uploadFunction
+          ? String(state.cfg.cms.uploadFunction)
+          : "cms-upload";
+
+      const publicUrl = await uploadFileViaSupabaseFunction(state.sb, state.cfg, fn, {
+        bucket,
+        path,
+        file,
+      });
+
+      const versionedUrl = withAssetVersion(publicUrl);
+      const { data: updatedRows, error: upErr } = await state.sb
+        .from(TABLE)
+        .update({ proof_image_url: versionedUrl })
+        .eq("id", credentialId)
+        .select("id")
+        .limit(1);
+      if (upErr) throw upErr;
+      if (!Array.isArray(updatedRows) || updatedRows.length === 0) {
+        throw new Error("Image uploaded, but record update was blocked. Check admin permissions/RLS for credentials.");
+      }
+    }
+
     tabs.forEach((btn) => {
       btn.addEventListener("click", () => {
         const next = String(btn.dataset.ccTab || "all");
@@ -1274,6 +1307,36 @@
         if (!isAdminModeActive() || !state.supabaseReady || !state.adminAuthed) return;
         await maybeSeedOnAdminActive();
         modal.openEdit(null);
+      });
+    }
+
+    const modalFileInput = modal.getFileInput();
+    if (modalFileInput) {
+      modalFileInput.addEventListener("change", async () => {
+        const file = modalFileInput.files && modalFileInput.files[0] ? modalFileInput.files[0] : null;
+        if (!file) return;
+        if (!isAdminModeActive() || !state.supabaseReady || !state.adminAuthed) return;
+
+        const current = modal.getCurrentItem();
+        if (!current || !current.id) {
+          modal.setEditError('For a new item, fill the form and click "Save" to create it before uploading an image.');
+          return;
+        }
+
+        modal.setEditError("");
+        modal.setEditBusy(true);
+        try {
+          await uploadCredentialProofImage(current.id, file);
+          state.items = await fetchCredentials(state.sb);
+          state.itemsSource = "supabase";
+          render();
+          modalFileInput.value = "";
+          modal.setEditError("Image uploaded successfully.");
+        } catch (e) {
+          modal.setEditError(e && e.message ? e.message : String(e));
+        } finally {
+          modal.setEditBusy(false);
+        }
       });
     }
 
@@ -1339,36 +1402,7 @@
           row = normalizeItem(data);
         }
 
-        if (vals.file) {
-          const ext = safeExtFromFile(vals.file);
-          const path = `credentials/${row.id}/proof${ext || ""}`;
-          const bucket =
-            state.cfg && state.cfg.cms && state.cfg.cms.assetsBucket
-              ? String(state.cfg.cms.assetsBucket)
-              : "resume-cms";
-          const fn =
-            state.cfg && state.cfg.cms && state.cfg.cms.uploadFunction
-              ? String(state.cfg.cms.uploadFunction)
-              : "cms-upload";
-
-          const publicUrl = await uploadFileViaSupabaseFunction(state.sb, state.cfg, fn, {
-            bucket,
-            path,
-            file: vals.file,
-          });
-
-          const versionedUrl = withAssetVersion(publicUrl);
-          const { data: updatedRows, error: upErr } = await state.sb
-            .from(TABLE)
-            .update({ proof_image_url: versionedUrl })
-            .eq("id", row.id)
-            .select("id")
-            .limit(1);
-          if (upErr) throw upErr;
-          if (!Array.isArray(updatedRows) || updatedRows.length === 0) {
-            throw new Error("Image uploaded, but record update was blocked. Check admin permissions/RLS for credentials.");
-          }
-        }
+        if (vals.file) await uploadCredentialProofImage(row.id, vals.file);
 
         state.items = await fetchCredentials(state.sb);
         state.itemsSource = "supabase";
