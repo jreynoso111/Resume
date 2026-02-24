@@ -934,14 +934,14 @@
       const depth = Math.max(0, parts.length - 1);
       const rootPrefix = '../'.repeat(depth);
       const footerHost = `<footer id="site-footer" data-root-path="${rootPrefix}"></footer>`;
-	      const STYLES_V = 34;
+	      const STYLES_V = 37;
 	      const HEADER_V = 12;
 	      const FOOTER_V = 20;
 	      const EDITOR_V = 45;
 	      const SHELL_V = 6;
 	      const PROJECT_LIGHTBOX_V = 3;
 	      const PROJECT_CAROUSEL_V = 9;
-	      const COURSES_CERTS_V = 12;
+	      const COURSES_CERTS_V = 16;
 	      const PROJECTS_V = 7;
 	      const PROJECT_DETAIL_LAYOUT_V = 10;
       const footerScript = `<script src="${rootPrefix}js/footer.js?v=${FOOTER_V}"></script>`;

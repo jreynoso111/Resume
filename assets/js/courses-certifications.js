@@ -403,8 +403,10 @@
     return role || "viewer";
   }
 
-  function canOpenCertificateProof(role, item) {
+  function canOpenCertificateProof(role, item, options) {
     if (!item || item.kind !== "certification") return true;
+    const opts = options && typeof options === "object" ? options : {};
+    if (Boolean(opts.allowRestricted)) return true;
     const normalized = normalizeRole(role);
     return normalized === "admin" || normalized === "recruiter";
   }
@@ -557,8 +559,18 @@
     img.className = "cc-modal-img";
     img.alt = "";
     img.loading = "lazy";
+    const imageLoading = createEl("div", "cc-modal-image-loading");
+    imageLoading.hidden = true;
+    const imageLoadingSpinner = createEl("span", "cc-modal-image-loading-spinner");
+    imageLoadingSpinner.setAttribute("aria-hidden", "true");
+    const imageLoadingText = createEl(
+      "span",
+      "cc-modal-image-loading-text",
+      "Loading certificate image..."
+    );
+    imageLoading.append(imageLoadingSpinner, imageLoadingText);
     const placeholder = createEl("div", "cc-modal-placeholder", "No certificate image on file.");
-    imageFrame.append(img, placeholder);
+    imageFrame.append(img, imageLoading, placeholder);
     const viewLinkRow = createEl("div", "cc-modal-linkrow");
     const viewLinkEmpty = createEl("div", "cc-modal-link-empty", "No proof link on file.");
     const viewLink = createEl("a", "cc-modal-link", "Open link");
@@ -686,6 +698,8 @@
     let currentItem = null;
     let lastFocused = null;
     let adminActive = false;
+    let activeImageRequestId = 0;
+    let imageLoadWatchRaf = 0;
 
     function setMode(next) {
       mode = next;
@@ -694,6 +708,9 @@
     }
 
     function close() {
+      activeImageRequestId += 1;
+      stopImageLoadWatch();
+      setImageLoadingVisible(false);
       overlay.hidden = true;
       overlay.classList.remove("is-open");
       document.body.classList.remove("cc-modal-open");
@@ -717,6 +734,57 @@
       closeBtn.focus();
     }
 
+    function stopImageLoadWatch() {
+      if (!imageLoadWatchRaf) return;
+      cancelAnimationFrame(imageLoadWatchRaf);
+      imageLoadWatchRaf = 0;
+    }
+
+    function setImageLoadingVisible(visible, text) {
+      if (text != null) imageLoadingText.textContent = String(text);
+      const show = Boolean(visible);
+      imageLoading.hidden = !show;
+      imageLoading.style.display = show ? "flex" : "none";
+      if (show) {
+        imageFrame.classList.add("is-loading");
+      } else {
+        imageFrame.classList.remove("is-loading");
+      }
+    }
+
+    function startImageLoadWatch(requestId) {
+      stopImageLoadWatch();
+      const watch = () => {
+        if (requestId !== activeImageRequestId) return;
+        if (img.complete) {
+          if (img.naturalWidth > 0) {
+            markImageLoaded();
+          } else {
+            markImageError("Certificate image could not be loaded.");
+          }
+          return;
+        }
+        imageLoadWatchRaf = requestAnimationFrame(watch);
+      };
+      imageLoadWatchRaf = requestAnimationFrame(watch);
+    }
+
+    function markImageLoaded() {
+      stopImageLoadWatch();
+      setImageLoadingVisible(false);
+      placeholder.hidden = true;
+      placeholder.textContent = "No certificate image on file.";
+      img.hidden = false;
+    }
+
+    function markImageError(message) {
+      stopImageLoadWatch();
+      setImageLoadingVisible(false);
+      img.hidden = true;
+      placeholder.hidden = false;
+      placeholder.textContent = String(message || "Certificate image could not be loaded.");
+    }
+
     function openView(item, { rootPrefix }) {
       currentItem = item;
       setMode("view");
@@ -730,14 +798,46 @@
       viewMeta.textContent = metaParts.join(" • ");
 
       viewNote.textContent = item.note ? item.note : "Credential note not provided.";
+      setImageLoadingVisible(false);
+      imageLoadingText.textContent = "Loading certificate image...";
 
       const imgUrl = normalizeAssetUrl(item.proof_image_url, rootPrefix);
       if (imgUrl) {
+        activeImageRequestId += 1;
+        const requestId = activeImageRequestId;
+        img.dataset.ccImageReq = String(requestId);
+        setImageLoadingVisible(true, "Loading certificate image...");
         img.src = imgUrl;
         img.alt = textOrDash(item.title);
         img.hidden = false;
         placeholder.hidden = true;
+        startImageLoadWatch(requestId);
+        if (img.complete) {
+          if (img.naturalWidth > 0) {
+            markImageLoaded();
+          } else {
+            markImageError("Certificate image could not be loaded.");
+          }
+        } else if (typeof img.decode === "function") {
+          img
+            .decode()
+            .then(() => {
+              const currentReq = Number(img.dataset.ccImageReq || "0");
+              if (requestId !== currentReq) return;
+              if (img.naturalWidth > 0) markImageLoaded();
+            })
+            .catch(() => {
+              const currentReq = Number(img.dataset.ccImageReq || "0");
+              if (requestId !== currentReq) return;
+              if (img.complete && img.naturalWidth > 0) {
+                markImageLoaded();
+              }
+            });
+        }
       } else {
+        activeImageRequestId += 1;
+        img.dataset.ccImageReq = String(activeImageRequestId);
+        setImageLoadingVisible(false);
         img.removeAttribute("src");
         img.alt = "";
         img.hidden = true;
@@ -755,6 +855,47 @@
         viewLink.hidden = true;
         viewLinkEmpty.hidden = !adminActive;
         viewLinkRow.hidden = !adminActive;
+      }
+
+      openBase();
+    }
+
+    function openLoginRequired(item, { rootPrefix, loginHref }) {
+      const safeItem = item || {};
+      currentItem = safeItem;
+      setMode("view");
+      heading.textContent = textOrDash(safeItem.title || "Certificate");
+
+      const metaParts = [];
+      metaParts.push(textOrDash(safeItem.issuer));
+      if (typeof safeItem.year === "number" && Number.isFinite(safeItem.year)) {
+        metaParts.push(String(safeItem.year));
+      }
+      viewMeta.textContent = metaParts.join(" • ");
+
+      viewNote.textContent = "Login is required to view this certificate. Please sign in to continue.";
+      activeImageRequestId += 1;
+      img.dataset.ccImageReq = String(activeImageRequestId);
+      setImageLoadingVisible(false, "Login required.");
+      img.removeAttribute("src");
+      img.alt = "";
+      img.hidden = true;
+      placeholder.hidden = false;
+      placeholder.textContent = "Login required to view certificate image.";
+
+      const href = String(loginHref || "").trim();
+      if (href) {
+        viewLink.href = href;
+        viewLink.textContent = "Log in";
+        viewLink.hidden = false;
+        viewLinkEmpty.hidden = true;
+        viewLinkRow.hidden = false;
+      } else {
+        viewLink.removeAttribute("href");
+        viewLink.hidden = true;
+        viewLinkEmpty.textContent = "Login required.";
+        viewLinkEmpty.hidden = false;
+        viewLinkRow.hidden = false;
       }
 
       openBase();
@@ -823,10 +964,23 @@
       }
     });
 
+    img.addEventListener("load", () => {
+      const currentReq = Number(img.dataset.ccImageReq || "0");
+      if (!currentReq || currentReq !== activeImageRequestId) return;
+      markImageLoaded();
+    });
+
+    img.addEventListener("error", () => {
+      const currentReq = Number(img.dataset.ccImageReq || "0");
+      if (!currentReq || currentReq !== activeImageRequestId) return;
+      markImageError("Certificate image could not be loaded.");
+    });
+
     return {
       overlay,
       close,
       openView,
+      openLoginRequired,
       openEdit,
       setAdminActive,
       getCurrentItem: () => currentItem,
@@ -1098,11 +1252,18 @@
                       ? state.auth.getAppHref("login.html")
                       : `${state.rootPrefix}login.html`;
                   const sep = loginHref.includes("?") ? "&" : "?";
-                  window.location.assign(`${loginHref}${sep}next=${encodeURIComponent(nextPath)}`);
+                  modal.openLoginRequired(it, {
+                    rootPrefix: state.rootPrefix,
+                    loginHref: `${loginHref}${sep}next=${encodeURIComponent(nextPath)}`,
+                  });
                   return;
                 }
 
-                if (!canOpenCertificateProof(state.viewerRole, it)) {
+                if (
+                  !canOpenCertificateProof(state.viewerRole, it, {
+                    allowRestricted: state.adminAuthed,
+                  })
+                ) {
                   modal.openView(
                     {
                       ...it,
