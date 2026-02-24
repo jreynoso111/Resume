@@ -38,6 +38,66 @@
 	        return clean.slice(0, marker);
 	    }
 
+	    function isAboutPage() {
+	        const bodyAbout = document.body && document.body.classList && document.body.classList.contains('about-page');
+	        if (bodyAbout) return true;
+	        const path = String(location.pathname || '').toLowerCase();
+	        return path.endsWith('/about.html') || path === '/about.html';
+	    }
+
+	    function calculateAgeYears(birthYear, birthMonth, birthDay) {
+	        const now = new Date();
+	        let age = now.getFullYear() - Number(birthYear);
+	        const month = now.getMonth() + 1;
+	        const day = now.getDate();
+	        if (month < Number(birthMonth) || (month === Number(birthMonth) && day < Number(birthDay))) {
+	            age -= 1;
+	        }
+	        return Math.max(0, age);
+	    }
+
+	    function ensureAboutAgeLine() {
+	        if (!isAboutPage()) return;
+	        const aboutCard = document.querySelector('.about-info-card');
+	        if (!(aboutCard instanceof HTMLElement)) return;
+	        const footer = aboutCard.querySelector('.hero-card-footer');
+	        if (!(footer instanceof HTMLElement)) return;
+
+	        let row = footer.querySelector('[data-about-age-row="1"]');
+	        if (!(row instanceof HTMLElement)) {
+	            row = document.createElement('div');
+	            row.setAttribute('data-about-age-row', '1');
+	            row.setAttribute('data-resume-dynamic', '1');
+	            row.className = 'hero-stat';
+	            row.style.display = 'flex';
+	            row.style.justifyContent = 'space-between';
+	            row.innerHTML = `
+	                <div class="hero-stat-label" data-resume-dynamic="1">Age</div>
+	                <div class="hero-stat-value" data-about-age-value="1" data-resume-dynamic="1"></div>
+	            `;
+	        }
+
+	        const heroRows = Array.from(footer.querySelectorAll(':scope > .hero-stat'));
+	        const bornRow = heroRows.find((item) => {
+	            const label = item.querySelector('.hero-stat-label');
+	            return String(label && label.textContent ? label.textContent : '').trim().toLowerCase() === 'born';
+	        });
+	        if (bornRow instanceof HTMLElement) {
+	            const next = bornRow.nextElementSibling;
+	            if (next !== row) {
+	                footer.insertBefore(row, next || null);
+	            }
+	        } else if (!row.parentElement) {
+	            footer.appendChild(row);
+	        }
+
+	        const valueNode = row.querySelector('[data-about-age-value="1"]');
+	        if (valueNode) {
+	            const age = calculateAgeYears(1987, 9, 23);
+	            valueNode.textContent = String(age);
+	        }
+	    }
+
 	    function ensureEditorLoaded(rootPath) {
 	        if (typeof window.__resumeCmsToggleEditor === 'function') {
 	            return Promise.resolve();
@@ -93,11 +153,11 @@
 
 	        const base = String(rootPath || '');
 	        const scriptRoot = getFooterScriptRoot();
-	        const canonical = `${base}js/editor-auth.js?v=51`;
+	        const canonical = `${base}js/editor-auth.js?v=53`;
 	            const canonicalFromFooter = scriptRoot
 	            ? (scriptRoot.endsWith('/') || scriptRoot.endsWith('\\')
-	                ? `${scriptRoot}js/editor-auth.js?v=51`
-	                : `${scriptRoot.replace(/[\\/]+$/, '')}/js/editor-auth.js?v=51`)
+	                ? `${scriptRoot}js/editor-auth.js?v=53`
+	                : `${scriptRoot.replace(/[\\/]+$/, '')}/js/editor-auth.js?v=53`)
 	            : '';
 	        const src = existing ? (existing.getAttribute('src') || existing.src || canonical) : canonical;
 	        const bust = `${src}${src.includes('?') ? '&' : '?'}cb=${Date.now()}`;
@@ -110,10 +170,10 @@
 	                canonical,
 	                canonicalFromFooter,
 	                // Fallbacks relative to the current page URL.
-	                new URL('js/editor-auth.js?v=51', location.href).toString(),
-	                new URL('../js/editor-auth.js?v=51', location.href).toString(),
-	                new URL('../../js/editor-auth.js?v=51', location.href).toString(),
-	                new URL('../../../js/editor-auth.js?v=51', location.href).toString()
+	                new URL('js/editor-auth.js?v=53', location.href).toString(),
+	                new URL('../js/editor-auth.js?v=53', location.href).toString(),
+	                new URL('../../js/editor-auth.js?v=53', location.href).toString(),
+	                new URL('../../../js/editor-auth.js?v=53', location.href).toString()
 	            ].filter(Boolean);
 
 	            for (const candidate of candidates) {
@@ -207,6 +267,8 @@
 	                }, true);
 	            }
 	        }
+
+	        ensureAboutAgeLine();
 	    }
 
     if (document.readyState === 'loading') {

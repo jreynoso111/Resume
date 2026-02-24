@@ -4,6 +4,7 @@
   const EDITOR_ENABLED_KEY = 'resume_cms_editor_enabled_v1';
   const SETTINGS_KEY = 'resume_admin_settings_v2';
   const DRAFT_KEY_PREFIX = 'resume_admin_draft_v2:';
+  const CMS_HYDRATION_SENTINEL_KEY = 'resume_cms_snapshot_hydration_v1';
 
   const SECTION_SELECTOR = [
     'main section',
@@ -603,7 +604,14 @@
     if (!cfg) return null;
     await ensureSupabaseLibrary();
     if (!window.supabase || typeof window.supabase.createClient !== 'function') return null;
-    state.supabaseClient = window.supabase.createClient(cfg.url, cfg.anonKey);
+    state.supabaseClient = window.supabase.createClient(cfg.url, cfg.anonKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: false,
+        storageKey: 'resume_cms_auth_v1'
+      }
+    });
     return state.supabaseClient;
   }
 
@@ -686,11 +694,27 @@
       const sb = await getSupabaseClient();
       if (!sb) return;
 
-      sb.auth.onAuthStateChange((_event, session) => {
+      sb.auth.onAuthStateChange((event, session) => {
+        const hadAdminAccess = state.authIsAdmin === true;
         state.authSession = session || null;
         state.authEmail = (session && session.user && session.user.email) ? String(session.user.email) : '';
-        void refreshAdminFlag();
-        updateStatusLine();
+        void (async () => {
+          await refreshAdminFlag();
+          const lostAccess = hadAdminAccess && !state.authIsAdmin;
+          const shouldDisable =
+            lostAccess &&
+            document.body &&
+            document.body.classList.contains('cms-admin-mode');
+          if (shouldDisable) {
+            setEditorEnabledFlag(false);
+            disableAdminMode();
+            syncAdminLinkState();
+            if (event !== 'SIGNED_OUT') {
+              notify('Session expired. Sign in again to keep publishing changes.', 'warn');
+            }
+          }
+          updateStatusLine();
+        })();
       });
 
       const { data } = await sb.auth.getSession();
@@ -721,6 +745,77 @@
     state.authIsAdmin = byEmail || byUserId;
   }
 
+  function getSessionExpiryMs(session) {
+    const expiresAtSeconds = Number(session && session.expires_at ? session.expires_at : 0);
+    if (!Number.isFinite(expiresAtSeconds) || expiresAtSeconds <= 0) return 0;
+    return expiresAtSeconds * 1000;
+  }
+
+  function isSessionExpiringSoon(session, thresholdMs) {
+    const expiresMs = getSessionExpiryMs(session);
+    if (!expiresMs) return false;
+    const threshold = Number.isFinite(Number(thresholdMs)) ? Number(thresholdMs) : 120000;
+    return Date.now() + threshold >= expiresMs;
+  }
+
+  function isLikelyAuthError(error) {
+    const raw = error && error.message ? String(error.message) : String(error || '');
+    const msg = raw.toLowerCase();
+    return msg.includes('not signed in')
+      || msg.includes('jwt')
+      || msg.includes('token')
+      || msg.includes('auth')
+      || msg.includes('expired')
+      || msg.includes('permission denied')
+      || msg.includes('row-level security')
+      || msg.includes('forbidden')
+      || msg.includes('unauthorized');
+  }
+
+  async function ensureAdminWriteSession(options) {
+    const { interactive = false } = options || {};
+    const unsafe = window.__SUPABASE_CONFIG__ && window.__SUPABASE_CONFIG__.unsafeNoAuth === true;
+    if (unsafe) return true;
+
+    const sb = await getSupabaseClient();
+    if (!sb) {
+      if (interactive) notify('Supabase CMS is not configured.', 'warn');
+      return false;
+    }
+
+    let session = null;
+    try {
+      const { data } = await sb.auth.getSession();
+      session = data && data.session ? data.session : null;
+    } catch (_e) {
+      session = null;
+    }
+
+    if (session && isSessionExpiringSoon(session)) {
+      try {
+        const { data: refreshed } = await sb.auth.refreshSession();
+        session = refreshed && refreshed.session ? refreshed.session : session;
+      } catch (_e) {
+        // If refresh fails we'll continue with the current session value and let admin check fail.
+      }
+    }
+
+    state.authSession = session || null;
+    state.authEmail = session && session.user && session.user.email
+      ? String(session.user.email)
+      : '';
+    await refreshAdminFlag();
+    updateStatusLine();
+
+    if (state.authIsAdmin) return true;
+    if (interactive) {
+      notify('Sign in as admin to publish changes.', 'warn');
+      try { await openLoginModal(); } catch (_e) {}
+      updateStatusLine();
+    }
+    return false;
+  }
+
 	  function updateStatusLine() {
 	    const statusLine = state.panel ? state.panel.querySelector('#cms-status-line') : null;
 	    if (!statusLine) return;
@@ -744,6 +839,8 @@
 	    }
 	    if (isAdmin() && state.hasUnpublishedChanges) {
 	      line = `${line} Unpublished changes pending. Click Publish to save or Cancel to discard.`;
+	    } else if (!unsafe && !state.authIsAdmin && state.hasUnpublishedChanges) {
+	      line = `${line} Local changes are pending. Sign in as admin, then click Publish to save on server.`;
 	    }
 	    if (uploadBusy) line = `${line} Uploading image...`;
 	    if (publishBusy) line = `${line} Publishing...`;
@@ -872,9 +969,29 @@
   async function maybeHydrateFromSupabase() {
 	    if (state.cmsHydrated) return false;
 
-	    // If we already loaded a CMS snapshot (document.write), do not re-hydrate or we'll loop.
-	    const snapshotMeta = document.querySelector('meta[name="cms-snapshot"][content="1"]');
-	    if (snapshotMeta) {
+	    let runtimeSnapshotSentinel = false;
+	    try {
+	      runtimeSnapshotSentinel = window.__resumeCmsHydrationSentinel === true;
+	      if (runtimeSnapshotSentinel) window.__resumeCmsHydrationSentinel = false;
+	    } catch (_e) {
+	      runtimeSnapshotSentinel = false;
+	    }
+	    if (runtimeSnapshotSentinel) {
+	      state.cmsHydrated = true;
+	      return false;
+	    }
+
+	    // Avoid immediate re-hydration loops right after `document.write()` snapshot loads.
+	    // Do not rely on the presence of the `cms-snapshot` meta alone, because some static
+	    // files may already contain it from old publishes.
+	    let justHydratedSnapshot = false;
+	    try {
+	      justHydratedSnapshot = sessionStorage.getItem(CMS_HYDRATION_SENTINEL_KEY) === '1';
+	      if (justHydratedSnapshot) sessionStorage.removeItem(CMS_HYDRATION_SENTINEL_KEY);
+	    } catch (_e) {
+	      justHydratedSnapshot = false;
+	    }
+	    if (justHydratedSnapshot) {
 	      state.cmsHydrated = true;
 	      return false;
 	    }
@@ -952,8 +1069,8 @@
       const footerHost = `<footer id="site-footer" data-root-path="${rootPrefix}"></footer>`;
 	      const STYLES_V = 38;
 	      const HEADER_V = 12;
-	      const FOOTER_V = 20;
-	      const EDITOR_V = 51;
+	      const FOOTER_V = 22;
+	      const EDITOR_V = 53;
 	      const SHELL_V = 6;
 	      const PROJECT_LIGHTBOX_V = 3;
 	      const PROJECT_CAROUSEL_V = 9;
@@ -987,6 +1104,9 @@
 	      out = out.replace(/<script\b[^>]*\bsrc=(['"])[^'"]*three\.min\.js\1[^>]*>\s*<\/script>/gi, '');
 	      out = out.replace(/<script\b[^>]*\bsrc=(['"])(?:\.\.\/)*js\/particles\.js\1[^>]*>\s*<\/script>/gi, '');
 	      out = out.replace(/<script\b[^>]*\bsrc=(['"])(?:\.\.\/)*js\/background-animation\.js\1[^>]*>\s*<\/script>/gi, '');
+	      // Remove stale runtime-only artifacts accidentally stored in previous snapshots.
+	      out = out.replace(/<div\b[^>]*class=(['"])[^'"]*project-lightbox[^'"]*\1[\s\S]*?<\/div>/gi, '');
+	      out = out.replace(/<input\b[^>]*\btype=(['"])file\1[^>]*\baria-hidden=(['"])true\2[^>]*>/gi, '');
 
 	      // Force current cache busters even if the snapshot already has older v= values.
 	      out = out.replace(/(assets\/css\/styles\.css\?v=)\d+/gi, `$1${STYLES_V}`);
@@ -1060,6 +1180,8 @@
     };
 
     state.cmsHydrated = true;
+    try { window.__resumeCmsHydrationSentinel = true; } catch (_e) {}
+    try { sessionStorage.setItem(CMS_HYDRATION_SENTINEL_KEY, '1'); } catch (_e) {}
     // `document.write()` replaces the document but keeps the same Window object.
     // Reset background init flags so the new document can re-initialize canvases/scripts.
     try {
@@ -2181,9 +2303,9 @@
   }
 
 		  async function handleImageUpload(target, kind, triggerBtn) {
-		    if (!isAdmin()) {
+		    const canUpload = await ensureAdminWriteSession({ interactive: true });
+		    if (!canUpload) {
 		      notify('Sign in to upload images.', 'warn');
-		      try { void openLoginModal(); } catch (_e) {}
 		      return;
 		    }
 
@@ -2248,6 +2370,8 @@
 	        const supabaseConfigured = Boolean(cfg && cfg.url && cfg.anonKey && cfg.cms && cfg.cms.assetsBucket);
 	        if (supabaseConfigured) {
 	          if (!sb) throw new Error('Supabase client is not available (failed to load supabase-js).');
+	          const canWrite = await ensureAdminWriteSession({ interactive: false });
+	          if (!canWrite) throw new Error('Not signed in.');
 	          const bucket = String(cfg.cms.assetsBucket || 'resume-cms');
 	          const ext = extensionFromFile(file);
 	          let destination = inferTargetAssetPath(target, kind, ext);
@@ -2288,6 +2412,9 @@
 	        window.alert(
 	          `Image upload failed.\\n\\n${msg}\\n\\nTip: sign in as the admin user and ensure the Supabase Edge Function \"${uploadFunctionName}\" has SUPABASE_SERVICE_ROLE_KEY configured.`
 	        );
+	        if (isLikelyAuthError(error)) {
+	          try { await openLoginModal(); } catch (_e) {}
+	        }
 	      } finally {
 	        try {
 	          if (previewUrl && typeof URL === 'object' && typeof URL.revokeObjectURL === 'function') {
@@ -2299,6 +2426,22 @@
 	        setUploadBusy(false);
 	      }
 	    }, { once: true });
+
+	    input.addEventListener('cancel', () => {
+	      try { input.remove(); } catch (_e) {}
+	    }, { once: true });
+
+	    const onWindowFocus = () => {
+	      window.removeEventListener('focus', onWindowFocus, true);
+	      setTimeout(() => {
+	        try {
+	          if (input && input.isConnected && (!input.files || input.files.length === 0)) {
+	            input.remove();
+	          }
+	        } catch (_e) {}
+	      }, 0);
+	    };
+	    window.addEventListener('focus', onWindowFocus, true);
 
 	    input.click();
 	  }
@@ -3381,7 +3524,8 @@
 
   async function saveCurrentPage(options) {
     const { silent = false, reason = 'manual' } = options || {};
-    if (!isAdmin()) {
+    const canPublish = await ensureAdminWriteSession({ interactive: !silent });
+    if (!canPublish) {
       if (!silent) notify('Sign in to edit and publish changes.', 'warn');
       return;
     }
@@ -3436,6 +3580,14 @@
     } catch (error) {
       console.error(error);
       if (!silent) notify(`Save error: ${error.message}`, 'error');
+      if (isLikelyAuthError(error)) {
+        state.authSession = null;
+        state.authEmail = '';
+        state.authIsAdmin = false;
+        updateStatusLine();
+        if (!silent) notify('Session expired. Sign in again and publish one more time.', 'warn');
+        try { await openLoginModal(); } catch (_e) {}
+      }
     } finally {
       state.saveInFlight = false;
       updateStatusLine();
@@ -3477,9 +3629,10 @@
 	      head.appendChild(meta);
 		    }
 
-		    root.querySelectorAll('#cms-admin-style, .cms-ui, [data-cms-ui="1"]').forEach((el) => el.remove());
-		    root.querySelectorAll('#bg-canvas, #particle-canvas, #theme-toggle, #theme-toggle-label').forEach((el) => el.remove());
-		    root.querySelectorAll('script[src]').forEach((el) => {
+	    root.querySelectorAll('#cms-admin-style, .cms-ui, [data-cms-ui="1"]').forEach((el) => el.remove());
+	    root.querySelectorAll('#bg-canvas, #particle-canvas, #theme-toggle, #theme-toggle-label').forEach((el) => el.remove());
+	    root.querySelectorAll('.project-lightbox, .nav-mobile, input[type="file"][aria-hidden="true"]').forEach((el) => el.remove());
+	    root.querySelectorAll('script[src]').forEach((el) => {
 		      const src = String(el.getAttribute('src') || '');
 		      if (!src) return;
 		      if (src.includes('three.min.js')) return el.remove();
