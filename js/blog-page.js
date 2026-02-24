@@ -74,8 +74,7 @@
       {
         slug: "first-post",
         title: "First Post (Demo)",
-        excerpt:
-          "Generic post to test the blog end-to-end: list view, post detail with chapters and images, and editing from the dashboard.",
+        excerpt: "Generic post to test the blog end-to-end: list view and post detail.",
         cover_image_url: "assets/images/blog/cover-generic.png",
         published_at: "2026-02-15T00:00:00.000Z",
       },

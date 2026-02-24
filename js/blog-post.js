@@ -16,7 +16,6 @@
     if (url.startsWith("/")) return url;
     const cleaned = url.replace(/^\.\//, "").replace(/^(?:\.\.\/)+/, "");
 
-    // Keep repo-hosted images local even when Supabase Storage is configured.
     if (/^assets\/images\//i.test(cleaned)) {
       return `${rootPrefix || ""}${cleaned}`;
     }
@@ -47,23 +46,67 @@
     const d = new Date(raw);
     if (Number.isNaN(d.getTime())) return "";
     try {
-      return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "2-digit" });
+      return d.toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
     } catch (_e) {
       return d.toISOString().slice(0, 10);
     }
   }
 
-  function renderBodyText(text) {
-    const raw = String(text == null ? "" : text).trim();
-    if (!raw) return "";
+  function countWords(text) {
+    const raw = String(text == null ? "" : text)
+      .trim()
+      .replace(/\s+/g, " ");
+    if (!raw) return 0;
+    return raw.split(" ").filter(Boolean).length;
+  }
 
-    const paras = raw.split(/\n{2,}/g);
-    return paras
-      .map((p) => {
-        const safe = escapeHtml(p).replace(/\n/g, "<br>");
-        return `<p>${safe}</p>`;
+  function estimateReadingMinutes(post) {
+    const source = [post && post.title, post && post.excerpt, post && post.body].join(" ");
+    const words = countWords(source);
+    return Math.max(1, Math.round(words / 220));
+  }
+
+  function paragraphHtml(block) {
+    return `<p>${escapeHtml(block).replace(/\n/g, "<br>")}</p>`;
+  }
+
+  function renderArticleBody(rawBody, rootPrefix) {
+    const raw = String(rawBody == null ? "" : rawBody).trim();
+    if (!raw) {
+      return '<p class="blog-note">No content yet. Add the article body in Admin Dashboard → Blog.</p>';
+    }
+
+    const blocks = raw.split(/\n{2,}/g).map((part) => String(part || "").trim()).filter(Boolean);
+    let imageCount = 0;
+
+    return blocks
+      .map((block) => {
+        const imgMatch = block.match(/^!\[(.*?)\]\((.*?)\)$/);
+        if (imgMatch) {
+          if (imageCount >= 2) return "";
+          const alt = String(imgMatch[1] || "").trim() || "Article image";
+          const src = normalizeAssetUrl(String(imgMatch[2] || "").trim(), rootPrefix);
+          if (!src) return "";
+          imageCount += 1;
+          return `
+            <figure class="blog-inline-image">
+              <img src="${escapeHtml(src)}" alt="${escapeHtml(alt)}" loading="lazy">
+            </figure>
+          `;
+        }
+
+        if (block.startsWith("## ")) {
+          return `<h2>${escapeHtml(block.slice(3).trim() || "Section")}</h2>`;
+        }
+
+        if (block.startsWith("### ")) {
+          return `<h3>${escapeHtml(block.slice(4).trim() || "Subsection")}</h3>`;
+        }
+
+        return paragraphHtml(block);
       })
-      .join("");
+      .filter(Boolean)
+      .join("\n");
   }
 
   function getSlug() {
@@ -92,92 +135,59 @@
         document.getElementById("site-footer").dataset.rootPath) ||
       "../";
 
-    const PLACEHOLDER_COVER = `${rootPrefix}assets/images/blog/cover-generic.png`;
-    const PLACEHOLDER_CHAPTER = `${rootPrefix}assets/images/placeholders/placeholder.png`;
-
     const LOCAL_FALLBACK_POST = {
       slug: "first-post",
       title: "First Post (Demo)",
-      excerpt:
-        "This post exists to test the full flow: dashboard -> database -> public site.",
+      excerpt: "A publication-style article template for long-form notes.",
       cover_image_url: "assets/images/blog/cover-generic.png",
       published_at: "2026-02-15T00:00:00.000Z",
-      chapters: [
-        {
-          sort_order: 0,
-          title: "Chapter 1: Structure",
-          body:
-            "This is a generic chapter.\n\nIt includes a text block and an image area.",
-          image_url: "assets/images/blog/chapter-1.png",
-        },
-        {
-          sort_order: 1,
-          title: "Chapter 2: Images",
-          body:
-            "Images can be local paths (assets/...) or public URLs from Supabase Storage.\n\nFrom the dashboard you can upload an image and save its URL on the chapter.",
-          image_url: "assets/images/blog/chapter-2.png",
-        },
-        {
-          sort_order: 2,
-          title: "Chapter 3: Publishing",
-          body:
-            "You can publish the post or keep it as a draft.\n\nVisitors only see published posts.",
-          image_url: "assets/images/blog/chapter-3.png",
-        },
-      ],
+      body:
+        "Operations teams often fail not because of missing effort, but because information arrives fragmented and late. When a team reads the same signal at different times, execution quality drops even if everyone is technically capable.\n\nIn this publication format, the objective is simple: write one complete argument from start to finish. Avoid splitting the message into disconnected blocks. A reader should be able to understand the problem, the constraints, and the decision criteria in one continuous flow.\n\n## A Practical Publishing Standard\n\nEach post should open with context, continue with evidence, and close with an operational recommendation. That sequence makes the article usable for both decision makers and implementers. It also makes archives valuable over time because each publication can stand on its own.\n\n![Field note](assets/images/blog/chapter-1.png)\n\nA good publication is dense in meaning, not in visual effects. One or two supporting images are enough when they clarify a process, a system state, or a before/after condition. Anything beyond that usually competes with the text instead of supporting it.\n\n## Writing For Execution\n\nTreat the article as an operational memo with editorial quality. Keep paragraphs focused, define terms when needed, and state assumptions explicitly. If a recommendation depends on a metric, include the metric and the threshold.\n\n![Workflow diagram](assets/images/blog/chapter-2.png)\n\nA blog built this way remains simple: one blog index, and one publication page per post. The structure is stable, readable, and easy to maintain without introducing card fragments or chapter management overhead.",
     };
 
-    function render(post, chapters) {
+    function render(post) {
       const title = String(post.title || "").trim() || "Untitled post";
       const excerpt = String(post.excerpt || "").trim();
       const date = formatDateLabel(post.published_at || post.updated_at || post.created_at);
-      const cover = normalizeAssetUrl(post.cover_image_url, rootPrefix) || PLACEHOLDER_COVER;
-
-      const meta = date ? `<div class="blog-post-meta">${escapeHtml(date)}</div>` : "";
-      const excerptHtml = excerpt ? `<p class="page-subtitle" style="max-width: 760px;">${escapeHtml(excerpt)}</p>` : "";
-
-      const chaptersHtml = (chapters || [])
-        .slice()
-        .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
-        .map((ch) => {
-          const chTitle = String(ch.title || "").trim() || "Chapter";
-          const chBody = renderBodyText(ch.body || "");
-          const img = normalizeAssetUrl(ch.image_url, rootPrefix) || PLACEHOLDER_CHAPTER;
-          return `
-            <section class="blog-chapter">
-              <div class="blog-chapter-inner">
-                <div class="blog-chapter-media">
-                  <img src="${escapeHtml(img)}" alt="${escapeHtml(chTitle)}" loading="lazy">
-                </div>
-                <div>
-                  <h2 class="blog-chapter-title">${escapeHtml(chTitle)}</h2>
-                  <div class="blog-chapter-body">${chBody || '<p style="color: var(--text-muted);">No content yet.</p>'}</div>
-                </div>
-              </div>
-            </section>
-          `;
-        })
-        .join("");
-
-      const chaptersBlock = chaptersHtml
-        ? `<div class="blog-chapters">${chaptersHtml}</div>`
-        : '<div class="blog-empty">No chapters yet. Add chapters in the Admin Dashboard → Blog tab.</div>';
+      const readingMinutes = estimateReadingMinutes(post);
+      const articleBody = renderArticleBody(post.body, rootPrefix);
+      const coverSrc = normalizeAssetUrl(post.cover_image_url, rootPrefix);
+      const coverAlt = title ? `Cover image for ${title}` : "Post cover image";
+      const mediaSlot = coverSrc
+        ? `
+          <figure class="blog-post-media-slot">
+            <img src="${escapeHtml(coverSrc)}" alt="${escapeHtml(coverAlt)}" loading="eager">
+          </figure>
+        `
+        : `
+          <figure class="blog-post-media-slot blog-post-media-slot--placeholder" aria-label="Post image placeholder">
+            <div class="blog-post-media-slot-empty">
+              Add a cover image in Admin Dashboard → Blog
+            </div>
+          </figure>
+        `;
 
       root.innerHTML = `
-        <div class="page-intro blog-post-header">
-          <div style="margin-bottom: 10px;">
-            <a href="blog.html" style="color: var(--text-muted); font-size: 13px;">← Back to Blog</a>
+        <article class="blog-post-single">
+          <div class="blog-post-back-row">
+            <a href="blog.html" class="blog-back-link">← Back to Blog</a>
           </div>
-          <h1 class="blog-post-title">${escapeHtml(title)}</h1>
-          ${meta}
-          ${excerptHtml}
-        </div>
 
-        <div class="blog-post-cover">
-          <img src="${escapeHtml(cover)}" alt="${escapeHtml(title)}" loading="lazy">
-        </div>
+          <header class="blog-post-head">
+            <h1 class="blog-post-title">${escapeHtml(title)}</h1>
+            ${excerpt ? `<p class="blog-post-excerpt">${escapeHtml(excerpt)}</p>` : ""}
+            <div class="blog-post-meta-row">
+              ${date ? `<span class="blog-meta-pill">${escapeHtml(date)}</span>` : ""}
+              <span class="blog-meta-pill">${readingMinutes} min read</span>
+            </div>
+          </header>
 
-        ${chaptersBlock}
+          ${mediaSlot}
+
+          <div class="blog-prose blog-article-simple">
+            ${articleBody}
+          </div>
+        </article>
       `;
 
       try {
@@ -185,10 +195,9 @@
       } catch (_e) {}
     }
 
-    // Local-only fallback
     if (!cfg.url || !cfg.anonKey || !window.supabase) {
       if (slug === LOCAL_FALLBACK_POST.slug) {
-        render(LOCAL_FALLBACK_POST, LOCAL_FALLBACK_POST.chapters);
+        render(LOCAL_FALLBACK_POST);
       } else {
         root.innerHTML = `<div class="blog-empty">Post not found (local preview). Go back to <a href="blog.html">Blog</a>.</div>`;
       }
@@ -198,7 +207,7 @@
     const sb = window.supabase.createClient(cfg.url, cfg.anonKey);
     const { data: post, error: postErr, status: postStatus } = await sb
       .from("blog_posts")
-      .select("*")
+      .select("id,slug,title,excerpt,body,cover_image_url,is_published,published_at,created_at,updated_at")
       .eq("slug", slug)
       .limit(1)
       .single();
@@ -211,15 +220,7 @@
       throw postErr;
     }
 
-    const { data: chapters, error: chErr } = await sb
-      .from("blog_chapters")
-      .select("*")
-      .eq("post_id", post.id)
-      .order("sort_order", { ascending: true })
-      .order("id", { ascending: true });
-    if (chErr) throw chErr;
-
-    render(post, chapters || []);
+    render(post);
   }
 
   document.addEventListener("DOMContentLoaded", () => {

@@ -6,7 +6,7 @@
   <title>Blog | Juan R. Reynoso</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="../assets/css/styles.css?v=34" />
+  <link rel="stylesheet" href="../assets/css/styles.css?v=37" />
 </head>
 
 <body class="blog-page">
@@ -21,25 +21,8 @@
         </p>
       </div>
 
-      <div class="blog-grid">
-        <article class="blog-card">
-          <a class="blog-cover" href="blog/first-post.html">
-            <img src="../assets/images/blog/cover-generic.png" alt="First Post (Demo)" loading="lazy">
-          </a>
-          <div class="blog-card-body">
-            <div class="blog-card-meta">Feb 15, 2026</div>
-            <h2 class="blog-card-title"><a href="blog/first-post.html">First Post (Demo)</a></h2>
-            <p class="blog-card-excerpt">
-              A clean, professional blog post page template that lives in code. Duplicate it to publish new posts.
-            </p>
-            <div class="skills-strip" style="margin-top:-4px; margin-bottom: 12px;">
-              <span class="skill-chip">Operations</span>
-              <span class="skill-chip">Analytics</span>
-              <span class="skill-chip">Systems</span>
-            </div>
-            <a href="blog/first-post.html" class="blog-card-link">Read →</a>
-          </div>
-        </article>
+      <div id="blog-posts-grid" class="blog-grid">
+        <div class="blog-empty">Loading blog posts...</div>
       </div>
 
       <div style="height: 60px;"></div>
@@ -72,6 +55,9 @@
   <script src="../js/header.js?v=12"></script>
   <script src="../js/footer.js?v=20"></script>
   <script src="../js/site-shell.js?v=6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../js/supabase-config.js"></script>
+  <script src="../js/blog-page.js?v=4"></script>
 </body>
 
 </html>
