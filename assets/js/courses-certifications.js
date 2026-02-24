@@ -883,6 +883,33 @@
     return "";
   }
 
+  function withAssetVersion(rawUrl) {
+    const value = String(rawUrl || "").trim();
+    if (!value) return value;
+    if (/^(data:|blob:)/i.test(value)) return value;
+
+    const hashIndex = value.indexOf("#");
+    const base = hashIndex === -1 ? value : value.slice(0, hashIndex);
+    const hash = hashIndex === -1 ? "" : value.slice(hashIndex);
+
+    const qIndex = base.indexOf("?");
+    const path = qIndex === -1 ? base : base.slice(0, qIndex);
+    const query = qIndex === -1 ? "" : base.slice(qIndex + 1);
+
+    const kept = query
+      ? query
+          .split("&")
+          .filter(Boolean)
+          .filter((part) => {
+            const key = part.split("=", 1)[0];
+            return key !== "v" && key !== "cb";
+          })
+      : [];
+
+    kept.push(`v=${Date.now()}`);
+    return `${path}?${kept.join("&")}${hash}`;
+  }
+
   async function uploadFileViaSupabaseFunction(sb, cfg, functionName, { bucket, path, file }) {
     const fn = String(functionName || "").trim();
     if (!fn) throw new Error("Missing upload function name.");
@@ -1330,11 +1357,17 @@
             file: vals.file,
           });
 
-          const { error: upErr } = await state.sb
+          const versionedUrl = withAssetVersion(publicUrl);
+          const { data: updatedRows, error: upErr } = await state.sb
             .from(TABLE)
-            .update({ proof_image_url: publicUrl })
-            .eq("id", row.id);
+            .update({ proof_image_url: versionedUrl })
+            .eq("id", row.id)
+            .select("id")
+            .limit(1);
           if (upErr) throw upErr;
+          if (!Array.isArray(updatedRows) || updatedRows.length === 0) {
+            throw new Error("Image uploaded, but record update was blocked. Check admin permissions/RLS for credentials.");
+          }
         }
 
         state.items = await fetchCredentials(state.sb);
