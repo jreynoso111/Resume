@@ -43,7 +43,7 @@
 	    textLabel: null,
 	    selectedSection: null,
 	    selectedEditable: null,
-	    autosaveEnabled: true,
+	    autosaveEnabled: false,
 		    autosaveTimer: null,
 		    saveInFlight: false,
 		    saveQueued: false,
@@ -62,6 +62,9 @@
 	    authSession: null,
 	    authEmail: '',
 	    authIsAdmin: false,
+	    hasUnpublishedChanges: false,
+	    lastLocalChangeReason: '',
+	    localChangeVersion: 0,
 	    cmsHydrated: false,
 	    projectsGridSyncSignature: ''
 	  };
@@ -722,7 +725,9 @@
 	    if (!statusLine) return;
 
 	    const unsafe = window.__SUPABASE_CONFIG__ && window.__SUPABASE_CONFIG__.unsafeNoAuth === true;
-	    const busy = (state.uploadsInFlight || 0) > 0;
+	    const uploadBusy = (state.uploadsInFlight || 0) > 0;
+	    const publishBusy = state.saveInFlight === true;
+	    const busy = uploadBusy || publishBusy;
 	    let line = '';
 	    if (unsafe) {
 	      line = 'UNSAFE mode: no login required. Anyone can edit and publish.';
@@ -736,24 +741,34 @@
 	        line = `Signed in as ${email} (no edit access).`;
 	      }
 	    }
-	    if (busy) line = `${line} Uploading image...`;
+	    if (isAdmin() && state.hasUnpublishedChanges) {
+	      line = `${line} Unpublished changes pending. Click Publish to save or Cancel to discard.`;
+	    }
+	    if (uploadBusy) line = `${line} Uploading image...`;
+	    if (publishBusy) line = `${line} Publishing...`;
 	    statusLine.textContent = line;
 
 	    const publishBtn = state.panel.querySelector('#cms-save-now');
 	    const signOutBtn = state.panel.querySelector('#cms-sign-out');
 	    const autosaveToggle = state.panel.querySelector('#cms-autosave');
+	    const cancelBtn = state.panel.querySelector('#cms-cancel-changes');
+	    const closeBtn = state.panel.querySelector('#cms-exit');
 
 	    if (unsafe) {
 	      if (publishBtn) publishBtn.disabled = busy;
-	      if (autosaveToggle) autosaveToggle.disabled = busy;
+	      if (autosaveToggle) autosaveToggle.disabled = true;
 	      if (signOutBtn) signOutBtn.disabled = true;
+	      if (cancelBtn) cancelBtn.disabled = busy || !state.hasUnpublishedChanges;
+	      if (closeBtn) closeBtn.disabled = busy;
 	      return;
 	    }
 
 	    const email = String(state.authEmail || '');
 	    if (publishBtn) publishBtn.disabled = !state.authIsAdmin || busy;
-	    if (autosaveToggle) autosaveToggle.disabled = !state.authIsAdmin || busy;
-	    if (signOutBtn) signOutBtn.disabled = !email;
+	    if (autosaveToggle) autosaveToggle.disabled = true;
+	    if (signOutBtn) signOutBtn.disabled = !email || publishBusy;
+	    if (cancelBtn) cancelBtn.disabled = !state.authIsAdmin || busy || !state.hasUnpublishedChanges;
+	    if (closeBtn) closeBtn.disabled = busy;
 	  }
 
   async function handleLoginSubmit() {
@@ -934,10 +949,10 @@
       const depth = Math.max(0, parts.length - 1);
       const rootPrefix = '../'.repeat(depth);
       const footerHost = `<footer id="site-footer" data-root-path="${rootPrefix}"></footer>`;
-	      const STYLES_V = 37;
+	      const STYLES_V = 38;
 	      const HEADER_V = 12;
 	      const FOOTER_V = 20;
-	      const EDITOR_V = 45;
+	      const EDITOR_V = 48;
 	      const SHELL_V = 6;
 	      const PROJECT_LIGHTBOX_V = 3;
 	      const PROJECT_CAROUSEL_V = 9;
@@ -1072,11 +1087,11 @@
   }
 
   function loadSettings() {
-    state.autosaveEnabled = true;
+    state.autosaveEnabled = false;
   }
 
   function saveSettings() {
-    const payload = { autosaveEnabled: true };
+    const payload = { autosaveEnabled: false };
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(payload));
   }
 
@@ -1122,12 +1137,14 @@
 
       <div class="cms-row">
         <button type="button" class="cms-btn-secondary" id="cms-sign-out">Sign out</button>
-        <button type="button" class="cms-btn-secondary" id="cms-exit">Close</button>
+        <button type="button" class="cms-btn-danger" id="cms-cancel-changes">Cancel</button>
       </div>
+
+      <button type="button" class="cms-btn-secondary" id="cms-exit" style="width:100%; margin-bottom:10px;">Close</button>
 
       <label class="cms-inline">
         <input id="cms-autosave" type="checkbox" />
-        <span id="cms-autosave-label">Auto-publish changes (always on)</span>
+        <span id="cms-autosave-label">Auto-publish disabled (manual Publish only)</span>
       </label>
 
       <details class="cms-details">
@@ -1176,13 +1193,14 @@
     state.textLabel = state.panel.querySelector('#cms-text-label');
 
     const autosaveToggle = state.panel.querySelector('#cms-autosave');
-    state.autosaveEnabled = true;
-    autosaveToggle.checked = true;
+    state.autosaveEnabled = false;
+    autosaveToggle.checked = false;
     autosaveToggle.disabled = true;
     autosaveToggle.addEventListener('change', () => {
-      state.autosaveEnabled = true;
+      state.autosaveEnabled = false;
+      autosaveToggle.checked = false;
       saveSettings();
-      notify('Auto-publish is always enabled.', 'success');
+      notify('Auto-publish is disabled. Use Publish to save changes.', 'warn');
     });
 
     state.panel.querySelector('#cms-save-now').addEventListener('click', () => {
@@ -1201,6 +1219,10 @@
       const unsafe = window.__SUPABASE_CONFIG__ && window.__SUPABASE_CONFIG__.unsafeNoAuth === true;
       if (unsafe) return;
       void signOut();
+    });
+
+    state.panel.querySelector('#cms-cancel-changes').addEventListener('click', () => {
+      void discardUnpublishedChanges();
     });
 
     state.panel.querySelector('#cms-exit').addEventListener('click', () => {
@@ -1513,8 +1535,40 @@
 
     lockEditingForNonAdmin();
 
-    updateSectionLabel();
-    updateTextLabel();
+	    updateSectionLabel();
+	    updateTextLabel();
+	  }
+
+  function markUnpublishedChanges(reason) {
+    if (!isAdmin()) return;
+    state.localChangeVersion = (Number(state.localChangeVersion) || 0) + 1;
+    state.lastLocalChangeReason = String(reason || 'edit');
+    if (!state.hasUnpublishedChanges) {
+      state.hasUnpublishedChanges = true;
+    }
+    updateStatusLine();
+  }
+
+  async function discardUnpublishedChanges() {
+    if (!isAdmin()) {
+      notify('Sign in to edit and publish changes.', 'warn');
+      return;
+    }
+    if (state.saveInFlight || (state.uploadsInFlight || 0) > 0) {
+      notify('Please wait for current upload/publish to finish.', 'warn');
+      return;
+    }
+    if (!state.hasUnpublishedChanges) {
+      notify('There are no unpublished changes to cancel.', 'warn');
+      return;
+    }
+
+    const ok = window.confirm('Discard all unpublished changes and reload this page?');
+    if (!ok) return;
+    state.hasUnpublishedChanges = false;
+    state.lastLocalChangeReason = '';
+    state.localChangeVersion = 0;
+    window.location.reload();
   }
 
 	  function lockEditingForNonAdmin() {
@@ -2200,16 +2254,9 @@
 	          const publicUrl = await uploadFileViaSupabaseFunction(sb, cfg, fn, { bucket, path: objectPath, file });
 
 	          applyImageValue(target, kind, withAssetVersion(publicUrl));
-	          await syncProjectPreviewImageRecord(target, kind, publicUrl);
-	          await syncBlogCoverImageRecord(target, kind, publicUrl);
 	          requestImageControlPositionUpdate();
-
-	          if (state.autosaveEnabled) {
-	            scheduleAutosave('image-upload');
-	            notify('Image uploaded to Supabase and queued for publish.', 'success');
-	          } else {
-	            notify('Image uploaded to Supabase. Click "Publish" to save page changes.', 'success');
-	          }
+	          scheduleAutosave('image-upload');
+	          notify('Image updated locally. Click "Publish" to save changes.', 'success');
 	          return;
 	        }
 
@@ -2273,25 +2320,16 @@
     }
 
     applyImageValue(target, kind, url);
-    void syncProjectPreviewImageRecord(target, kind, url);
-    void syncBlogCoverImageRecord(target, kind, url);
     requestImageControlPositionUpdate();
     if (target instanceof HTMLElement) {
       delete target.dataset.assetPath;
     }
 
-    if (state.autosaveEnabled) {
-      scheduleAutosave('image-link');
-      notify(
-        'Image URL applied and queued for publish.',
-        'success'
-      );
-    } else {
-      notify(
-        'Image URL applied. Click "Publish" to persist page changes.',
-        'success'
-      );
-    }
+    scheduleAutosave('image-link');
+    notify(
+      'Image URL applied locally. Click "Publish" to save changes.',
+      'success'
+    );
   }
 
   function getCurrentImageReference(target, kind) {
@@ -3077,8 +3115,9 @@
 
     if (state.autosaveTimer) clearTimeout(state.autosaveTimer);
     state.autosaveTimer = setTimeout(() => {
-      saveCurrentPage({ silent: true, reason });
-    }, 900);
+      state.autosaveTimer = null;
+      markUnpublishedChanges(reason);
+    }, 200);
   }
 
   async function tryInsertCmsPublishLog(sb, path, reason, html) {
@@ -3176,6 +3215,7 @@
     }
 
     state.saveInFlight = true;
+    const changeVersionAtPublishStart = Number(state.localChangeVersion) || 0;
 
     try {
       const html = buildCleanHtmlSnapshot();
@@ -3201,6 +3241,10 @@
       const { error } = await sb.from(table).upsert({ path, html }, { onConflict: 'path' });
       if (error) throw error;
       await tryInsertCmsPublishLog(sb, path, reason, html);
+      if ((Number(state.localChangeVersion) || 0) === changeVersionAtPublishStart) {
+        state.hasUnpublishedChanges = false;
+        state.lastLocalChangeReason = '';
+      }
 
       if (!silent) {
         notify(`Published: ${path}`, 'success');
@@ -3210,6 +3254,7 @@
       if (!silent) notify(`Save error: ${error.message}`, 'error');
     } finally {
       state.saveInFlight = false;
+      updateStatusLine();
       if (state.saveQueued) {
         state.saveQueued = false;
         saveCurrentPage({ silent: true, reason: `${reason}-queued` });
