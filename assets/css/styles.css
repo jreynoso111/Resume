@@ -1528,6 +1528,10 @@ body.about-page #philosophy + div + .standard-text + .standard-text {
     margin-top: -260px;
   }
 
+  .highlights-left {
+    margin-top: -72px;
+  }
+
   .highlights-right {
     margin-top: calc(210px + 2cm);
   }
