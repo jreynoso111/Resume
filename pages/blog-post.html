@@ -6,7 +6,7 @@
   <title>Blog Post | Juan R. Reynoso</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="../assets/css/styles.css?v=34" />
+  <link rel="stylesheet" href="../assets/css/styles.css?v=39" />
 </head>
 
 <body class="blog-post-page">
@@ -14,10 +14,8 @@
 
   <main id="top">
     <div class="shell">
-      <div class="blog-empty" style="margin-top: 40px;">
-        This site now publishes blog posts as individual pages under <code>pages/blog/</code>.
-        <br><br>
-        Go to <a href="blog.html">Blog</a>.
+      <div id="blog-post-root">
+        <div class="blog-empty">Loading blog post...</div>
       </div>
     </div>
   </main>
@@ -48,18 +46,9 @@
   <script src="../js/header.js?v=12"></script>
   <script src="../js/footer.js?v=20"></script>
   <script src="../js/site-shell.js?v=6"></script>
-
-  <script>
-    // Back-compat redirect: blog-post.html?slug=my-post -> blog/my-post.html
-    (function () {
-      try {
-        var params = new URLSearchParams(location.search || '');
-        var slug = String(params.get('slug') || '').trim();
-        if (!slug) return;
-        location.replace('blog/' + encodeURIComponent(slug) + '.html');
-      } catch (e) {}
-    })();
-  </script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../js/supabase-config.js"></script>
+  <script src="../js/blog-post.js?v=6"></script>
 </body>
 
 </html>

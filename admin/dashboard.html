@@ -217,6 +217,7 @@
 	            <button class="tab-btn" onclick="openTab('tab-education')">Education</button>
 	            <button class="tab-btn" onclick="openTab('tab-skills')">Skills</button>
 	            <button class="tab-btn" onclick="openTab('tab-projects')">Projects</button>
+	            <button class="tab-btn" onclick="openTab('tab-blog')">Blog</button>
 	            <button class="tab-btn" onclick="openTab('tab-analytics')">Analytics</button>
 	        </div>
 
@@ -407,6 +408,79 @@
             </section>
         </div>
 
+        <div id="tab-blog" class="tab-content">
+            <section class="card">
+                <h2>Blog posts</h2>
+                <p style="font-size:0.9rem; color:#4b5563;">
+                    Create, edit, publish, and delete blog posts. Public listing lives in <code>/pages/blog.html</code> and each
+                    post detail uses the standardized template in <code>/pages/blog-post.html?slug=...</code>.
+                </p>
+                <ul class="item-list" id="blog-posts-list"></ul>
+
+                <hr style="margin: 2rem 0; border: 0; border-top: 1px dashed #ccc;">
+
+                <h3 id="blog-post-form-title">Create blog post</h3>
+                <form id="blog-post-form">
+                    <input type="hidden" id="blog-post-id" />
+                    <div class="row">
+                        <div class="col form-group">
+                            <label>Title</label>
+                            <input type="text" id="blog-post-title" required />
+                        </div>
+                        <div class="col form-group">
+                            <label>Slug</label>
+                            <input type="text" id="blog-post-slug" placeholder="e.g. operations-playbook" required />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Excerpt</label>
+                        <textarea id="blog-post-excerpt" style="height:90px;"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Article body</label>
+                        <textarea id="blog-post-body" style="height:240px;" placeholder="Write the full article here. Use blank lines for paragraphs. Optional image line syntax: ![alt text](https://... or assets/images/...)"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Cover image</label>
+                        <div style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
+                            <div style="flex:1; min-width:220px;">
+                                <input type="file" id="blog-cover-file" accept="image/*" />
+                                <small style="color:#666; display:block; margin-top:6px;">
+                                    Uploads go to the <code>resume-cms</code> bucket.
+                                </small>
+                            </div>
+                            <button type="button" class="btn-secondary" id="blog-cover-upload-btn">Upload</button>
+                        </div>
+                        <input type="text" id="blog-post-cover-url" placeholder="Image URL (or relative path like assets/images/...)" style="margin-top:10px;" />
+                        <div id="blog-post-cover-preview" style="display:none; margin-top:10px;">
+                            <img id="blog-post-cover-preview-img" alt="Blog cover preview" style="width:100%; max-width:520px; border-radius:10px; border:1px solid #e5e7eb;" />
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col form-group">
+                            <label>Published</label>
+                            <select id="blog-post-published">
+                                <option value="true">Yes</option>
+                                <option value="false" selected>No (draft)</option>
+                            </select>
+                        </div>
+                        <div class="col form-group">
+                            <label>Published at</label>
+                            <input type="datetime-local" id="blog-post-published-at" />
+                        </div>
+                    </div>
+
+                    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                        <button type="submit" class="btn-primary" id="blog-post-submit-btn">Create post</button>
+                        <button type="button" class="btn-secondary" id="blog-post-cancel-edit" style="display:none;">Cancel</button>
+                    </div>
+                </form>
+            </section>
+        </div>
+
         <div id="tab-analytics" class="tab-content">
             <section class="card">
                 <div class="analytics-head">
@@ -499,6 +573,7 @@
 
 	        let booted = false;
 	        let projectsById = new Map();
+        let blogPostsById = new Map();
         let analyticsLoading = false;
         let analyticsLoaded = false;
 
@@ -610,6 +685,9 @@
             if (tabId === 'tab-analytics') {
                 loadAnalytics();
                 loadCmsPublishLog();
+            }
+            if (tabId === 'tab-blog') {
+                loadBlogPosts();
             }
         }
 
@@ -1363,6 +1441,34 @@
             return publicUrl;
         }
 
+        function resolveAdminPreviewUrl(rawUrl) {
+            const value = String(rawUrl || '').trim();
+            if (!value) return '';
+            if (/^(https?:|data:|blob:)/i.test(value) || value.startsWith('/')) return value;
+
+            const cleaned = value.replace(/^\.\//, '').replace(/^(?:\.\.\/)+/, '');
+            const bucket = cfg && cfg.cms && cfg.cms.assetsBucket ? String(cfg.cms.assetsBucket) : '';
+            const sbUrl = cfg && cfg.url ? String(cfg.url) : '';
+            const storageBase = (bucket && sbUrl)
+                ? `${sbUrl.replace(/\/$/, '')}/storage/v1/object/public/${bucket}/`
+                : '';
+
+            if (storageBase) {
+                if (cleaned.startsWith('assets/')) {
+                    return `${storageBase}${cleaned.slice('assets/'.length)}`;
+                }
+                if (
+                    cleaned.startsWith('images/')
+                    || cleaned.startsWith('projects/')
+                    || cleaned.startsWith('blog/')
+                ) {
+                    return `${storageBase}${cleaned}`;
+                }
+            }
+
+            return `../${cleaned}`;
+        }
+
         function updateProjectPreview() {
             const wrap = document.getElementById('proj-image-preview');
             const img = document.getElementById('proj-image-preview-img');
@@ -1374,28 +1480,7 @@
                 return;
             }
             wrap.style.display = 'block';
-            let src = url;
-            if (!/^(https?:|data:|blob:)/i.test(src) && !src.startsWith('/')) {
-                const cleaned = src.replace(/^\.\//, '').replace(/^(?:\.\.\/)+/, '');
-                const bucket = cfg && cfg.cms && cfg.cms.assetsBucket ? String(cfg.cms.assetsBucket) : '';
-                const sbUrl = cfg && cfg.url ? String(cfg.url) : '';
-                const storageBase = (bucket && sbUrl)
-                    ? `${sbUrl.replace(/\/$/, '')}/storage/v1/object/public/${bucket}/`
-                    : '';
-                if (storageBase) {
-                    if (cleaned.startsWith('assets/')) {
-                        src = `${storageBase}${cleaned.slice('assets/'.length)}`;
-                    } else if (cleaned.startsWith('images/') || cleaned.startsWith('projects/')) {
-                        src = `${storageBase}${cleaned}`;
-                    } else {
-                        src = `../${cleaned}`;
-                    }
-                } else {
-                    // Normalize relative paths like "./assets/..." to "../assets/..." for the admin UI preview.
-                    src = `../${cleaned}`;
-                }
-            }
-            img.src = src;
+            img.src = resolveAdminPreviewUrl(url);
         }
 
         function setProjectFormMode(mode, project) {
@@ -1558,11 +1643,297 @@
             }
         });
 
-	        // ==========================================
-	        // 6) BLOG
-	        // ==========================================
-	        // Blog publishing is code-based (each post is its own HTML file under /pages/blog/).
-	        // If you want DB-driven posts again, re-introduce a blog table + UI here.
+        // ==========================================
+        // 6) BLOG
+        // ==========================================
+        function formatAdminDateTime(value) {
+            const raw = String(value || '').trim();
+            if (!raw) return '';
+            const d = new Date(raw);
+            if (Number.isNaN(d.getTime())) return '';
+            return d.toLocaleString();
+        }
+
+        function toDatetimeLocalValue(value) {
+            const raw = String(value || '').trim();
+            if (!raw) return '';
+            const d = new Date(raw);
+            if (Number.isNaN(d.getTime())) return '';
+            const pad = (n) => String(n).padStart(2, '0');
+            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        }
+
+        function toIsoFromDatetimeLocal(value) {
+            const raw = String(value || '').trim();
+            if (!raw) return null;
+            const d = new Date(raw);
+            if (Number.isNaN(d.getTime())) return null;
+            return d.toISOString();
+        }
+
+        function updateBlogPostCoverPreview() {
+            const wrap = document.getElementById('blog-post-cover-preview');
+            const img = document.getElementById('blog-post-cover-preview-img');
+            const url = String(document.getElementById('blog-post-cover-url').value || '').trim();
+            if (!wrap || !img) return;
+            if (!url) {
+                wrap.style.display = 'none';
+                img.removeAttribute('src');
+                return;
+            }
+            wrap.style.display = 'block';
+            img.src = resolveAdminPreviewUrl(url);
+        }
+
+        function setBlogPostFormMode(mode, post) {
+            const form = document.getElementById('blog-post-form');
+            const idEl = document.getElementById('blog-post-id');
+            const titleEl = document.getElementById('blog-post-title');
+            const slugEl = document.getElementById('blog-post-slug');
+            const excerptEl = document.getElementById('blog-post-excerpt');
+            const bodyEl = document.getElementById('blog-post-body');
+            const coverEl = document.getElementById('blog-post-cover-url');
+            const publishedEl = document.getElementById('blog-post-published');
+            const publishedAtEl = document.getElementById('blog-post-published-at');
+            const heading = document.getElementById('blog-post-form-title');
+            const submitBtn = document.getElementById('blog-post-submit-btn');
+            const cancelBtn = document.getElementById('blog-post-cancel-edit');
+            const coverFileEl = document.getElementById('blog-cover-file');
+
+            if (!form || !idEl || !titleEl || !slugEl || !excerptEl || !bodyEl || !coverEl || !publishedEl || !publishedAtEl) return;
+
+            if (mode === 'edit' && post) {
+                idEl.value = String(post.id || '');
+                titleEl.value = String(post.title || '');
+                slugEl.value = String(post.slug || '');
+                slugEl.dataset.touched = '1';
+                excerptEl.value = String(post.excerpt || '');
+                bodyEl.value = String(post.body || '');
+                coverEl.value = String(post.cover_image_url || '');
+                publishedEl.value = String(Boolean(post.is_published));
+                publishedAtEl.value = toDatetimeLocalValue(post.published_at);
+                if (heading) heading.textContent = 'Edit blog post';
+                if (submitBtn) submitBtn.textContent = 'Save post';
+                if (cancelBtn) cancelBtn.style.display = '';
+            } else {
+                form.reset();
+                idEl.value = '';
+                slugEl.dataset.touched = '0';
+                publishedEl.value = 'false';
+                publishedAtEl.value = '';
+                if (heading) heading.textContent = 'Create blog post';
+                if (submitBtn) submitBtn.textContent = 'Create post';
+                if (cancelBtn) cancelBtn.style.display = 'none';
+            }
+
+            if (coverFileEl) coverFileEl.value = '';
+            updateBlogPostCoverPreview();
+        }
+
+        window.editBlogPost = (id) => {
+            const idNum = Number(id);
+            const post = blogPostsById.get(idNum);
+            if (!post) return;
+            setBlogPostFormMode('edit', post);
+            openTab('tab-blog');
+        };
+
+        window.deleteBlogPost = async (id) => {
+            if (!(await requireAdmin())) return;
+            const idNum = Number(id);
+            if (!Number.isFinite(idNum) || idNum <= 0) return;
+            if (!confirm('Delete this blog post?')) return;
+            try {
+                const { error } = await sb.from('blog_posts').delete().eq('id', idNum);
+                if (error) throw error;
+                await loadBlogPosts();
+                alert('Post deleted.');
+            } catch (err) {
+                alert('Error: ' + (err && err.message ? err.message : String(err)));
+            }
+        };
+
+        async function loadBlogPosts() {
+            const list = document.getElementById('blog-posts-list');
+            if (!list) return;
+            list.innerHTML = 'Loading...';
+            try {
+                const { data, error } = await sb
+                    .from('blog_posts')
+                    .select('id,slug,title,excerpt,body,is_published,published_at,updated_at,created_at,cover_image_url')
+                    .order('updated_at', { ascending: false })
+                    .order('id', { ascending: false });
+                if (error) {
+                    console.error('Supabase loadBlogPosts error:', error);
+                    list.innerHTML = renderLoadError('blog posts', error);
+                    return;
+                }
+
+                blogPostsById = new Map();
+                list.innerHTML = '';
+
+                if (!data || data.length === 0) {
+                    list.innerHTML = '<li class="item-row"><div>No blog posts yet.</div></li>';
+                    setBlogPostFormMode('add');
+                    return;
+                }
+
+                data.forEach((row) => {
+                    blogPostsById.set(row.id, row);
+                    const status = row.is_published ? 'published' : 'draft';
+                    const when = formatAdminDateTime(row.published_at || row.updated_at || row.created_at);
+                    const slug = String(row.slug || '').trim();
+                    const href = slug ? `../pages/blog-post.html?slug=${encodeURIComponent(slug)}` : '../pages/blog.html';
+                    const snippet = String(row.excerpt || row.body || '').trim().replace(/\s+/g, ' ').slice(0, 120);
+
+                    list.innerHTML += `
+                    <li class="item-row">
+                        <div>
+                            <b>${escapeHtml(row.title || 'Untitled post')}</b><br>
+                            <small>/${escapeHtml(slug || 'no-slug')} · ${escapeHtml(status)}${when ? ` · ${escapeHtml(when)}` : ''}</small>
+                            ${snippet ? `<br><small>${escapeHtml(snippet)}${snippet.length >= 120 ? '...' : ''}</small>` : ''}
+                        </div>
+                        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end;">
+                            <a class="btn-secondary" href="${escapeHtml(href)}" target="_blank" rel="noopener">View</a>
+                            <button class="btn-secondary" onclick="editBlogPost(${row.id})">Edit</button>
+                            <button class="btn-delete" onclick="deleteBlogPost(${row.id})">Delete</button>
+                        </div>
+                    </li>`;
+                });
+
+            } catch (err) {
+                console.error('Supabase loadBlogPosts exception:', err);
+                list.innerHTML = renderLoadError('blog posts', err);
+            }
+        }
+
+        document.getElementById('blog-post-cover-url').addEventListener('input', updateBlogPostCoverPreview);
+
+        document.getElementById('blog-post-cancel-edit').addEventListener('click', () => {
+            setBlogPostFormMode('add');
+        });
+
+        document.getElementById('blog-post-title').addEventListener('input', () => {
+            const idRaw = String(document.getElementById('blog-post-id').value || '').trim();
+            if (idRaw) return;
+            const slugEl = document.getElementById('blog-post-slug');
+            if (!slugEl) return;
+            if (String(slugEl.dataset.touched || '0') === '1' && String(slugEl.value || '').trim()) return;
+            slugEl.value = slugify(document.getElementById('blog-post-title').value || '');
+        });
+
+        document.getElementById('blog-post-slug').addEventListener('input', (event) => {
+            const el = event && event.target ? event.target : null;
+            if (!el) return;
+            el.dataset.touched = '1';
+            el.value = slugify(el.value || '');
+        });
+
+        document.getElementById('blog-cover-upload-btn').addEventListener('click', async () => {
+            try {
+                if (!(await requireAdmin())) return;
+                const fileInput = document.getElementById('blog-cover-file');
+                const file = (fileInput.files || [])[0];
+                if (!file) {
+                    alert('Choose an image first.');
+                    return;
+                }
+                const ext = extFromFile(file);
+                const urlEl = document.getElementById('blog-post-cover-url');
+                const current = String(urlEl.value || '').trim();
+
+                let objectPath = resolveSupabasePublicObjectPath(current);
+                if (!objectPath && current && !/^(https?:|data:|blob:)/i.test(current)) {
+                    const cleaned = current.replace(/^\.\//, '').replace(/^(?:\.\.\/)+/, '').replace(/^\/+/, '');
+                    if (cleaned.startsWith('assets/')) objectPath = cleaned.slice('assets/'.length);
+                    else if (cleaned.startsWith('images/') || cleaned.startsWith('blog/')) objectPath = cleaned;
+                }
+
+                if (!objectPath) {
+                    const slugSeed = String(document.getElementById('blog-post-slug').value || document.getElementById('blog-post-title').value || 'post');
+                    objectPath = `blog/${slugify(slugSeed)}/cover-${Date.now()}.${ext}`;
+                } else if (/\.[a-z0-9]+$/i.test(objectPath)) {
+                    objectPath = objectPath.replace(/\.[a-z0-9]+$/i, `.${ext}`);
+                } else {
+                    objectPath = `${objectPath}.${ext}`;
+                }
+
+                const publicUrl = await uploadViaEdgeFunction({ file, objectPath });
+                urlEl.value = withAssetVersion(publicUrl);
+                updateBlogPostCoverPreview();
+                alert('Cover uploaded.');
+            } catch (err) {
+                alert('Upload failed: ' + (err && err.message ? err.message : String(err)));
+            }
+        });
+
+        document.getElementById('blog-post-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!(await requireAdmin())) return;
+
+            const idRaw = String(document.getElementById('blog-post-id').value || '').trim();
+            const title = String(document.getElementById('blog-post-title').value || '').trim();
+            const slug = slugify(document.getElementById('blog-post-slug').value || title);
+            const isPublished = String(document.getElementById('blog-post-published').value || 'false') === 'true';
+            let publishedAt = toIsoFromDatetimeLocal(document.getElementById('blog-post-published-at').value || '');
+
+            if (!title) {
+                alert('Title is required.');
+                return;
+            }
+            if (!slug) {
+                alert('Slug is required.');
+                return;
+            }
+            if (isPublished && !publishedAt) {
+                publishedAt = new Date().toISOString();
+            }
+            if (!isPublished) {
+                publishedAt = null;
+            }
+
+            const payload = {
+                title,
+                slug,
+                excerpt: String(document.getElementById('blog-post-excerpt').value || '').trim() || null,
+                body: String(document.getElementById('blog-post-body').value || '').trim() || null,
+                cover_image_url: String(document.getElementById('blog-post-cover-url').value || '').trim() || null,
+                is_published: isPublished,
+                published_at: publishedAt
+            };
+
+            try {
+                let focusId = null;
+                if (idRaw) {
+                    const idNum = Number(idRaw);
+                    const { error } = await sb.from('blog_posts').update(payload).eq('id', idNum);
+                    if (error) throw error;
+                    focusId = idNum;
+                    alert('Post updated.');
+                } else {
+                    const { data, error } = await sb
+                        .from('blog_posts')
+                        .insert([payload])
+                        .select('id')
+                        .single();
+                    if (error) throw error;
+                    focusId = data && data.id ? Number(data.id) : null;
+                    alert('Post created.');
+                }
+
+                await loadBlogPosts();
+                if (focusId && blogPostsById.has(focusId)) {
+                    const post = blogPostsById.get(focusId);
+                    setBlogPostFormMode('edit', post);
+                } else {
+                    setBlogPostFormMode('add');
+                }
+            } catch (err) {
+                alert('Error: ' + (err && err.message ? err.message : String(err)));
+            }
+        });
+
+        setBlogPostFormMode('add');
 
 	        // ==========================================
 	        // 7) CMS PUBLISHING (HTML SNAPSHOTS)
@@ -1586,6 +1957,7 @@
 	                'index.html',
 	                'pages/about.html',
 	                'pages/blog.html',
+	                'pages/blog-post.html',
 	                'pages/blog/first-post.html',
 	                'pages/projects.html',
 	                'pages/projects/fleet-maintenance-analytics.html',
@@ -1662,6 +2034,7 @@
 		            loadCredentials();
 		            loadSkills();
 		            loadProjects();
+                loadBlogPosts();
 		        }
 
         const analyticsRefreshBtn = document.getElementById('analytics-refresh-btn');
