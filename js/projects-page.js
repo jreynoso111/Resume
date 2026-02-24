@@ -16,12 +16,6 @@
 	    if (url.startsWith("/")) return url;
 	    const cleaned = url.replace(/^\.\//, "").replace(/^(?:\.\.\/)+/, "");
 
-      // Treat repo-hosted assets as local even when Supabase Storage is configured.
-      // This avoids rewriting paths like `assets/images/projects/...` into Storage URLs.
-      if (/^assets\/images\//i.test(cleaned)) {
-        return `${rootPrefix || ""}${cleaned}`;
-      }
-
 	    const cfg = window.__SUPABASE_CONFIG__ || {};
 	    const bucket = cfg && cfg.cms && cfg.cms.assetsBucket ? String(cfg.cms.assetsBucket) : "";
 	    const sbUrl = cfg && cfg.url ? String(cfg.url) : "";
@@ -39,6 +33,35 @@
 	    }
 	    return `${rootPrefix || ""}${cleaned}`;
 	  }
+
+  function localAssetUrl(raw, rootPrefix) {
+    const url = String(raw || "").trim();
+    if (!url) return "";
+    if (/^(https?:|data:|blob:)/i.test(url)) return "";
+    if (url.startsWith("/")) return "";
+    const cleaned = url.replace(/^\.\//, "").replace(/^(?:\.\.\/)+/, "");
+    return `${rootPrefix || ""}${cleaned}`;
+  }
+
+  function armImageFallbacks(scope) {
+    const root = scope instanceof HTMLElement ? scope : document;
+    const images = Array.from(root.querySelectorAll("img[data-fallback-src]"));
+    images.forEach((img) => {
+      if (!(img instanceof HTMLImageElement)) return;
+      const fallback = String(img.getAttribute("data-fallback-src") || "").trim();
+      if (!fallback) return;
+      img.addEventListener(
+        "error",
+        () => {
+          if (img.dataset.fallbackApplied === "1") return;
+          if (img.src === fallback) return;
+          img.dataset.fallbackApplied = "1";
+          img.src = fallback;
+        },
+        { once: true }
+      );
+    });
+  }
 
   function hrefToSlug(href) {
       const raw = String(href || "").trim();
@@ -128,10 +151,15 @@
           : "";
         const baseImgSrc = normalizeAssetUrl(p.image_url, rootPrefix) || fallbackPreview;
         const imgSrc = withCacheVersion(baseImgSrc, projectImageVersion(p));
+        const localFallbackBase = localAssetUrl(p.image_url, rootPrefix) || fallbackPreview;
+        const fallbackImgSrc = withCacheVersion(localFallbackBase, projectImageVersion(p));
+        const fallbackAttr = fallbackImgSrc && fallbackImgSrc !== imgSrc
+          ? ` data-fallback-src="${escapeHtml(fallbackImgSrc)}"`
+          : "";
         const imgAlt = escapeHtml(title);
         const descHtml = desc ? `<p class="project-desc">${escapeHtml(desc)}</p>` : "";
         const imgHtml = imgSrc
-          ? `<img src="${escapeHtml(imgSrc)}" alt="${imgAlt}" loading="lazy">`
+          ? `<img src="${escapeHtml(imgSrc)}"${fallbackAttr} alt="${imgAlt}" loading="lazy">`
           : "";
 
         return `
@@ -148,8 +176,13 @@
       return `${note}${cards}`;
     }
 
+    function setGridHtml(html) {
+      grid.innerHTML = html;
+      armImageFallbacks(grid);
+    }
+
     if (!cfg.url || !cfg.anonKey || !window.supabase) {
-      grid.innerHTML = renderCards(LOCAL_FALLBACK_PROJECTS, "Showing local project previews (Supabase not configured).");
+      setGridHtml(renderCards(LOCAL_FALLBACK_PROJECTS, "Showing local project previews (Supabase not configured)."));
       return;
     }
 
@@ -162,19 +195,19 @@
       .order("id", { ascending: true });
 
     if (error) {
-      grid.innerHTML = renderCards(
+      setGridHtml(renderCards(
         LOCAL_FALLBACK_PROJECTS,
         `Error loading projects from Supabase. Showing local previews instead. (${escapeHtml(error.message || String(error))})`
-      );
+      ));
       return;
     }
 
     if (!data || data.length === 0) {
-      grid.innerHTML = renderCards(LOCAL_FALLBACK_PROJECTS, "No projects returned from Supabase. Showing local previews instead.");
+      setGridHtml(renderCards(LOCAL_FALLBACK_PROJECTS, "No projects returned from Supabase. Showing local previews instead."));
       return;
     }
 
-    grid.innerHTML = renderCards(data, "");
+    setGridHtml(renderCards(data, ""));
   }
 
   document.addEventListener("DOMContentLoaded", () => {

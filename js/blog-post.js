@@ -16,10 +16,6 @@
     if (url.startsWith("/")) return url;
     const cleaned = url.replace(/^\.\//, "").replace(/^(?:\.\.\/)+/, "");
 
-    if (/^assets\/images\//i.test(cleaned)) {
-      return `${rootPrefix || ""}${cleaned}`;
-    }
-
     const cfg = window.__SUPABASE_CONFIG__ || {};
     const bucket = cfg && cfg.cms && cfg.cms.assetsBucket ? String(cfg.cms.assetsBucket) : "";
     const sbUrl = cfg && cfg.url ? String(cfg.url) : "";
@@ -38,6 +34,35 @@
     }
 
     return `${rootPrefix || ""}${cleaned}`;
+  }
+
+  function localAssetUrl(raw, rootPrefix) {
+    const url = String(raw || "").trim();
+    if (!url) return "";
+    if (/^(https?:|data:|blob:)/i.test(url)) return "";
+    if (url.startsWith("/")) return "";
+    const cleaned = url.replace(/^\.\//, "").replace(/^(?:\.\.\/)+/, "");
+    return `${rootPrefix || ""}${cleaned}`;
+  }
+
+  function armImageFallbacks(scope) {
+    const root = scope instanceof HTMLElement ? scope : document;
+    const images = Array.from(root.querySelectorAll("img[data-fallback-src]"));
+    images.forEach((img) => {
+      if (!(img instanceof HTMLImageElement)) return;
+      const fallback = String(img.getAttribute("data-fallback-src") || "").trim();
+      if (!fallback) return;
+      img.addEventListener(
+        "error",
+        () => {
+          if (img.dataset.fallbackApplied === "1") return;
+          if (img.src === fallback) return;
+          img.dataset.fallbackApplied = "1";
+          img.src = fallback;
+        },
+        { once: true }
+      );
+    });
   }
 
   function formatDateLabel(value) {
@@ -85,12 +110,18 @@
         if (imgMatch) {
           if (imageCount >= 2) return "";
           const alt = String(imgMatch[1] || "").trim() || "Article image";
-          const src = normalizeAssetUrl(String(imgMatch[2] || "").trim(), rootPrefix);
+          const rawSrc = String(imgMatch[2] || "").trim();
+          const src = normalizeAssetUrl(rawSrc, rootPrefix);
+          const localFallback = localAssetUrl(rawSrc, rootPrefix);
+          const fallbackAttr =
+            localFallback && localFallback !== src
+              ? ` data-fallback-src="${escapeHtml(localFallback)}"`
+              : "";
           if (!src) return "";
           imageCount += 1;
           return `
             <figure class="blog-inline-image">
-              <img src="${escapeHtml(src)}" alt="${escapeHtml(alt)}" loading="lazy">
+              <img src="${escapeHtml(src)}"${fallbackAttr} alt="${escapeHtml(alt)}" loading="lazy">
             </figure>
           `;
         }
@@ -178,11 +209,17 @@
       const articleBody = renderArticleBody(post.body, rootPrefix);
       const baseCoverSrc = normalizeAssetUrl(post.cover_image_url, rootPrefix);
       const coverSrc = withCacheVersion(baseCoverSrc, postImageVersion(post));
+      const coverFallbackBase = localAssetUrl(post.cover_image_url, rootPrefix);
+      const coverFallback = withCacheVersion(coverFallbackBase, postImageVersion(post));
+      const coverFallbackAttr =
+        coverFallback && coverFallback !== coverSrc
+          ? ` data-fallback-src="${escapeHtml(coverFallback)}"`
+          : "";
       const coverAlt = title ? `Cover image for ${title}` : "Post cover image";
       const mediaSlot = coverSrc
         ? `
           <figure class="blog-post-media-slot">
-            <img src="${escapeHtml(coverSrc)}" alt="${escapeHtml(coverAlt)}" loading="eager">
+            <img src="${escapeHtml(coverSrc)}"${coverFallbackAttr} alt="${escapeHtml(coverAlt)}" loading="eager">
           </figure>
         `
         : `
@@ -215,6 +252,7 @@
           </div>
         </article>
       `;
+      armImageFallbacks(root);
 
       try {
         document.title = `${title} | Blog`;

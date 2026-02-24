@@ -66,7 +66,8 @@
 	    lastLocalChangeReason: '',
 	    localChangeVersion: 0,
 	    cmsHydrated: false,
-	    projectsGridSyncSignature: ''
+	    projectsGridSyncSignature: '',
+	    blogCoverSyncSignature: ''
 	  };
 
   // Marker for smoke tests / footer loader. If this isn't set after the script loads,
@@ -952,12 +953,14 @@
 	      const STYLES_V = 38;
 	      const HEADER_V = 12;
 	      const FOOTER_V = 20;
-	      const EDITOR_V = 48;
+	      const EDITOR_V = 51;
 	      const SHELL_V = 6;
 	      const PROJECT_LIGHTBOX_V = 3;
 	      const PROJECT_CAROUSEL_V = 9;
 	      const COURSES_CERTS_V = 16;
-	      const PROJECTS_V = 7;
+	      const PROJECTS_V = 9;
+	      const BLOG_PAGE_V = 7;
+	      const BLOG_POST_V = 9;
 	      const PROJECT_DETAIL_LAYOUT_V = 10;
       const footerScript = `<script src="${rootPrefix}js/footer.js?v=${FOOTER_V}"></script>`;
       const headerScript = `<script src="${rootPrefix}js/header.js?v=${HEADER_V}"></script>`;
@@ -995,6 +998,8 @@
 	      out = out.replace(/(js\/project-screenshots-carousel\.js\?v=)\d+/gi, `$1${PROJECT_CAROUSEL_V}`);
 	      out = out.replace(/(assets\/js\/courses-certifications\.js\?v=)\d+/gi, `$1${COURSES_CERTS_V}`);
 	      out = out.replace(/(js\/projects-page\.js\?v=)\d+/gi, `$1${PROJECTS_V}`);
+	      out = out.replace(/(js\/blog-page\.js\?v=)\d+/gi, `$1${BLOG_PAGE_V}`);
+	      out = out.replace(/(js\/blog-post\.js\?v=)\d+/gi, `$1${BLOG_POST_V}`);
 	      out = out.replace(/project-detail-layout\.css(?:\?v=\d+)?/gi, `project-detail-layout.css?v=${PROJECT_DETAIL_LAYOUT_V}`);
 
       // Ensure the footer host exists (some snapshots were saved without it).
@@ -2254,9 +2259,11 @@
 	          const publicUrl = await uploadFileViaSupabaseFunction(sb, cfg, fn, { bucket, path: objectPath, file });
 
 	          applyImageValue(target, kind, withAssetVersion(publicUrl));
+	          markProjectCardImageDirty(target);
+	          markBlogCoverDirty(target);
 	          requestImageControlPositionUpdate();
 	          scheduleAutosave('image-upload');
-	          notify('Image updated locally. Click "Publish" to save changes.', 'success');
+	          notify('Image uploaded. Click "Publish" to save the change on server.', 'success');
 	          return;
 	        }
 
@@ -2320,6 +2327,8 @@
     }
 
     applyImageValue(target, kind, url);
+    markProjectCardImageDirty(target);
+    markBlogCoverDirty(target);
     requestImageControlPositionUpdate();
     if (target instanceof HTMLElement) {
       delete target.dataset.assetPath;
@@ -2327,7 +2336,7 @@
 
     scheduleAutosave('image-link');
     notify(
-      'Image URL applied locally. Click "Publish" to save changes.',
+      'Image URL applied. Click "Publish" to save the change on server.',
       'success'
     );
   }
@@ -2402,11 +2411,8 @@
 
   function detectBlogSlugForTarget(target) {
     if (!(target instanceof HTMLElement)) return '';
-    const pagePath = getPreferredCurrentPagePath().replace(/^\/+/, '').toLowerCase();
-    const inBlogPostPage = pagePath === 'pages/blog-post.html' || pagePath === 'blog-post.html';
-    const inBlogListPage = pagePath === 'pages/blog.html' || pagePath === 'blog.html';
 
-    if (inBlogPostPage && target.closest('.blog-post-media-slot')) {
+    if (target.closest('.blog-post-media-slot')) {
       try {
         const params = new URLSearchParams(location.search || '');
         return normalizeBlogSlug(params.get('slug') || '');
@@ -2415,8 +2421,8 @@
       }
     }
 
-    if (inBlogListPage && target.closest('.blog-cover')) {
-      const card = target.closest('.blog-card');
+    const card = target.closest('.blog-card');
+    if ((card instanceof HTMLElement) || target.closest('.blog-cover')) {
       if (!(card instanceof HTMLElement)) return '';
       const link = card.querySelector('.blog-cover') || card.querySelector('.blog-card-title a') || card.querySelector('a[href]');
       const href = link ? link.getAttribute('href') || '' : '';
@@ -2424,6 +2430,44 @@
     }
 
     return '';
+  }
+
+  function markProjectCardImageDirty(target) {
+    if (!(target instanceof HTMLElement)) return;
+    const card = target.closest('.project-card');
+    if (!(card instanceof HTMLElement)) return;
+    card.setAttribute('data-project-image-dirty', '1');
+  }
+
+  function markBlogCoverDirty(target) {
+    if (!(target instanceof HTMLElement)) return;
+    const slug = detectBlogSlugForTarget(target);
+    if (!slug) return;
+
+    target.setAttribute('data-blog-cover-dirty', '1');
+    target.setAttribute('data-blog-cover-slug', slug);
+
+    const card = target.closest('.blog-card');
+    if (card instanceof HTMLElement) {
+      card.setAttribute('data-blog-cover-dirty', '1');
+      card.setAttribute('data-blog-cover-slug', slug);
+    }
+
+    const postSlot = target.closest('.blog-post-media-slot');
+    if (postSlot instanceof HTMLElement) {
+      postSlot.setAttribute('data-blog-cover-dirty', '1');
+      postSlot.setAttribute('data-blog-cover-slug', slug);
+    }
+  }
+
+  function isBlogListPath(pathValue) {
+    const clean = String(pathValue || '').replace(/^\/+/, '').toLowerCase();
+    return clean === 'pages/blog.html' || clean === 'blog.html' || clean.endsWith('/pages/blog.html') || clean.endsWith('/blog.html');
+  }
+
+  function isBlogPostPath(pathValue) {
+    const clean = String(pathValue || '').replace(/^\/+/, '').toLowerCase();
+    return clean === 'pages/blog-post.html' || clean === 'blog-post.html' || clean.endsWith('/pages/blog-post.html') || clean.endsWith('/blog-post.html');
   }
 
   function isProjectsIndexPath(pathValue) {
@@ -2476,6 +2520,7 @@
         image_url: imagePath || String(imageRaw || '').trim() || null,
         sort_order: (index + 1) * 10,
         is_published: true,
+        force_sync: card.getAttribute('data-project-image-dirty') === '1',
         cardEl: card
       });
     });
@@ -2504,7 +2549,8 @@
     const collected = collectProjectsGridRowsForSync();
     if (!collected || !Array.isArray(collected.rows) || collected.rows.length === 0) return;
     if (!collected.signature) return;
-    if (state.projectsGridSyncSignature === collected.signature) return;
+    const hasForcedSync = collected.rows.some((row) => row && row.force_sync === true);
+    if (state.projectsGridSyncSignature === collected.signature && !hasForcedSync) return;
 
     const { data: existing, error: existingError } = await sb.from('projects').select('id,href,is_published');
     if (existingError) throw existingError;
@@ -2530,6 +2576,9 @@
         sort_order: Number(row.sort_order || 0) || 0,
         is_published: true
       };
+      if (row && row.force_sync === true) {
+        payload.updated_at = new Date().toISOString();
+      }
 
       let targetId = Number(row.id || '');
       if (!Number.isFinite(targetId) || targetId <= 0) {
@@ -2541,7 +2590,10 @@
         const { error: updateError } = await sb.from('projects').update(payload).eq('id', targetId);
         if (updateError) throw updateError;
         touchedIds.add(targetId);
-        if (row.cardEl instanceof HTMLElement) row.cardEl.setAttribute('data-project-id', String(targetId));
+        if (row.cardEl instanceof HTMLElement) {
+          row.cardEl.setAttribute('data-project-id', String(targetId));
+          row.cardEl.removeAttribute('data-project-image-dirty');
+        }
         continue;
       }
 
@@ -2557,7 +2609,10 @@
           : NaN;
       if (Number.isFinite(insertedId) && insertedId > 0) {
         touchedIds.add(insertedId);
-        if (row.cardEl instanceof HTMLElement) row.cardEl.setAttribute('data-project-id', String(insertedId));
+        if (row.cardEl instanceof HTMLElement) {
+          row.cardEl.setAttribute('data-project-id', String(insertedId));
+          row.cardEl.removeAttribute('data-project-image-dirty');
+        }
       }
     }
 
@@ -2575,6 +2630,128 @@
     }
 
     state.projectsGridSyncSignature = collected.signature;
+  }
+
+  function collectBlogCoverRowsForSync(pathValue) {
+    const rows = [];
+    const grid = document.getElementById('blog-posts-grid');
+    const canReadList = isBlogListPath(pathValue) || (grid instanceof HTMLElement);
+    const canReadPost = isBlogPostPath(pathValue) || Boolean(document.querySelector('.blog-post-media-slot'));
+
+    if (canReadList) {
+      if (!(grid instanceof HTMLElement)) return { rows: [], signature: '' };
+      const cards = Array.from(grid.querySelectorAll('.blog-card'));
+      if (cards.length === 0 && !canReadPost) return { rows: [], signature: '' };
+
+      cards.forEach((card) => {
+        if (!(card instanceof HTMLElement)) return;
+        const coverLink = card.querySelector('a.blog-cover') || card.querySelector('.blog-card-title a') || card.querySelector('a[href]');
+        const hrefRaw = coverLink ? coverLink.getAttribute('href') || '' : '';
+        const slug = normalizeBlogSlug(card.getAttribute('data-blog-cover-slug') || extractBlogSlugFromHref(hrefRaw));
+        if (!slug) return;
+
+        const imageNode = card.querySelector('.blog-cover img') || card.querySelector('img');
+        const imageRaw = imageNode ? imageNode.getAttribute('src') || imageNode.src || '' : '';
+        const imagePath = resolveAssetPath(imageRaw);
+        const imageUrl = imagePath || String(imageRaw || '').trim() || null;
+        const forceSync = card.getAttribute('data-blog-cover-dirty') === '1'
+          || (imageNode instanceof HTMLElement && imageNode.getAttribute('data-blog-cover-dirty') === '1');
+
+        rows.push({
+          slug,
+          cover_image_url: imageUrl,
+          force_sync: forceSync,
+          cardEl: card,
+          imageEl: imageNode instanceof HTMLElement ? imageNode : null
+        });
+      });
+    }
+
+    if (rows.length === 0 && canReadPost) {
+      let slug = '';
+      try {
+        const params = new URLSearchParams(location.search || '');
+        slug = normalizeBlogSlug(params.get('slug') || '');
+      } catch (_e) {
+        slug = '';
+      }
+      if (!slug) return { rows: [], signature: '' };
+
+      const imageNode = document.querySelector('.blog-post-media-slot img');
+      if (!(imageNode instanceof HTMLImageElement)) return { rows: [], signature: '' };
+      const imageRaw = imageNode.getAttribute('src') || imageNode.src || '';
+      const imagePath = resolveAssetPath(imageRaw);
+      const imageUrl = imagePath || String(imageRaw || '').trim() || null;
+      const slot = imageNode.closest('.blog-post-media-slot');
+      const forceSync = imageNode.getAttribute('data-blog-cover-dirty') === '1'
+        || (slot instanceof HTMLElement && slot.getAttribute('data-blog-cover-dirty') === '1');
+
+      rows.push({
+        slug,
+        cover_image_url: imageUrl,
+        force_sync: forceSync,
+        cardEl: null,
+        imageEl: imageNode,
+        slotEl: slot instanceof HTMLElement ? slot : null
+      });
+    }
+
+    if (rows.length === 0) return { rows: [], signature: '' };
+
+    const signature = JSON.stringify(
+      rows.map((row) => ({
+        slug: row.slug,
+        cover_image_url: row.cover_image_url || null
+      }))
+    );
+
+    return { rows, signature };
+  }
+
+  async function syncBlogCoverRecords(sb, pathValue) {
+    const hasBlogListDom = document.getElementById('blog-posts-grid') instanceof HTMLElement;
+    const hasBlogPostDom = Boolean(document.querySelector('.blog-post-media-slot'));
+    if (!isBlogListPath(pathValue) && !isBlogPostPath(pathValue) && !hasBlogListDom && !hasBlogPostDom) return;
+    if (!sb || typeof sb.from !== 'function') return;
+
+    const collected = collectBlogCoverRowsForSync(pathValue);
+    if (!collected || !Array.isArray(collected.rows) || collected.rows.length === 0) return;
+    if (!collected.signature) return;
+    const hasForcedSync = collected.rows.some((row) => row && row.force_sync === true);
+    if (state.blogCoverSyncSignature === collected.signature && !hasForcedSync) return;
+
+    for (const row of collected.rows) {
+      const slug = normalizeBlogSlug(row && row.slug ? row.slug : '');
+      if (!slug) continue;
+
+      const payload = {
+        cover_image_url: row.cover_image_url || null
+      };
+      if (row && row.force_sync === true) {
+        payload.updated_at = new Date().toISOString();
+      }
+
+      const { error } = await sb
+        .from('blog_posts')
+        .update(payload)
+        .eq('slug', slug);
+      if (error) throw error;
+
+      if (row.cardEl instanceof HTMLElement) {
+        row.cardEl.removeAttribute('data-blog-cover-dirty');
+        row.cardEl.removeAttribute('data-blog-cover-slug');
+      }
+      if (row.imageEl instanceof HTMLElement) {
+        row.imageEl.removeAttribute('data-blog-cover-dirty');
+        row.imageEl.removeAttribute('data-blog-cover-slug');
+      }
+      if (row.slotEl instanceof HTMLElement) {
+        row.slotEl.removeAttribute('data-blog-cover-dirty');
+        row.slotEl.removeAttribute('data-blog-cover-slug');
+      }
+    }
+
+    state.blogCoverSyncSignature = collected.signature;
   }
 
   async function syncProjectPreviewImageRecord(target, kind, nextValue) {
@@ -3237,6 +3414,13 @@
         const msg = syncError && syncError.message ? syncError.message : String(syncError);
         console.warn('projects sync warning:', syncError);
         if (!silent) notify(`Projects sync warning: ${msg}`, 'warn');
+      }
+      try {
+        await syncBlogCoverRecords(sb, path);
+      } catch (syncError) {
+        const msg = syncError && syncError.message ? syncError.message : String(syncError);
+        console.warn('blog cover sync warning:', syncError);
+        if (!silent) notify(`Blog cover sync warning: ${msg}`, 'warn');
       }
       const { error } = await sb.from(table).upsert({ path, html }, { onConflict: 'path' });
       if (error) throw error;
