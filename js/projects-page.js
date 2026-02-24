@@ -40,13 +40,38 @@
 	    return `${rootPrefix || ""}${cleaned}`;
 	  }
 
-    function hrefToSlug(href) {
+  function hrefToSlug(href) {
       const raw = String(href || "").trim();
       if (!raw) return "";
       const noHash = raw.split("#")[0];
       const noQuery = noHash.split("?")[0];
       const last = noQuery.split("/").filter(Boolean).pop() || "";
       return last.replace(/\.html$/i, "");
+    }
+
+    function withCacheVersion(url, seed) {
+      const raw = String(url || "").trim();
+      if (!raw) return "";
+      const v = String(seed || "").trim();
+      if (!v) return raw;
+      const [pathAndQuery, hash = ""] = raw.split("#");
+      const [path, query = ""] = pathAndQuery.split("?");
+      const params = query
+        ? query
+            .split("&")
+            .filter(Boolean)
+            .filter((part) => part.split("=", 1)[0] !== "v")
+        : [];
+      params.push(`v=${encodeURIComponent(v)}`);
+      return `${path}?${params.join("&")}${hash ? `#${hash}` : ""}`;
+    }
+
+    function projectImageVersion(project) {
+      const updatedRaw = String((project && project.updated_at) || "").trim();
+      if (!updatedRaw) return "";
+      const d = new Date(updatedRaw);
+      if (Number.isNaN(d.getTime())) return "";
+      return String(d.getTime());
     }
 
   async function init() {
@@ -101,7 +126,8 @@
         const fallbackPreview = slug && LOCAL_PREVIEW_SLUGS.has(slug)
           ? `${rootPrefix || ""}assets/images/projects/previews/${slug}.jpg`
           : "";
-        const imgSrc = normalizeAssetUrl(p.image_url, rootPrefix) || fallbackPreview;
+        const baseImgSrc = normalizeAssetUrl(p.image_url, rootPrefix) || fallbackPreview;
+        const imgSrc = withCacheVersion(baseImgSrc, projectImageVersion(p));
         const imgAlt = escapeHtml(title);
         const descHtml = desc ? `<p class="project-desc">${escapeHtml(desc)}</p>` : "";
         const imgHtml = imgSrc
