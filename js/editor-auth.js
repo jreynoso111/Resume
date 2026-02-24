@@ -941,7 +941,7 @@
 	      const SHELL_V = 6;
 	      const PROJECT_LIGHTBOX_V = 3;
 	      const PROJECT_CAROUSEL_V = 9;
-	      const COURSES_CERTS_V = 11;
+	      const COURSES_CERTS_V = 12;
 	      const PROJECTS_V = 7;
 	      const PROJECT_DETAIL_LAYOUT_V = 10;
       const footerScript = `<script src="${rootPrefix}js/footer.js?v=${FOOTER_V}"></script>`;
