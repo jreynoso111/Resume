@@ -853,7 +853,7 @@
     notify('Signed out.', 'success');
   }
 
-	  async function maybeHydrateFromSupabase() {
+  async function maybeHydrateFromSupabase() {
 	    if (state.cmsHydrated) return false;
 
 	    // If we already loaded a CMS snapshot (document.write), do not re-hydrate or we'll loop.
@@ -881,8 +881,9 @@
 		    // Avoid hydrating when the page is opened directly from disk (file://).
 		    if (location.protocol === 'file:') return false;
 
-		    const path = getPreferredCurrentPagePath();
-		    if (path.startsWith('admin/')) return false;
+	    const path = getPreferredCurrentPagePath();
+	    if (path.startsWith('admin/')) return false;
+      if (isDynamicDataPagePath(path)) return false;
 
 	    const cfg = await getSupabaseConfig();
 	    if (!cfg || !cfg.cms || !cfg.cms.pagesTable) return false;
@@ -941,7 +942,7 @@
 	      const PROJECT_LIGHTBOX_V = 3;
 	      const PROJECT_CAROUSEL_V = 9;
 	      const COURSES_CERTS_V = 11;
-	      const PROJECTS_V = 6;
+	      const PROJECTS_V = 7;
 	      const PROJECT_DETAIL_LAYOUT_V = 10;
       const footerScript = `<script src="${rootPrefix}js/footer.js?v=${FOOTER_V}"></script>`;
       const headerScript = `<script src="${rootPrefix}js/header.js?v=${HEADER_V}"></script>`;
@@ -1051,6 +1052,16 @@
     document.write(patchSnapshotShell(html, resolvedPagePath));
     document.close();
     return true;
+  }
+
+  function isDynamicDataPagePath(pathValue) {
+    const path = String(pathValue || '').replace(/^\/+/, '').toLowerCase();
+    return path === 'pages/blog.html'
+      || path === 'blog.html'
+      || path === 'pages/blog-post.html'
+      || path === 'blog-post.html'
+      || path === 'pages/projects.html'
+      || path === 'projects.html';
   }
 
   function injectCSS() {
@@ -2190,6 +2201,7 @@
 
 	          applyImageValue(target, kind, withAssetVersion(publicUrl));
 	          await syncProjectPreviewImageRecord(target, kind, publicUrl);
+	          await syncBlogCoverImageRecord(target, kind, publicUrl);
 	          requestImageControlPositionUpdate();
 
 	          if (state.autosaveEnabled) {
@@ -2262,6 +2274,7 @@
 
     applyImageValue(target, kind, url);
     void syncProjectPreviewImageRecord(target, kind, url);
+    void syncBlogCoverImageRecord(target, kind, url);
     requestImageControlPositionUpdate();
     if (target instanceof HTMLElement) {
       delete target.dataset.assetPath;
@@ -2319,6 +2332,60 @@
       .split('#', 1)[0]
       .split('?', 1)[0];
     return clean;
+  }
+
+  function normalizeBlogSlug(rawSlug) {
+    return String(rawSlug || '')
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9-]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  }
+
+  function extractBlogSlugFromHref(rawHref) {
+    const href = String(rawHref || '').trim();
+    if (!href) return '';
+    try {
+      const parsed = new URL(href, location.href);
+      const slug = normalizeBlogSlug(parsed.searchParams.get('slug') || '');
+      if (slug) return slug;
+    } catch (_e) {
+      // Best-effort fallback below.
+    }
+
+    const match = href.match(/[?&]slug=([^&#]+)/i);
+    if (!match) return '';
+    try {
+      return normalizeBlogSlug(decodeURIComponent(match[1] || ''));
+    } catch (_e) {
+      return normalizeBlogSlug(match[1] || '');
+    }
+  }
+
+  function detectBlogSlugForTarget(target) {
+    if (!(target instanceof HTMLElement)) return '';
+    const pagePath = getPreferredCurrentPagePath().replace(/^\/+/, '').toLowerCase();
+    const inBlogPostPage = pagePath === 'pages/blog-post.html' || pagePath === 'blog-post.html';
+    const inBlogListPage = pagePath === 'pages/blog.html' || pagePath === 'blog.html';
+
+    if (inBlogPostPage && target.closest('.blog-post-media-slot')) {
+      try {
+        const params = new URLSearchParams(location.search || '');
+        return normalizeBlogSlug(params.get('slug') || '');
+      } catch (_e) {
+        return '';
+      }
+    }
+
+    if (inBlogListPage && target.closest('.blog-cover')) {
+      const card = target.closest('.blog-card');
+      if (!(card instanceof HTMLElement)) return '';
+      const link = card.querySelector('.blog-cover') || card.querySelector('.blog-card-title a') || card.querySelector('a[href]');
+      const href = link ? link.getAttribute('href') || '' : '';
+      return extractBlogSlugFromHref(href);
+    }
+
+    return '';
   }
 
   function isProjectsIndexPath(pathValue) {
@@ -2544,6 +2611,39 @@
     }
 
     notify('Project preview image saved to server.', 'success');
+  }
+
+  async function syncBlogCoverImageRecord(target, kind, nextValue) {
+    if (!(target instanceof HTMLElement)) return;
+    if (kind !== 'img') return;
+
+    const slug = detectBlogSlugForTarget(target);
+    if (!slug) return;
+
+    const cfg = await getSupabaseConfig();
+    const sb = await getSupabaseClient();
+    if (!cfg || !cfg.url || !cfg.anonKey || !sb) return;
+
+    const imageRef = String(nextValue || target.getAttribute('src') || target.src || '').trim();
+    const imagePath = resolveAssetPath(imageRef);
+    const imageUrlForDb = imagePath || imageRef;
+    if (!imageUrlForDb) return;
+
+    const { data, error } = await sb
+      .from('blog_posts')
+      .update({ cover_image_url: imageUrlForDb })
+      .eq('slug', slug)
+      .select('id')
+      .limit(1);
+
+    if (error) {
+      notify(`Blog cover sync failed: ${error.message || String(error)}`, 'warn');
+      return;
+    }
+
+    if (Array.isArray(data) && data.length > 0) {
+      notify('Blog cover image saved to server.', 'success');
+    }
   }
 
   function withAssetVersion(rawUrl) {

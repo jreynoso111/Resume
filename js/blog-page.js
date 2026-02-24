@@ -59,6 +59,31 @@
     return `blog-post.html?slug=${encodeURIComponent(s)}`;
   }
 
+  function withCacheVersion(url, seed) {
+    const raw = String(url || "").trim();
+    if (!raw) return "";
+    const v = String(seed || "").trim();
+    if (!v) return raw;
+    const [pathAndQuery, hash = ""] = raw.split("#");
+    const [path, query = ""] = pathAndQuery.split("?");
+    const params = query
+      ? query
+          .split("&")
+          .filter(Boolean)
+          .filter((part) => part.split("=", 1)[0] !== "v")
+      : [];
+    params.push(`v=${encodeURIComponent(v)}`);
+    return `${path}?${params.join("&")}${hash ? `#${hash}` : ""}`;
+  }
+
+  function postImageVersion(post) {
+    const updatedRaw = String((post && post.updated_at) || "").trim();
+    if (!updatedRaw) return "";
+    const d = new Date(updatedRaw);
+    if (Number.isNaN(d.getTime())) return "";
+    return String(d.getTime());
+  }
+
   async function init() {
     const grid = document.getElementById("blog-posts-grid");
     if (!grid) return;
@@ -90,7 +115,8 @@
           const slug = String(p.slug || "").trim();
           const title = String(p.title || "").trim() || "Untitled post";
           const excerpt = String(p.excerpt || "").trim();
-          const cover = normalizeAssetUrl(p.cover_image_url, rootPrefix) || `${rootPrefix}assets/images/blog/cover-generic.png`;
+          const baseCover = normalizeAssetUrl(p.cover_image_url, rootPrefix) || `${rootPrefix}assets/images/blog/cover-generic.png`;
+          const cover = withCacheVersion(baseCover, postImageVersion(p));
           const date = formatDateLabel(p.published_at || p.updated_at || p.created_at);
           const meta = date ? `<div class="blog-card-meta">${escapeHtml(date)}</div>` : "";
           const excerptHtml = excerpt ? `<p class="blog-card-excerpt">${escapeHtml(excerpt)}</p>` : "";

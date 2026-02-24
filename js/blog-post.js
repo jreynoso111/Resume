@@ -118,6 +118,31 @@
     }
   }
 
+  function withCacheVersion(url, seed) {
+    const raw = String(url || "").trim();
+    if (!raw) return "";
+    const v = String(seed || "").trim();
+    if (!v) return raw;
+    const [pathAndQuery, hash = ""] = raw.split("#");
+    const [path, query = ""] = pathAndQuery.split("?");
+    const params = query
+      ? query
+          .split("&")
+          .filter(Boolean)
+          .filter((part) => part.split("=", 1)[0] !== "v")
+      : [];
+    params.push(`v=${encodeURIComponent(v)}`);
+    return `${path}?${params.join("&")}${hash ? `#${hash}` : ""}`;
+  }
+
+  function postImageVersion(post) {
+    const updatedRaw = String((post && post.updated_at) || "").trim();
+    if (!updatedRaw) return "";
+    const d = new Date(updatedRaw);
+    if (Number.isNaN(d.getTime())) return "";
+    return String(d.getTime());
+  }
+
   async function init() {
     const root = document.getElementById("blog-post-root");
     if (!root) return;
@@ -151,7 +176,8 @@
       const date = formatDateLabel(post.published_at || post.updated_at || post.created_at);
       const readingMinutes = estimateReadingMinutes(post);
       const articleBody = renderArticleBody(post.body, rootPrefix);
-      const coverSrc = normalizeAssetUrl(post.cover_image_url, rootPrefix);
+      const baseCoverSrc = normalizeAssetUrl(post.cover_image_url, rootPrefix);
+      const coverSrc = withCacheVersion(baseCoverSrc, postImageVersion(post));
       const coverAlt = title ? `Cover image for ${title}` : "Post cover image";
       const mediaSlot = coverSrc
         ? `

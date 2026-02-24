@@ -1876,9 +1876,25 @@
                 }
 
                 const publicUrl = await uploadViaEdgeFunction({ file, objectPath });
-                urlEl.value = withAssetVersion(publicUrl);
+                const versionedUrl = withAssetVersion(publicUrl);
+                urlEl.value = versionedUrl;
                 updateBlogPostCoverPreview();
-                alert('Cover uploaded.');
+
+                // In edit mode, save immediately so refresh keeps the replacement.
+                const idRaw = String(document.getElementById('blog-post-id').value || '').trim();
+                if (idRaw) {
+                    const idNum = Number(idRaw);
+                    const { error } = await sb.from('blog_posts').update({ cover_image_url: versionedUrl }).eq('id', idNum);
+                    if (error) throw error;
+                    if (blogPostsById.has(idNum)) {
+                        const prev = blogPostsById.get(idNum) || {};
+                        blogPostsById.set(idNum, { ...prev, cover_image_url: versionedUrl });
+                    }
+                    await loadBlogPosts();
+                    alert('Cover uploaded and saved.');
+                } else {
+                    alert('Cover uploaded. Click "Create post" to save the post.');
+                }
             } catch (err) {
                 alert('Upload failed: ' + (err && err.message ? err.message : String(err)));
             }
