@@ -1070,7 +1070,7 @@
 	      const STYLES_V = 38;
 	      const HEADER_V = 12;
 	      const FOOTER_V = 22;
-	      const EDITOR_V = 53;
+	      const EDITOR_V = 55;
 	      const SHELL_V = 6;
 	      const PROJECT_LIGHTBOX_V = 3;
 	      const PROJECT_CAROUSEL_V = 9;
@@ -1098,6 +1098,8 @@
 
 	      // Repair a previously-published broken script tag (`src="js/"`, `src="../js/"`, etc.).
 	      out = out.replace(/<script\b[^>]*\bsrc=(['"])(?:\.\.\/)*js\/\1[^>]*>\s*<\/script>/gi, '');
+	      // Strip legacy auth module snapshots that conflict with editor-auth session handling.
+	      out = out.replace(/<script\b[^>]*\bsrc=(['"])[^'"]*assets\/js\/auth\.js(?:\?[^'"]*)?\1[^>]*>\s*<\/script>/gi, '');
 
 	      // Strip dynamic background scripts that should remain code-driven.
 	      // These can get frozen into CMS snapshots via DOM cloning and cause double-init.
@@ -2303,12 +2305,6 @@
   }
 
 		  async function handleImageUpload(target, kind, triggerBtn) {
-		    const canUpload = await ensureAdminWriteSession({ interactive: true });
-		    if (!canUpload) {
-		      notify('Sign in to upload images.', 'warn');
-		      return;
-		    }
-
 	    const input = document.createElement('input');
 	    input.type = 'file';
 	    input.accept = 'image/*';
@@ -2333,6 +2329,12 @@
 	      const file = (input.files || [])[0];
 	      input.remove();
 	      if (!file) return;
+
+		      const canUpload = await ensureAdminWriteSession({ interactive: true });
+		      if (!canUpload) {
+		        notify('Sign in to upload images.', 'warn');
+		        return;
+		      }
 
 	      // Snapshot current value so we can revert if upload fails.
 	      const previousRef = getCurrentImageReference(target, kind) || '';
@@ -2443,7 +2445,15 @@
 	    };
 	    window.addEventListener('focus', onWindowFocus, true);
 
-	    input.click();
+	    try {
+	      if (typeof input.showPicker === 'function') {
+	        input.showPicker();
+	      } else {
+	        input.click();
+	      }
+	    } catch (_e) {
+	      input.click();
+	    }
 	  }
 
   function fileToDataUrl(file) {
@@ -3640,6 +3650,7 @@
 		      const cleaned = src.split('?', 1)[0].split('#', 1)[0].replace(/\\\\/g, '/');
 		      if (cleaned.endsWith('js/particles.js')) return el.remove();
 		      if (cleaned.endsWith('js/background-animation.js')) return el.remove();
+		      if (cleaned.endsWith('assets/js/auth.js')) return el.remove();
 		    });
 
 	    // Avoid freezing dynamic/global UI into the CMS snapshot.
