@@ -1603,9 +1603,26 @@
 	                }
 
 	                const publicUrl = await uploadViaEdgeFunction({ file, objectPath });
-	                document.getElementById('proj-image-url').value = withAssetVersion(publicUrl);
+	                const versionedUrl = withAssetVersion(publicUrl);
+	                document.getElementById('proj-image-url').value = versionedUrl;
 	                updateProjectPreview();
-	                alert('Image uploaded.');
+
+	                // In edit mode, persist immediately so a page refresh reflects the new image
+	                // without requiring an extra "Save project" click.
+	                const idRaw = String(document.getElementById('proj-id').value || '').trim();
+	                if (idRaw) {
+	                    const id = Number(idRaw);
+	                    const { error } = await sb.from('projects').update({ image_url: versionedUrl }).eq('id', id);
+	                    if (error) throw error;
+	                    if (projectsById.has(id)) {
+	                        const prev = projectsById.get(id) || {};
+	                        projectsById.set(id, { ...prev, image_url: versionedUrl });
+	                    }
+	                    await loadProjects();
+	                    alert('Image uploaded and saved.');
+	                } else {
+	                    alert('Image uploaded. Click "Add project" to save the new card.');
+	                }
 	            } catch (err) {
 	                alert('Upload failed: ' + (err && err.message ? err.message : String(err)));
 	            }
