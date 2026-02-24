@@ -16,11 +16,6 @@
     if (url.startsWith("/")) return url;
     const cleaned = url.replace(/^\.\//, "").replace(/^(?:\.\.\/)+/, "");
 
-    // Keep repo-hosted images local even when Supabase Storage is configured.
-    if (/^assets\/images\//i.test(cleaned)) {
-      return `${rootPrefix || ""}${cleaned}`;
-    }
-
     const cfg = window.__SUPABASE_CONFIG__ || {};
     const bucket = cfg && cfg.cms && cfg.cms.assetsBucket ? String(cfg.cms.assetsBucket) : "";
     const sbUrl = cfg && cfg.url ? String(cfg.url) : "";
@@ -39,6 +34,35 @@
     }
 
     return `${rootPrefix || ""}${cleaned}`;
+  }
+
+  function localAssetUrl(raw, rootPrefix) {
+    const url = String(raw || "").trim();
+    if (!url) return "";
+    if (/^(https?:|data:|blob:)/i.test(url)) return "";
+    if (url.startsWith("/")) return "";
+    const cleaned = url.replace(/^\.\//, "").replace(/^(?:\.\.\/)+/, "");
+    return `${rootPrefix || ""}${cleaned}`;
+  }
+
+  function armImageFallbacks(scope) {
+    const root = scope instanceof HTMLElement ? scope : document;
+    const images = Array.from(root.querySelectorAll("img[data-fallback-src]"));
+    images.forEach((img) => {
+      if (!(img instanceof HTMLImageElement)) return;
+      const fallback = String(img.getAttribute("data-fallback-src") || "").trim();
+      if (!fallback) return;
+      img.addEventListener(
+        "error",
+        () => {
+          if (img.dataset.fallbackApplied === "1") return;
+          if (img.src === fallback) return;
+          img.dataset.fallbackApplied = "1";
+          img.src = fallback;
+        },
+        { once: true }
+      );
+    });
   }
 
   function formatDateLabel(value) {
@@ -117,6 +141,12 @@
           const excerpt = String(p.excerpt || "").trim();
           const baseCover = normalizeAssetUrl(p.cover_image_url, rootPrefix) || `${rootPrefix}assets/images/blog/cover-generic.png`;
           const cover = withCacheVersion(baseCover, postImageVersion(p));
+          const localFallbackBase = localAssetUrl(p.cover_image_url, rootPrefix) || `${rootPrefix}assets/images/blog/cover-generic.png`;
+          const fallbackCover = withCacheVersion(localFallbackBase, postImageVersion(p));
+          const fallbackAttr =
+            fallbackCover && fallbackCover !== cover
+              ? ` data-fallback-src="${escapeHtml(fallbackCover)}"`
+              : "";
           const date = formatDateLabel(p.published_at || p.updated_at || p.created_at);
           const meta = date ? `<div class="blog-card-meta">${escapeHtml(date)}</div>` : "";
           const excerptHtml = excerpt ? `<p class="blog-card-excerpt">${escapeHtml(excerpt)}</p>` : "";
@@ -125,7 +155,7 @@
           return `
             <article class="blog-card">
               <a class="blog-cover" href="${escapeHtml(href)}">
-                <img src="${escapeHtml(cover)}" alt="${escapeHtml(title)}" loading="lazy">
+                <img src="${escapeHtml(cover)}"${fallbackAttr} alt="${escapeHtml(title)}" loading="lazy">
               </a>
               <div class="blog-card-body">
                 ${meta}
@@ -141,8 +171,13 @@
       return `${note}${cards}`;
     }
 
+    function setGridHtml(html) {
+      grid.innerHTML = html;
+      armImageFallbacks(grid);
+    }
+
     if (!cfg.url || !cfg.anonKey || !window.supabase) {
-      grid.innerHTML = renderCards(LOCAL_FALLBACK_POSTS, "Showing local blog preview (Supabase not configured).");
+      setGridHtml(renderCards(LOCAL_FALLBACK_POSTS, "Showing local blog preview (Supabase not configured)."));
       return;
     }
 
@@ -156,20 +191,19 @@
       .order("id", { ascending: false });
 
     if (error) {
-      grid.innerHTML = renderCards(
+      setGridHtml(renderCards(
         LOCAL_FALLBACK_POSTS,
         `Error loading blog posts from Supabase. Showing local preview instead. (${escapeHtml(error.message || String(error))})`
-      );
+      ));
       return;
     }
 
     if (!data || data.length === 0) {
-      grid.innerHTML =
-        '<div class="blog-empty">No blog posts yet. Use the Admin Dashboard → Blog tab to add your first post.</div>';
+      setGridHtml('<div class="blog-empty">No blog posts yet. Use the Admin Dashboard → Blog tab to add your first post.</div>');
       return;
     }
 
-    grid.innerHTML = renderCards(data, "");
+    setGridHtml(renderCards(data, ""));
   }
 
   document.addEventListener("DOMContentLoaded", () => {
