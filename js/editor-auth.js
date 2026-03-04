@@ -977,6 +977,9 @@
 	      runtimeSnapshotSentinel = false;
 	    }
 	    if (runtimeSnapshotSentinel) {
+	      // Clear stale session marker so navigation between pages does not
+	      // alternate unpredictably between hydrated and static HTML.
+	      try { sessionStorage.removeItem(CMS_HYDRATION_SENTINEL_KEY); } catch (_e) {}
 	      state.cmsHydrated = true;
 	      return false;
 	    }
@@ -1070,8 +1073,8 @@
 	      const STYLES_V = 38;
 	      const HEADER_V = 12;
 	      const FOOTER_V = 22;
-	      const EDITOR_V = 55;
-	      const SHELL_V = 6;
+	      const EDITOR_V = 56;
+	      const SHELL_V = 7;
 	      const PROJECT_LIGHTBOX_V = 3;
 	      const PROJECT_CAROUSEL_V = 9;
 	      const COURSES_CERTS_V = 16;

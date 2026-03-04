@@ -2,6 +2,7 @@
 
 
   function init() {
+    initImageFallbacks();
     initThemeManager();
     initBackgroundAnimation();
     initWebAnalytics();
@@ -115,6 +116,88 @@
       });
       document.head.appendChild(script);
     });
+  }
+
+  function normalizeAssetPath(rawPath) {
+    const value = String(rawPath || '').trim().replace(/\\/g, '/').replace(/^\/+/, '');
+    return value.startsWith('assets/') ? value : '';
+  }
+
+  function toLocalAssetUrl(assetPath) {
+    const clean = normalizeAssetPath(assetPath);
+    if (!clean) return '';
+    return `${getShellBasePath()}${clean}`;
+  }
+
+  function resolveSupabasePublicAssetPath(rawUrl) {
+    const value = String(rawUrl || '').trim();
+    if (!value || /^data:/i.test(value)) return '';
+    try {
+      const parsed = new URL(value, location.href);
+      const marker = '/storage/v1/object/public/';
+      const path = String(parsed.pathname || '');
+      const idx = path.indexOf(marker);
+      if (idx === -1) return '';
+      const remainder = path.slice(idx + marker.length).replace(/^\/+/, '');
+      const slash = remainder.indexOf('/');
+      if (slash === -1) return '';
+      const objectPath = remainder.slice(slash + 1).replace(/^\/+/, '');
+      if (!objectPath) return '';
+      return normalizeAssetPath(`assets/${objectPath}`);
+    } catch (_e) {
+      return '';
+    }
+  }
+
+  function applyImageFallback(img, fallback) {
+    if (!(img instanceof HTMLImageElement)) return;
+    const next = String(fallback || '').trim();
+    if (!next) return;
+    if (img.dataset.fallbackApplied === '1') return;
+    if (img.currentSrc === next || img.src === next) return;
+    img.dataset.fallbackApplied = '1';
+    img.src = next;
+  }
+
+  function bindImageFallback(img) {
+    if (!(img instanceof HTMLImageElement)) return;
+    if (img.dataset.resumeFallbackBound === '1') return;
+
+    const explicitFallback = String(img.getAttribute('data-fallback-src') || '').trim();
+    const assetPathFallback = normalizeAssetPath(img.getAttribute('data-asset-path') || '');
+    const supabaseAssetPath = resolveSupabasePublicAssetPath(
+      img.getAttribute('src') || img.currentSrc || img.src || ''
+    );
+
+    const fallback = explicitFallback
+      || toLocalAssetUrl(assetPathFallback)
+      || toLocalAssetUrl(supabaseAssetPath);
+    if (!fallback) return;
+
+    img.dataset.resumeFallbackBound = '1';
+    if (!img.getAttribute('data-fallback-src')) {
+      img.setAttribute('data-fallback-src', fallback);
+    }
+
+    const onError = () => applyImageFallback(img, fallback);
+    img.addEventListener('error', onError);
+
+    // Guard against stalled CDN image loads that never paint.
+    const timeoutId = window.setTimeout(() => {
+      if (img.dataset.fallbackApplied === '1') return;
+      if (!img.complete || img.naturalWidth === 0) onError();
+    }, 7000);
+
+    const clearTimer = () => window.clearTimeout(timeoutId);
+    img.addEventListener('load', clearTimer, { once: true });
+    img.addEventListener('error', clearTimer, { once: true });
+
+    if (img.complete && img.naturalWidth === 0) onError();
+  }
+
+  function initImageFallbacks() {
+    const images = Array.from(document.querySelectorAll('img'));
+    images.forEach((img) => bindImageFallback(img));
   }
 
   function randomId(prefix) {
