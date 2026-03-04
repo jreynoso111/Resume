@@ -286,13 +286,20 @@
       const target = event.target;
       const placeholder = target && target.closest ? target.closest('.img-placeholder') : null;
       if (!placeholder) return;
-      if (!placeholder.closest('.screenshot-carousel__slide')) return;
+      const slide = placeholder.closest('.screenshot-carousel__slide');
+      if (!slide) return;
+      if (slide.classList.contains('is-active')) {
+        // Let the global lightbox listener handle active-slide clicks.
+        return;
+      }
       const max = getRealSlides().length;
       if (max <= 1) return;
       const wrapped = index >= max - 1;
       index = wrapped ? 0 : index + 1;
       stopAndPause();
       render({ skipTransition: wrapped });
+      // Prevent non-active slide clicks from also opening the lightbox.
+      event.stopPropagation();
     });
 
     carousel.addEventListener('keydown', (event) => {

@@ -186,46 +186,8 @@
         return projectLinksPromise;
     }
 
-    function renderDesktopAuthLinks(rootPrefix, isLoggedIn, buttonClass) {
-        const loginHref = `${rootPrefix}login.html`;
-        const profileHref = `${rootPrefix}profile.html`;
-        const btnClass = String(buttonClass || '').trim() || 'nav-cta';
-        const clsAttr = btnClass ? ` class="${btnClass}"` : '';
-        if (isLoggedIn) {
-            return `<a href="${profileHref}"${clsAttr}>Profile</a> <a href="${loginHref}" data-auth-logout="1">Logout</a>`;
-        }
-        return `<a href="${loginHref}"${clsAttr}>Login</a>`;
-    }
-
-    function bindAuthLogout(root, auth, rootPrefix) {
-        const candidates = new Set([
-            ...Array.from(root.querySelectorAll('[data-auth-logout="1"]')),
-            ...Array.from(document.querySelectorAll('.nav-mobile [data-auth-logout="1"]'))
-        ]);
-        candidates.forEach((el) => {
-            if (el.dataset.boundAuthLogout === '1') return;
-            el.dataset.boundAuthLogout = '1';
-            el.addEventListener('click', async (event) => {
-                event.preventDefault();
-                if (!auth || typeof auth.logout !== 'function') return;
-                try {
-                    await auth.logout({ redirectTo: `${rootPrefix}login.html` });
-                } catch (_e) {
-                    // Ignore logout errors to keep nav non-blocking.
-                }
-            });
-        });
-    }
-
-    async function refreshAuthNav(root, auth, rootPrefix) {
-        let isLoggedIn = false;
-        try {
-            const session = auth && typeof auth.getSession === 'function' ? await auth.getSession() : null;
-            isLoggedIn = Boolean(session && session.user);
-        } catch (_e) {
-            isLoggedIn = false;
-        }
-
+    function clearAuthNavSlots(root) {
+        if (!root) return;
         const desktopSlots = Array.from(root.querySelectorAll('[data-auth-desktop="1"]'));
         const mobileSlots = new Set([
             ...Array.from(root.querySelectorAll('[data-auth-mobile="1"]')),
@@ -233,16 +195,11 @@
         ]);
 
         desktopSlots.forEach((slot) => {
-            slot.innerHTML = renderDesktopAuthLinks(
-                rootPrefix,
-                isLoggedIn,
-                slot.getAttribute('data-auth-btn-class') || ''
-            );
+            slot.innerHTML = '';
         });
         mobileSlots.forEach((slot) => {
             slot.innerHTML = '';
         });
-        bindAuthLogout(root, auth, rootPrefix);
     }
 
     async function initAuthNavigation(root) {
@@ -255,44 +212,9 @@
             ...Array.from(document.querySelectorAll('.nav-mobile [data-auth-mobile="1"]'))
         ]);
         const hasAuthSlots = desktopSlots.length > 0 || mobileSlots.length > 0;
-        const hasRenderedAuthLinks = Array.from(desktopSlots).some((slot) => /<a\b/i.test(String(slot.innerHTML || '')))
-            || Array.from(mobileSlots).some((slot) => /<a\b/i.test(String(slot.innerHTML || '')));
-        if (root.dataset.authNavInitialized === '1' && hasAuthSlots && hasRenderedAuthLinks) return;
+        if (root.dataset.authNavInitialized === '1' && hasAuthSlots) return;
         root.dataset.authNavInitialized = '1';
-
-        const rootPrefix = inferRootPrefixFromHeaderScript();
-        let auth = null;
-
-        try {
-            auth = await ensureAuthModule(rootPrefix);
-        } catch (_e) {
-            auth = null;
-        }
-
-        if (!auth) {
-            root.querySelectorAll('[data-auth-desktop="1"]').forEach((slot) => {
-                slot.innerHTML = renderDesktopAuthLinks(
-                    rootPrefix,
-                    false,
-                    slot.getAttribute('data-auth-btn-class') || ''
-                );
-            });
-            const mobileSlots = new Set([
-                ...Array.from(root.querySelectorAll('[data-auth-mobile="1"]')),
-                ...Array.from(document.querySelectorAll('.nav-mobile [data-auth-mobile="1"]'))
-            ]);
-            mobileSlots.forEach((slot) => {
-                slot.innerHTML = '';
-            });
-            return;
-        }
-
-        await refreshAuthNav(root, auth, rootPrefix);
-        if (typeof auth.onAuthStateChange === 'function') {
-            auth.onAuthStateChange(() => {
-                refreshAuthNav(root, auth, rootPrefix);
-            }).catch(() => {});
-        }
+        clearAuthNavSlots(root);
     }
 
     function renderMobileMenu(activePage, config) {
@@ -399,7 +321,6 @@
             })}
 
           <div class="nav-auth-cta">
-            <span data-auth-desktop="1" data-auth-btn-class="nav-cta"></span>
             <a href="mailto:JReynoso111@gmail.com" class="nav-cta">Contact <span aria-hidden="true">→</span></a>
           </div>
 
@@ -439,7 +360,6 @@
             })}
           </div>
           <div class="nav-auth-cta">
-            <span data-auth-desktop="1" data-auth-btn-class="nav-cta"></span>
             <a href="mailto:JReynoso111@gmail.com" class="nav-cta">Contact <span aria-hidden="true">→</span></a>
           </div>
 
@@ -481,7 +401,6 @@
 	            })}
 	          </div>
 		          <div class="nav-auth-cta">
-		            <span data-auth-desktop="1" data-auth-btn-class="nav-cta"></span>
 		            <a href="mailto:JReynoso111@gmail.com" class="nav-cta">Contact <span aria-hidden="true">→</span></a>
 		          </div>
 
@@ -519,7 +438,6 @@
             })}
         </nav>
 	        <div class="header-cta nav-auth-cta">
-            <span data-auth-desktop="1" data-auth-btn-class="nav-cta"></span>
             <a href="mailto:JReynoso111@gmail.com" class="nav-cta">Contact →</a>
           </div>
 
@@ -556,7 +474,6 @@
 	        </nav>
 
 	        <div class="nav-auth-cta">
-            <span data-auth-desktop="1" data-auth-btn-class="header-cta"></span>
             <a href="mailto:JReynoso111@gmail.com" class="header-cta">Contact →</a>
           </div>
 

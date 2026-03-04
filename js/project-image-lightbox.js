@@ -18,6 +18,12 @@
   const closeButton = modal.querySelector('.project-lightbox__close');
   let opener = null;
 
+  const isInactiveCarouselPlaceholder = (element) => {
+    const slide = element && element.closest ? element.closest('.screenshot-carousel__slide') : null;
+    if (!slide) return false;
+    return !slide.classList.contains('is-active');
+  };
+
   const markExpandable = (element) => {
     if (!element || !element.classList || !element.classList.contains('img-placeholder')) return;
     if (!getImageUrl(element)) return;
@@ -63,7 +69,7 @@
     const target = event.target;
     const placeholder = target && target.closest ? target.closest('.img-placeholder') : null;
     if (!placeholder) return;
-    if (placeholder.closest('[data-screenshot-carousel]')) return;
+    if (isInactiveCarouselPlaceholder(placeholder)) return;
     if (!getImageUrl(placeholder)) return;
     openModal(placeholder);
   });
@@ -72,7 +78,7 @@
     const target = event.target;
     const isPlaceholder = target && target.classList && target.classList.contains('img-placeholder');
     if (!isPlaceholder) return;
-    if (target.closest && target.closest('[data-screenshot-carousel]')) return;
+    if (isInactiveCarouselPlaceholder(target)) return;
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
       openModal(target);

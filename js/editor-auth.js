@@ -53,6 +53,7 @@
 		    editorDomRefreshTimer: null,
 		    imageControls: new Map(),
 		    imageRepositionRaf: null,
+		    activeImageDrag: null,
 		    resizeControls: new Map(),
 		    resizeRepositionRaf: null,
 		    activeResize: null,
@@ -496,6 +497,18 @@
       cursor: nwse-resize !important;
     }
 
+    body.cms-admin-mode [data-cms-image-kind="img"],
+    body.cms-admin-mode [data-cms-image-kind="bg"] {
+      cursor: grab;
+      touch-action: none;
+    }
+
+    body.cms-image-dragging,
+    body.cms-image-dragging * {
+      user-select: none !important;
+      cursor: grabbing !important;
+    }
+
     @media (max-width: 720px) {
       .cms-panel {
         top: auto;
@@ -608,8 +621,7 @@
       auth: {
         persistSession: true,
         autoRefreshToken: true,
-        detectSessionInUrl: false,
-        storageKey: 'resume_cms_auth_v1'
+        detectSessionInUrl: false
       }
     });
     return state.supabaseClient;
@@ -734,12 +746,18 @@
       return;
     }
     const cfg = await getSupabaseConfig();
-    const adminEmail = cfg && cfg.adminEmail ? String(cfg.adminEmail).trim().toLowerCase() : '';
-    const adminUserId = cfg && cfg.adminUserId ? String(cfg.adminUserId).trim() : '';
-    const currentEmail = String(state.authEmail || '').trim().toLowerCase();
+    const allowAnyAuthenticatedUserAsAdmin =
+      Boolean(cfg && cfg.allowAnyAuthenticatedUserAsAdmin === true);
     const currentUserId = state.authSession && state.authSession.user && state.authSession.user.id
       ? String(state.authSession.user.id).trim()
       : '';
+    if (allowAnyAuthenticatedUserAsAdmin && currentUserId) {
+      state.authIsAdmin = true;
+      return;
+    }
+    const adminEmail = cfg && cfg.adminEmail ? String(cfg.adminEmail).trim().toLowerCase() : '';
+    const adminUserId = cfg && cfg.adminUserId ? String(cfg.adminUserId).trim() : '';
+    const currentEmail = String(state.authEmail || '').trim().toLowerCase();
     const byEmail = Boolean(adminEmail && currentEmail && adminEmail === currentEmail);
     const byUserId = Boolean(adminUserId && currentUserId && adminUserId === currentUserId);
     state.authIsAdmin = byEmail || byUserId;
@@ -1071,12 +1089,12 @@
       const rootPrefix = '../'.repeat(depth);
       const footerHost = `<footer id="site-footer" data-root-path="${rootPrefix}"></footer>`;
 	      const STYLES_V = 38;
-	      const HEADER_V = 12;
+	      const HEADER_V = 13;
 	      const FOOTER_V = 22;
-	      const EDITOR_V = 56;
+	      const EDITOR_V = 58;
 	      const SHELL_V = 7;
-	      const PROJECT_LIGHTBOX_V = 3;
-	      const PROJECT_CAROUSEL_V = 9;
+	      const PROJECT_LIGHTBOX_V = 4;
+	      const PROJECT_CAROUSEL_V = 10;
 	      const COURSES_CERTS_V = 16;
 	      const PROJECTS_V = 9;
 	      const BLOG_PAGE_V = 7;
@@ -1841,6 +1859,7 @@
 	  }
 
   function clearImageControls() {
+    finishImageDrag(false);
     state.imageControls.forEach((control) => {
       if (control && control.panel) control.panel.remove();
     });
@@ -2103,6 +2122,187 @@
     scheduleAutosave(reason);
   }
 
+  function normalizePositionPercent(value, fallback) {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return fallback;
+    return Math.min(100, Math.max(0, n));
+  }
+
+  function parsePositionPercentToken(token, axis, fallback) {
+    const value = String(token || '').trim().toLowerCase();
+    if (!value) return fallback;
+
+    if (value === 'center') return 50;
+    if (axis === 'x' && value === 'left') return 0;
+    if (axis === 'x' && value === 'right') return 100;
+    if (axis === 'y' && value === 'top') return 0;
+    if (axis === 'y' && value === 'bottom') return 100;
+
+    if (value.endsWith('%')) {
+      const pct = parseFloat(value.slice(0, -1));
+      if (Number.isFinite(pct)) return pct;
+      return fallback;
+    }
+
+    const number = parseFloat(value);
+    if (Number.isFinite(number) && !value.endsWith('px')) {
+      return number;
+    }
+
+    return fallback;
+  }
+
+  function parseTwoAxisPosition(rawValue) {
+    const segment = String(rawValue || '').split(',', 1)[0].trim();
+    if (!segment) return { x: 50, y: 50 };
+    const tokens = segment.split(/\s+/).filter(Boolean);
+    if (tokens.length === 0) return { x: 50, y: 50 };
+
+    if (tokens.length === 1) {
+      const token = tokens[0];
+      if (token === 'top' || token === 'bottom') {
+        return {
+          x: 50,
+          y: normalizePositionPercent(parsePositionPercentToken(token, 'y', 50), 50)
+        };
+      }
+      if (token === 'left' || token === 'right') {
+        return {
+          x: normalizePositionPercent(parsePositionPercentToken(token, 'x', 50), 50),
+          y: 50
+        };
+      }
+      return {
+        x: normalizePositionPercent(parsePositionPercentToken(token, 'x', 50), 50),
+        y: 50
+      };
+    }
+
+    return {
+      x: normalizePositionPercent(parsePositionPercentToken(tokens[0], 'x', 50), 50),
+      y: normalizePositionPercent(parsePositionPercentToken(tokens[1], 'y', 50), 50)
+    };
+  }
+
+  function getCurrentImagePosition(target, kind) {
+    if (!(target instanceof HTMLElement)) return { x: 50, y: 50 };
+    if (kind === 'img') {
+      const inline = String(target.style.objectPosition || '').trim();
+      if (inline) return parseTwoAxisPosition(inline);
+      const computed = window.getComputedStyle(target).objectPosition || '';
+      return parseTwoAxisPosition(computed);
+    }
+
+    const inline = String(target.style.backgroundPosition || '').trim();
+    if (inline) return parseTwoAxisPosition(inline);
+    const computed = window.getComputedStyle(target).backgroundPosition || '';
+    return parseTwoAxisPosition(computed);
+  }
+
+  function applyImagePosition(target, kind, xPct, yPct) {
+    if (!(target instanceof HTMLElement)) return;
+    const x = normalizePositionPercent(xPct, 50).toFixed(2);
+    const y = normalizePositionPercent(yPct, 50).toFixed(2);
+    if (kind === 'img') {
+      target.style.objectPosition = `${x}% ${y}%`;
+      return;
+    }
+    target.style.backgroundPosition = `${x}% ${y}%`;
+  }
+
+  function handleImageTargetPointerDown(event) {
+    const target = event && event.currentTarget;
+    if (!(target instanceof HTMLElement)) return;
+    const controlId = String(target.getAttribute('data-cms-image-id') || '');
+    const kind = String(target.getAttribute('data-cms-image-kind') || '');
+    if (!controlId) return;
+    if (kind !== 'img' && kind !== 'bg') return;
+    if (kind === 'bg' && event && event.target instanceof Element && event.target !== target) return;
+    beginImageDrag(event, controlId);
+  }
+
+  function beginImageDrag(event, controlId) {
+    if (!isAdmin()) return;
+    if (!event || typeof event.clientX !== 'number' || typeof event.clientY !== 'number') return;
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+    if (event.target instanceof Element && event.target.closest('[data-cms-ui="1"]')) return;
+
+    const control = state.imageControls.get(controlId);
+    if (!control || !(control.target instanceof HTMLElement) || !document.contains(control.target)) return;
+
+    const rect = control.target.getBoundingClientRect();
+    if (rect.width < 8 || rect.height < 8) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    const start = getCurrentImagePosition(control.target, control.kind);
+    state.activeImageDrag = {
+      controlId,
+      kind: control.kind,
+      target: control.target,
+      startX: event.clientX,
+      startY: event.clientY,
+      frameW: rect.width,
+      frameH: rect.height,
+      startPosX: normalizePositionPercent(start.x, 50),
+      startPosY: normalizePositionPercent(start.y, 50),
+      moved: false
+    };
+
+    document.body.classList.add('cms-image-dragging');
+    window.addEventListener('pointermove', onImageDragPointerMove, true);
+    window.addEventListener('pointerup', onImageDragPointerUp, true);
+    window.addEventListener('pointercancel', onImageDragPointerUp, true);
+  }
+
+  function onImageDragPointerMove(event) {
+    const active = state.activeImageDrag;
+    if (!active) return;
+    if (!event || typeof event.clientX !== 'number' || typeof event.clientY !== 'number') return;
+    if (!(active.target instanceof HTMLElement) || !document.contains(active.target)) {
+      finishImageDrag(false);
+      return;
+    }
+
+    event.preventDefault();
+    const dx = event.clientX - active.startX;
+    const dy = event.clientY - active.startY;
+    const width = Math.max(1, Number(active.frameW) || 1);
+    const height = Math.max(1, Number(active.frameH) || 1);
+
+    const nextX = normalizePositionPercent(active.startPosX + ((dx / width) * 100), active.startPosX);
+    const nextY = normalizePositionPercent(active.startPosY + ((dy / height) * 100), active.startPosY);
+
+    if (Math.abs(nextX - active.startPosX) > 0.05 || Math.abs(nextY - active.startPosY) > 0.05) {
+      active.moved = true;
+    }
+
+    applyImagePosition(active.target, active.kind, nextX, nextY);
+    markProjectCardImageDirty(active.target);
+    markBlogCoverDirty(active.target);
+    requestImageControlPositionUpdate();
+  }
+
+  function onImageDragPointerUp(event) {
+    if (!state.activeImageDrag) return;
+    if (event) event.preventDefault();
+    finishImageDrag(true);
+  }
+
+  function finishImageDrag(shouldAutosave) {
+    const active = state.activeImageDrag;
+    window.removeEventListener('pointermove', onImageDragPointerMove, true);
+    window.removeEventListener('pointerup', onImageDragPointerUp, true);
+    window.removeEventListener('pointercancel', onImageDragPointerUp, true);
+    document.body.classList.remove('cms-image-dragging');
+    state.activeImageDrag = null;
+
+    if (!active || !shouldAutosave) return;
+    if (!active.moved) return;
+    scheduleAutosave('image-reposition');
+  }
+
   function requestImageControlPositionUpdate() {
     if (!isAdmin() || state.imageControls.size === 0) return;
     if (state.imageRepositionRaf) return;
@@ -2259,6 +2459,7 @@
   function createImageControlsForTarget(target, kind) {
     if (!(target instanceof HTMLElement)) return;
     const controlId = target.dataset.cmsImageId || `${kind}-${Date.now()}`;
+    target.dataset.cmsImageId = controlId;
 
     const panel = document.createElement('div');
     panel.className = 'cms-image-actions cms-ui';
@@ -2290,6 +2491,11 @@
     panel.append(uploadBtn, linkBtn);
     panel.addEventListener('click', (event) => event.stopPropagation());
     document.body.appendChild(panel);
+
+    if (target.dataset.cmsImageDragBound !== '1') {
+      target.dataset.cmsImageDragBound = '1';
+      target.addEventListener('pointerdown', handleImageTargetPointerDown);
+    }
 
     state.imageControls.set(controlId, { target, kind, panel });
   }
