@@ -11,6 +11,8 @@ window.__SUPABASE_CONFIG__ = {
   // Server-side access is enforced by RLS policies.
   adminEmail: 'jreynoso111@gmail.com',
   adminUserId: '63289f31-af96-48ee-a30c-597825825887',
+  // When true, any authenticated site user can access the editor without extra admin matching.
+  allowAnyAuthenticatedUserAsAdmin: false,
   // UNSAFE mode: no login required. Anyone with access to the website can edit content.
   // This must match your "UNSAFE grants" SQL setup in Supabase.
   unsafeNoAuth: false,
