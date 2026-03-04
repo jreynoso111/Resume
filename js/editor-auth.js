@@ -1098,7 +1098,7 @@
 	      const COURSES_CERTS_V = 16;
 	      const PROJECTS_V = 9;
 	      const BLOG_PAGE_V = 7;
-	      const BLOG_POST_V = 9;
+	      const BLOG_POST_V = 10;
 	      const PROJECT_DETAIL_LAYOUT_V = 10;
       const footerScript = `<script src="${rootPrefix}js/footer.js?v=${FOOTER_V}"></script>`;
       const headerScript = `<script src="${rootPrefix}js/header.js?v=${HEADER_V}"></script>`;
