@@ -293,6 +293,13 @@ header {
 
 }
 
+/* Blog post reading mode: keep top nav in normal document flow (not sticky). */
+body.blog-post-page header,
+body.blog-post-page #site-header {
+  position: static;
+  top: auto;
+}
+
 
 
 .nav {
