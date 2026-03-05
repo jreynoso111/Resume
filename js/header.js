@@ -1,12 +1,7 @@
 (function () {
     const SUPABASE_CDN = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
-    const fallbackProjectLinks = [
-        { href: 'fleet-maintenance-analytics.html', label: 'Corrective Maintenance Analytics', key: 'fleet-maintenance-analytics' },
-        { href: 'inventory-control-dashboard.html', label: 'Inventory Control Dashboard', key: 'inventory-control-dashboard' },
-        { href: 'gps-movement-analytics.html', label: 'GPS Tracking & Movement Analysis', key: 'gps-movement-analytics' },
-        { href: 'techloc-fleet-service-control.html', label: 'TechLoc Fleet & Service Control Platform', key: 'techloc-fleet-service-control' }
-    ];
-    let projectLinks = fallbackProjectLinks.slice();
+    const fallbackProjectLinks = [];
+    let projectLinks = [];
     let projectLinksPromise = null;
 
     function withActiveClass(activeKey, key, className = 'active') {
@@ -153,10 +148,14 @@
         projectLinksPromise = (async () => {
             const cfg = await ensureSupabaseConfig(rootPrefix);
             if (!cfg || !cfg.url || !cfg.anonKey) {
+                projectLinks = fallbackProjectLinks.slice();
                 return projectLinks;
             }
             const hasLib = await ensureSupabaseLibrary();
-            if (!hasLib) return projectLinks;
+            if (!hasLib) {
+                projectLinks = [];
+                return projectLinks;
+            }
 
             try {
                 const sb = window.supabase.createClient(cfg.url, cfg.anonKey, {
@@ -175,9 +174,11 @@
 
                 if (!error) {
                     projectLinks = mapProjectRowsToLinks(data);
+                } else {
+                    projectLinks = [];
                 }
             } catch (_e) {
-                // Keep fallback links when remote fetch fails.
+                projectLinks = [];
             }
             return projectLinks;
         })().finally(() => {
