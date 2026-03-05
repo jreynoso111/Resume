@@ -1088,7 +1088,7 @@
       const depth = Math.max(0, parts.length - 1);
       const rootPrefix = '../'.repeat(depth);
       const footerHost = `<footer id="site-footer" data-root-path="${rootPrefix}"></footer>`;
-	      const STYLES_V = 38;
+	      const STYLES_V = 40;
 	      const HEADER_V = 13;
 	      const FOOTER_V = 22;
 	      const EDITOR_V = 58;
