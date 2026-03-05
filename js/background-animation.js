@@ -126,6 +126,9 @@
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         camera.position.z = 45;
+        const clock = new THREE.Clock();
+        const raycaster = new THREE.Raycaster();
+        const pointerNdc = new THREE.Vector2();
 
         const renderer = new THREE.WebGLRenderer({
             canvas: canvas,
@@ -226,6 +229,117 @@
 
         let mistBaseOpacity = 0.09;
         let silhouetteBaseOpacity = 0.72;
+        let asteroidColor = new THREE.Color('#cbd5e1');
+
+        // 4. Click-to-spawn asteroids.
+        const asteroids = [];
+        const ASTEROID_MAX = 24;
+        const asteroidGeometry = new THREE.IcosahedronGeometry(0.38, 0);
+
+        function isInteractiveTarget(target) {
+            if (!(target instanceof Element)) return false;
+            return Boolean(
+                target.closest(
+                    'a, button, input, textarea, select, label, summary, [role="button"], [contenteditable="true"], #theme-toggle, #theme-toggle-label'
+                )
+            );
+        }
+
+        function pointOnPlaneFromScreen(clientX, clientY, planeZ) {
+            pointerNdc.x = (clientX / window.innerWidth) * 2 - 1;
+            pointerNdc.y = -((clientY / window.innerHeight) * 2 - 1);
+            raycaster.setFromCamera(pointerNdc, camera);
+            const origin = raycaster.ray.origin;
+            const direction = raycaster.ray.direction;
+            if (Math.abs(direction.z) < 1e-5) {
+                return origin.clone().add(direction.clone().multiplyScalar(20));
+            }
+            const t = (planeZ - origin.z) / direction.z;
+            if (!isFinite(t) || t <= 0) {
+                return origin.clone().add(direction.clone().multiplyScalar(20));
+            }
+            return origin.clone().add(direction.clone().multiplyScalar(t));
+        }
+
+        function removeAsteroid(index) {
+            const asteroid = asteroids[index];
+            if (!asteroid) return;
+            scene.remove(asteroid.mesh);
+            if (asteroid.material) asteroid.material.dispose();
+            asteroids.splice(index, 1);
+        }
+
+        function spawnAsteroid(clientX, clientY) {
+            const spawn = pointOnPlaneFromScreen(clientX, clientY, (Math.random() * 14) - 7);
+
+            const direction = new THREE.Vector3(
+                (Math.random() * 2) - 1,
+                (Math.random() * 2) - 1,
+                (Math.random() * 2) - 1
+            ).normalize();
+            if (Math.abs(direction.z) < 0.2) direction.z = direction.z >= 0 ? 0.2 : -0.2;
+            direction.normalize();
+
+            const speed = 4 + (Math.random() * 5);
+            const size = 0.18 + (Math.random() * 0.22);
+            const life = 2.6 + (Math.random() * 1.8);
+            const opacity = 0.82 + (Math.random() * 0.14);
+
+            const material = new THREE.MeshBasicMaterial({
+                color: asteroidColor.clone(),
+                transparent: true,
+                opacity: opacity
+            });
+            const mesh = new THREE.Mesh(asteroidGeometry, material);
+            mesh.position.copy(spawn);
+            mesh.scale.set(size, size, size);
+            mesh.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+            scene.add(mesh);
+
+            asteroids.push({
+                mesh: mesh,
+                material: material,
+                velocity: direction.multiplyScalar(speed),
+                spin: new THREE.Vector3(
+                    (Math.random() * 2 - 1) * 2.2,
+                    (Math.random() * 2 - 1) * 2.2,
+                    (Math.random() * 2 - 1) * 2.2
+                ),
+                age: 0,
+                life: life,
+                baseOpacity: opacity
+            });
+
+            if (asteroids.length > ASTEROID_MAX) {
+                removeAsteroid(0);
+            }
+        }
+
+        function updateAsteroids(deltaSec) {
+            for (let i = asteroids.length - 1; i >= 0; i--) {
+                const a = asteroids[i];
+                a.age += deltaSec;
+                a.mesh.position.addScaledVector(a.velocity, deltaSec);
+                a.mesh.rotation.x += a.spin.x * deltaSec;
+                a.mesh.rotation.y += a.spin.y * deltaSec;
+                a.mesh.rotation.z += a.spin.z * deltaSec;
+
+                const lifeRatio = a.age / a.life;
+                const fade = lifeRatio < 0.65 ? 1 : Math.max(0, 1 - ((lifeRatio - 0.65) / 0.35));
+                a.material.opacity = a.baseOpacity * fade;
+
+                if (a.age >= a.life) {
+                    removeAsteroid(i);
+                }
+            }
+        }
+
+        document.addEventListener('click', (event) => {
+            if (event.defaultPrevented) return;
+            if (event.button !== 0) return;
+            if (isInteractiveTarget(event.target)) return;
+            spawnAsteroid(event.clientX, event.clientY);
+        });
 
         function isInInteractionZone(clientX, clientY, pointerType) {
             const dx = clientX - windowHalfX;
@@ -362,6 +476,9 @@
                 ? new THREE.Color(accentHex || '#1f4f7b')
                 : glowColor;
             const silhouetteColor = new THREE.Color('#ffffff');
+            asteroidColor = isLightMode
+                ? new THREE.Color(accentHex || '#1f4f7b')
+                : new THREE.Color(mutedHex || '#cbd5e1');
 
             materialDots.color = accentColor;
             materialWire.color = accentColor;
@@ -369,6 +486,9 @@
             mistMaterial.blending = isLightMode ? THREE.NormalBlending : THREE.AdditiveBlending;
             mistMaterial.needsUpdate = true;
             silhouetteMaterial.color.copy(silhouetteColor);
+            asteroids.forEach((a) => {
+                a.material.color.copy(asteroidColor);
+            });
 
             if (isLightMode) {
                 materialDots.opacity = 0.45;
@@ -392,6 +512,7 @@
         function render() {
             requestAnimationFrame(render);
             const t = performance.now() * 0.001;
+            const deltaSec = Math.min(clock.getDelta(), 0.05);
 
             angularVelocity.x *= DRAG_DAMPING;
             angularVelocity.y *= DRAG_DAMPING;
@@ -409,6 +530,7 @@
             coreMist.rotation.z += 0.0009;
             coreMist.rotation.y += 0.0005;
             silhouetteMaterial.opacity = silhouetteBaseOpacity * (0.94 + (Math.sin(t * 1.35 + 1.0) * 0.06));
+            updateAsteroids(deltaSec);
 
             renderer.render(scene, camera);
         }

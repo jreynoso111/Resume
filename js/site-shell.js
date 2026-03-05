@@ -54,7 +54,7 @@
       const load3D = () => {
         const s = document.createElement('script');
         // Cache-bust so mobile clients don't get stuck with an older touch model.
-        s.src = basePath + 'js/background-animation.js?v=3';
+        s.src = basePath + 'js/background-animation.js?v=4';
         document.body.appendChild(s);
       };
 
