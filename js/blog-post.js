@@ -132,28 +132,12 @@
     }
 
     const blocks = splitBodyBlocks(raw);
-    let imageCount = 0;
 
     return blocks
       .map((block) => {
         const imgMatch = block.match(/^!\[(.*?)\]\((.*?)\)$/);
         if (imgMatch) {
-          if (imageCount >= 2) return "";
-          const alt = String(imgMatch[1] || "").trim() || "Article image";
-          const rawSrc = String(imgMatch[2] || "").trim();
-          const src = normalizeAssetUrl(rawSrc, rootPrefix);
-          const localFallback = localAssetUrl(rawSrc, rootPrefix);
-          const fallbackAttr =
-            localFallback && localFallback !== src
-              ? ` data-fallback-src="${escapeHtml(localFallback)}"`
-              : "";
-          if (!src) return "";
-          imageCount += 1;
-          return `
-            <figure class="blog-inline-image">
-              <img src="${escapeHtml(src)}"${fallbackAttr} alt="${escapeHtml(alt)}" loading="lazy">
-            </figure>
-          `;
+          return "";
         }
 
         if (block.startsWith("## ")) {

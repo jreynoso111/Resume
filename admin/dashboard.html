@@ -439,7 +439,7 @@
 
                     <div class="form-group">
                         <label>Article body</label>
-                        <textarea id="blog-post-body" style="height:240px;" placeholder="Write the full article here. Use blank lines for paragraphs. Optional image line syntax: ![alt text](https://... or assets/images/...)"></textarea>
+                        <textarea id="blog-post-body" style="height:240px;" placeholder="Write the full article here. Use blank lines for paragraphs."></textarea>
                     </div>
 
                     <div class="form-group">
@@ -1706,7 +1706,10 @@
         }
 
         function normalizeBlogBodyForStorage(value) {
-            const normalized = normalizeBlogBodyText(value).trim();
+            let normalized = normalizeBlogBodyText(value);
+            // Keep a single-image model: cover image only (no inline body images).
+            normalized = normalized.replace(/(^|\n)\s*!\[[^\]]*\]\([^)]+\)\s*(?=\n|$)/g, '$1');
+            normalized = normalized.replace(/\n{3,}/g, '\n\n').trim();
             return normalized || null;
         }
 

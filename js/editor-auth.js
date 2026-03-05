@@ -2907,18 +2907,7 @@
             return;
           }
           if (tag === 'FIGURE') {
-            const img = child.querySelector('img');
-            if (!(img instanceof HTMLImageElement)) return;
-            const rawSrc = String(img.getAttribute('src') || img.src || '').trim();
-            if (!rawSrc) return;
-            const assetPath = resolveAssetPath(rawSrc);
-            const src = String(assetPath || rawSrc).trim();
-            if (!src) return;
-            const alt = String(img.getAttribute('alt') || 'Article image')
-              .replace(/[\[\]\r\n]+/g, ' ')
-              .replace(/\s+/g, ' ')
-              .trim() || 'Article image';
-            blocks.push(`![${alt}](${src})`);
+            // Keep a single-image model: post cover only.
             return;
           }
 
