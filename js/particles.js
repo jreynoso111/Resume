@@ -17,32 +17,52 @@
     let particleCount = window.innerWidth < 768 ? 40 : 100;
 
     // Theme-based colors
-    let currentParticleColor = 'rgba(31, 79, 123, 0.15)';
-    let lineBaseRgb = '31, 79, 123';
+    let currentParticleColor = 'rgba(148, 163, 184, 0.18)';
+    let lineBaseRgb = '148, 163, 184';
     let lineBaseAlpha = 0.1;
+
+    function colorToRgb(color, fallback) {
+        if (!color) return fallback;
+        if (color.startsWith('#')) {
+            const hex = color.replace('#', '').trim();
+            if (hex.length === 3) {
+                return [
+                    parseInt(hex[0] + hex[0], 16),
+                    parseInt(hex[1] + hex[1], 16),
+                    parseInt(hex[2] + hex[2], 16)
+                ];
+            }
+            if (hex.length >= 6) {
+                return [
+                    parseInt(hex.substring(0, 2), 16),
+                    parseInt(hex.substring(2, 4), 16),
+                    parseInt(hex.substring(4, 6), 16)
+                ];
+            }
+        }
+        const rgbMatch = color.match(/rgba?\((\d+)[,\s]+(\d+)[,\s]+(\d+)/i);
+        if (rgbMatch) {
+            return [parseInt(rgbMatch[1], 10), parseInt(rgbMatch[2], 10), parseInt(rgbMatch[3], 10)];
+        }
+        return fallback;
+    }
 
     function updateTheme() {
         const styles = getComputedStyle(document.documentElement);
         const accent = styles.getPropertyValue('--accent').trim() || '#1f4f7b';
+        const muted = styles.getPropertyValue('--text-muted').trim() || '#94a3b8';
         const bg = styles.getPropertyValue('--bg').trim();
         const isLight = bg === '#f5f5f5' || bg === '#ffffff' || bg.includes('245');
 
-        // Convert hex to rgba for the particles
-        let r = 31, g = 79, b = 123;
-        if (accent.startsWith('#')) {
-            const hex = accent.replace('#', '');
-            r = parseInt(hex.substring(0, 2), 16);
-            g = parseInt(hex.substring(2, 4), 16);
-            b = parseInt(hex.substring(4, 6), 16);
-        }
+        const baseColor = isLight ? accent : muted;
+        const [r, g, b] = colorToRgb(baseColor, [148, 163, 184]);
 
         if (isLight) {
-            // Increased opacity from 0.2 to 0.5 for particles and 0.1 to 0.3 for lines in Light Mode
-            currentParticleColor = `rgba(${r}, ${g}, ${b}, 0.5)`;
-            lineBaseAlpha = 0.3;
+            currentParticleColor = `rgba(${r}, ${g}, ${b}, 0.34)`;
+            lineBaseAlpha = 0.18;
         } else {
-            currentParticleColor = `rgba(${r}, ${g}, ${b}, 0.4)`;
-            lineBaseAlpha = 0.2;
+            currentParticleColor = `rgba(${r}, ${g}, ${b}, 0.22)`;
+            lineBaseAlpha = 0.1;
         }
         lineBaseRgb = `${r}, ${g}, ${b}`;
 
