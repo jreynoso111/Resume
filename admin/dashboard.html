@@ -440,6 +440,12 @@
                     <div class="form-group">
                         <label>Article body</label>
                         <textarea id="blog-post-body" style="height:240px;" placeholder="Write the full article here. Use blank lines for paragraphs."></textarea>
+                        <div style="display:flex; gap:8px; align-items:center; margin-top:8px; flex-wrap:wrap;">
+                            <button type="button" class="btn-secondary" id="blog-post-template-btn">Insert standard structure</button>
+                            <small style="color:#6b7280;">
+                                Standard format: Context → Analysis → Recommendation (single body field).
+                            </small>
+                        </div>
                     </div>
 
                     <div class="form-group">
@@ -1701,15 +1707,65 @@
             return out;
         }
 
+        function getStandardBlogBodyTemplate() {
+            return [
+                '## Context',
+                '',
+                'Describe the operational context and why this topic matters now.',
+                '',
+                '## Analysis',
+                '',
+                'Present the key evidence, constraints, and trade-offs.',
+                '',
+                '## Recommendation',
+                '',
+                'State the concrete decision, next steps, and expected outcome.'
+            ].join('\n');
+        }
+
+        function applyStandardBlogBodyStructure(value) {
+            const raw = normalizeBlogBodyText(value);
+            if (!raw.trim()) return getStandardBlogBodyTemplate();
+
+            // If the author already defined section headings, respect them.
+            if (/^##\s+/m.test(raw)) {
+                return raw.replace(/\n{3,}/g, '\n\n').trim();
+            }
+
+            const blocks = raw
+                .split(/\n{2,}/g)
+                .map((part) => String(part || '').trim())
+                .filter(Boolean);
+
+            if (blocks.length === 0) return getStandardBlogBodyTemplate();
+            const context = blocks[0] || '';
+            const recommendation = blocks.length > 1 ? (blocks[blocks.length - 1] || '') : '';
+            const analysis = blocks.slice(1, -1).join('\n\n').trim();
+
+            return [
+                '## Context',
+                '',
+                context || 'Add context.',
+                '',
+                '## Analysis',
+                '',
+                analysis || 'Add analysis.',
+                '',
+                '## Recommendation',
+                '',
+                recommendation || 'Add recommendation.'
+            ].join('\n').replace(/\n{3,}/g, '\n\n').trim();
+        }
+
         function formatBlogBodyForEditor(value) {
-            return normalizeBlogBodyText(value);
+            return applyStandardBlogBodyStructure(value);
         }
 
         function normalizeBlogBodyForStorage(value) {
             let normalized = normalizeBlogBodyText(value);
             // Keep a single-image model: cover image only (no inline body images).
             normalized = normalized.replace(/(^|\n)\s*!\[[^\]]*\]\([^)]+\)\s*(?=\n|$)/g, '$1');
-            normalized = normalized.replace(/\n{3,}/g, '\n\n').trim();
+            normalized = applyStandardBlogBodyStructure(normalized);
             return normalized || null;
         }
 
@@ -1763,6 +1819,7 @@
                 slugEl.dataset.touched = '0';
                 publishedEl.value = 'false';
                 publishedAtEl.value = '';
+                bodyEl.value = getStandardBlogBodyTemplate();
                 if (heading) heading.textContent = 'Create blog post';
                 if (submitBtn) submitBtn.textContent = 'Create post';
                 if (cancelBtn) cancelBtn.style.display = 'none';
@@ -1850,6 +1907,12 @@
         }
 
         document.getElementById('blog-post-cover-url').addEventListener('input', updateBlogPostCoverPreview);
+        document.getElementById('blog-post-template-btn').addEventListener('click', () => {
+            const bodyEl = document.getElementById('blog-post-body');
+            if (!bodyEl) return;
+            bodyEl.value = getStandardBlogBodyTemplate();
+            bodyEl.focus();
+        });
 
         document.getElementById('blog-post-cancel-edit').addEventListener('click', () => {
             setBlogPostFormMode('add');
