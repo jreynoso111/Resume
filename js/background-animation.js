@@ -358,11 +358,16 @@
             const glowColor = isLightMode
                 ? accentColor.clone()
                 : new THREE.Color(textMainHex || '#ffffff');
+            const mistColor = isLightMode
+                ? new THREE.Color(accentHex || '#1f4f7b')
+                : glowColor;
             const silhouetteColor = new THREE.Color('#ffffff');
 
             materialDots.color = accentColor;
             materialWire.color = accentColor;
-            mistMaterial.color.copy(glowColor);
+            mistMaterial.color.copy(mistColor);
+            mistMaterial.blending = isLightMode ? THREE.NormalBlending : THREE.AdditiveBlending;
+            mistMaterial.needsUpdate = true;
             silhouetteMaterial.color.copy(silhouetteColor);
 
             if (isLightMode) {
