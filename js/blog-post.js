@@ -96,7 +96,7 @@
   }
 
   function renderInlineFormatting(text) {
-    const safe = escapeHtml(text);
+    const safe = escapeHtml(text).replace(/\t/g, "&nbsp;&nbsp;&nbsp;&nbsp;");
     const withUnderline = safe.replace(/\+\+([^+\n][^+\n]*?)\+\+/g, "<u>$1</u>");
     const withBold = withUnderline.replace(/\*\*([^*\n][^*\n]*?)\*\*/g, "<strong>$1</strong>");
     const withItalic = withBold.replace(/(^|[^*])\*([^*\n][^*\n]*?)\*(?!\*)/g, "$1<em>$2</em>");
