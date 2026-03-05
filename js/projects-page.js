@@ -113,30 +113,10 @@
       "inventory-control-dashboard",
       "gps-movement-analytics",
       "techloc-fleet-service-control",
+      "turnstile-deployment-management-line-2b-expansion",
+      "warranty-claim-analytics-metro-santo-domingo",
+      "fare-system-transaction-fraud-detection-metro-santo-domingo",
     ]);
-
-    const LOCAL_FALLBACK_PROJECTS = [
-      {
-        href: "projects/fleet-maintenance-analytics.html",
-        title: "Corrective Maintenance Analytics",
-        description: "Fleet maintenance KPIs, downtime visibility, and readiness reporting.",
-      },
-      {
-        href: "projects/inventory-control-dashboard.html",
-        title: "Inventory Control Dashboard",
-        description: "Stock-level controls, usage monitoring, and cost exposure visibility.",
-      },
-      {
-        href: "projects/gps-movement-analytics.html",
-        title: "GPS Tracking & Movement Analysis",
-        description: "Movement patterns, utilization, and operational movement oversight.",
-      },
-      {
-        href: "projects/techloc-fleet-service-control.html",
-        title: "TechLoc Fleet & Service Control Platform",
-        description: "Dispatch + service control visibility for fleet readiness execution.",
-      },
-    ];
 
     function renderCards(list, noteHtml) {
       const note = noteHtml ? `<div style="color: var(--text-muted); font-size: 12px; margin-bottom: 10px;">${noteHtml}</div>` : "";
@@ -182,7 +162,7 @@
     }
 
     if (!cfg.url || !cfg.anonKey || !window.supabase) {
-      setGridHtml(renderCards(LOCAL_FALLBACK_PROJECTS, "Showing local project previews (Supabase not configured)."));
+      setGridHtml(`<div style="color: var(--text-muted);">Projects data source is not available.</div>`);
       return;
     }
 
@@ -195,15 +175,12 @@
       .order("id", { ascending: true });
 
     if (error) {
-      setGridHtml(renderCards(
-        LOCAL_FALLBACK_PROJECTS,
-        `Error loading projects from Supabase. Showing local previews instead. (${escapeHtml(error.message || String(error))})`
-      ));
+      setGridHtml(`<div style="color:#b91c1c; font-size: 13px;">Error loading projects from Supabase: ${escapeHtml(error.message || String(error))}</div>`);
       return;
     }
 
     if (!data || data.length === 0) {
-      setGridHtml(renderCards(LOCAL_FALLBACK_PROJECTS, "No projects returned from Supabase. Showing local previews instead."));
+      setGridHtml(`<div style="color: var(--text-muted);">No published projects found in Supabase.</div>`);
       return;
     }
 
@@ -214,56 +191,8 @@
     init().catch((err) => {
       const grid = document.getElementById("projects-grid");
       if (!grid) return;
-      const rootPrefix =
-        (document.getElementById("site-footer") &&
-          document.getElementById("site-footer").dataset &&
-          document.getElementById("site-footer").dataset.rootPath) ||
-        "../";
       const msg = escapeHtml(err && err.message ? err.message : String(err));
-      grid.innerHTML = `
-        <div style="color:#b91c1c; font-size: 13px; margin-bottom: 10px;">Error loading projects: ${msg}</div>
-        <div style="color: var(--text-muted); font-size: 12px; margin-bottom: 12px;">Showing local previews instead.</div>
-        <article class="project-card">
-          <a href="projects/fleet-maintenance-analytics.html" class="project-img-frame">
-            <img src="${rootPrefix}assets/images/projects/previews/fleet-maintenance-analytics.jpg" alt="Corrective Maintenance Analytics" loading="lazy">
-          </a>
-          <div class="project-content">
-            <h2 class="project-title"><a href="projects/fleet-maintenance-analytics.html">Corrective Maintenance Analytics</a></h2>
-            <p class="project-desc">Fleet maintenance KPIs, downtime visibility, and readiness reporting.</p>
-            <a href="projects/fleet-maintenance-analytics.html" class="project-link">View Case Study →</a>
-          </div>
-        </article>
-        <article class="project-card">
-          <a href="projects/inventory-control-dashboard.html" class="project-img-frame">
-            <img src="${rootPrefix}assets/images/projects/previews/inventory-control-dashboard.jpg" alt="Inventory Control Dashboard" loading="lazy">
-          </a>
-          <div class="project-content">
-            <h2 class="project-title"><a href="projects/inventory-control-dashboard.html">Inventory Control Dashboard</a></h2>
-            <p class="project-desc">Stock-level controls, usage monitoring, and cost exposure visibility.</p>
-            <a href="projects/inventory-control-dashboard.html" class="project-link">View Case Study →</a>
-          </div>
-        </article>
-        <article class="project-card">
-          <a href="projects/gps-movement-analytics.html" class="project-img-frame">
-            <img src="${rootPrefix}assets/images/projects/previews/gps-movement-analytics.jpg" alt="GPS Tracking & Movement Analysis" loading="lazy">
-          </a>
-          <div class="project-content">
-            <h2 class="project-title"><a href="projects/gps-movement-analytics.html">GPS Tracking & Movement Analysis</a></h2>
-            <p class="project-desc">Movement patterns, utilization, and operational movement oversight.</p>
-            <a href="projects/gps-movement-analytics.html" class="project-link">View Case Study →</a>
-          </div>
-        </article>
-        <article class="project-card">
-          <a href="projects/techloc-fleet-service-control.html" class="project-img-frame">
-            <img src="${rootPrefix}assets/images/projects/previews/techloc-fleet-service-control.jpg" alt="TechLoc Fleet & Service Control Platform" loading="lazy">
-          </a>
-          <div class="project-content">
-            <h2 class="project-title"><a href="projects/techloc-fleet-service-control.html">TechLoc Fleet & Service Control Platform</a></h2>
-            <p class="project-desc">Dispatch + service control visibility for fleet readiness execution.</p>
-            <a href="projects/techloc-fleet-service-control.html" class="project-link">View Case Study →</a>
-          </div>
-        </article>
-      `;
+      grid.innerHTML = `<div style="color:#b91c1c; font-size: 13px;">Error loading projects: ${msg}</div>`;
     });
   });
 })();
