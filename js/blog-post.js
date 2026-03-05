@@ -108,13 +108,30 @@
     return out;
   }
 
+  function splitBodyBlocks(raw) {
+    const normalized = String(raw || "").replace(/\r\n?/g, "\n");
+    const withBlankLines = normalized
+      .split(/\n{2,}/g)
+      .map((part) => String(part || "").trim())
+      .filter(Boolean);
+
+    if (withBlankLines.length > 1) return withBlankLines;
+
+    const lines = normalized
+      .split("\n")
+      .map((line) => String(line || "").trim())
+      .filter(Boolean);
+
+    return lines.length ? lines : withBlankLines;
+  }
+
   function renderArticleBody(rawBody, rootPrefix) {
     const raw = normalizeBlogBodyText(rawBody).trim();
     if (!raw) {
       return '<p class="blog-note">No content yet. Add the article body in Admin Dashboard → Blog.</p>';
     }
 
-    const blocks = raw.split(/\n{2,}/g).map((part) => String(part || "").trim()).filter(Boolean);
+    const blocks = splitBodyBlocks(raw);
     let imageCount = 0;
 
     return blocks
