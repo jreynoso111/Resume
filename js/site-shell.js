@@ -54,7 +54,7 @@
       const load3D = () => {
         const s = document.createElement('script');
         // Cache-bust so mobile clients don't get stuck with an older touch model.
-        s.src = basePath + 'js/background-animation.js?v=2';
+        s.src = basePath + 'js/background-animation.js?v=3';
         document.body.appendChild(s);
       };
 
@@ -346,6 +346,7 @@
         '--bg-soft': 'rgba(255, 255, 255, 0.85)',
         '--bg-alt': '#f0f2f5',
         '--accent': '#1f4f7b',
+        '--accent-rgb': '31, 79, 123',
         '--accent-soft': '#e0ecf7',
         '--accent-strong': '#153554',
         '--text-main': '#111827',
@@ -359,18 +360,19 @@
     {
       name: 'Dark',
       vars: {
-        '--bg': '#020617', /* Slate-950, very deep black-blue */
-        '--bg-soft': 'rgba(15, 23, 42, 0.85)', /* Slate-900 with opacity */
-        '--bg-alt': '#1e293b',
-        '--accent': '#38bdf8', /* Sky-400 */
-        '--accent-soft': '#0c4a6e',
-        '--accent-strong': '#e0f2fe',
-        '--text-main': '#f8fafc',
-        '--text-muted': '#94a3b8',
-        '--border-subtle': '#1e293b',
-        '--chip-bg': 'rgba(15, 23, 42, 0.85)',
-        '--header-bg': 'rgba(2, 6, 23, 0.85)',
-        '--text-on-accent': '#020617'
+        '--bg': '#050505',
+        '--bg-soft': 'rgba(15, 15, 15, 0.88)',
+        '--bg-alt': '#151515',
+        '--accent': '#d1d5db',
+        '--accent-rgb': '209, 213, 219',
+        '--accent-soft': '#242424',
+        '--accent-strong': '#f9fafb',
+        '--text-main': '#ffffff',
+        '--text-muted': '#d1d5db',
+        '--border-subtle': '#2f2f2f',
+        '--chip-bg': 'rgba(24, 24, 24, 0.9)',
+        '--header-bg': 'rgba(8, 8, 8, 0.9)',
+        '--text-on-accent': '#0a0a0a'
       }
     },
     {
@@ -380,6 +382,7 @@
         '--bg-soft': 'rgba(38, 38, 38, 0.85)', /* Neutral-800 with opacity */
         '--bg-alt': '#404040',
         '--accent': '#a3a3a3', /* Neutral-400 */
+        '--accent-rgb': '163, 163, 163',
         '--accent-soft': '#404040',
         '--accent-strong': '#ffffff',
         '--text-main': '#f5f5f5', /* Neutral-100 */

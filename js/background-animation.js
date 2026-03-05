@@ -6,6 +6,139 @@
 (function () {
     if (window.BG_ANIMATION_INITIALIZED) return;
 
+    function createRadialGlowTexture() {
+        const size = 512;
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        const center = size / 2;
+
+        const imageData = ctx.createImageData(size, size);
+        const data = imageData.data;
+        let i = 0;
+        for (let y = 0; y < size; y++) {
+            const ny = (y + 0.5 - center) / center;
+            for (let x = 0; x < size; x++) {
+                const nx = (x + 0.5 - center) / center;
+                const d = Math.sqrt((nx * nx) + (ny * ny));
+                let alpha = 0;
+                if (d < 1) {
+                    const core = Math.exp(-(d * d) * 4.8);
+                    const tail = Math.exp(-(d * d) * 1.6);
+                    const cutoff = Math.pow(Math.max(0, 1 - d), 1.2);
+                    alpha = ((core * 0.65) + (tail * 0.35)) * cutoff;
+                }
+                const a = Math.max(0, Math.min(255, Math.round(alpha * 255)));
+                data[i++] = 255;
+                data[i++] = 255;
+                data[i++] = 255;
+                data[i++] = a;
+            }
+        }
+        ctx.putImageData(imageData, 0, 0);
+
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.minFilter = THREE.LinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        texture.generateMipmaps = false;
+        texture.needsUpdate = true;
+        return texture;
+    }
+
+    function createHumanSilhouetteTexture() {
+        const size = 256;
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        const cx = size / 2;
+        const toX = (v) => cx + v;
+        const toY = (v) => v;
+
+        // Soft white edge to evoke a "Truth-like" silhouette.
+        ctx.fillStyle = 'rgba(255, 255, 255, 1)';
+        ctx.strokeStyle = 'rgba(255, 255, 255, 1)';
+        ctx.lineWidth = 5;
+        ctx.lineJoin = 'round';
+        ctx.lineCap = 'round';
+
+        // Head
+        ctx.beginPath();
+        ctx.arc(cx, toY(54), 15, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Main body (elongated, floating)
+        ctx.beginPath();
+        ctx.moveTo(toX(-18), toY(74));
+        ctx.quadraticCurveTo(toX(-34), toY(114), toX(-24), toY(156));
+        ctx.quadraticCurveTo(toX(-18), toY(196), toX(-13), toY(232));
+        ctx.lineTo(toX(13), toY(232));
+        ctx.quadraticCurveTo(toX(18), toY(196), toX(24), toY(156));
+        ctx.quadraticCurveTo(toX(34), toY(114), toX(18), toY(74));
+        ctx.quadraticCurveTo(toX(0), toY(66), toX(-18), toY(74));
+        ctx.closePath();
+        ctx.fill();
+
+        // Arms (long + slightly distorted)
+        ctx.beginPath();
+        ctx.moveTo(toX(-16), toY(94));
+        ctx.quadraticCurveTo(toX(-52), toY(122), toX(-62), toY(164));
+        ctx.quadraticCurveTo(toX(-66), toY(190), toX(-62), toY(214));
+        ctx.lineTo(toX(-52), toY(214));
+        ctx.quadraticCurveTo(toX(-56), toY(190), toX(-52), toY(168));
+        ctx.quadraticCurveTo(toX(-46), toY(134), toX(-10), toY(106));
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.moveTo(toX(16), toY(94));
+        ctx.quadraticCurveTo(toX(52), toY(122), toX(62), toY(164));
+        ctx.quadraticCurveTo(toX(66), toY(190), toX(62), toY(214));
+        ctx.lineTo(toX(52), toY(214));
+        ctx.quadraticCurveTo(toX(56), toY(190), toX(52), toY(168));
+        ctx.quadraticCurveTo(toX(46), toY(134), toX(10), toY(106));
+        ctx.closePath();
+        ctx.fill();
+
+        // Hands / finger-like tendrils
+        const tendrils = [
+            [-62, 213, -74, 226],
+            [-57, 213, -65, 230],
+            [-50, 213, -52, 232],
+            [62, 213, 74, 226],
+            [57, 213, 65, 230],
+            [50, 213, 52, 232]
+        ];
+        tendrils.forEach(([x1, y1, x2, y2]) => {
+            ctx.beginPath();
+            ctx.moveTo(toX(x1), toY(y1));
+            ctx.lineTo(toX(x2), toY(y2));
+            ctx.stroke();
+        });
+
+        // Legs (thin, merged lower form)
+        ctx.beginPath();
+        ctx.moveTo(toX(-11), toY(232));
+        ctx.quadraticCurveTo(toX(-15), toY(244), toX(-11), toY(252));
+        ctx.lineTo(toX(-2), toY(252));
+        ctx.lineTo(toX(0), toY(236));
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.moveTo(toX(11), toY(232));
+        ctx.quadraticCurveTo(toX(15), toY(244), toX(11), toY(252));
+        ctx.lineTo(toX(2), toY(252));
+        ctx.lineTo(toX(0), toY(236));
+        ctx.closePath();
+        ctx.fill();
+
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.needsUpdate = true;
+        return texture;
+    }
+
     function init() {
         if (window.BG_ANIMATION_INITIALIZED) return;
 
@@ -81,23 +214,93 @@
         }
 
         const materialDots = new THREE.PointsMaterial({
-            color: 0x1f4f7b,
+            color: 0x94a3b8,
             size: 0.15, // Smaller points for satellites
             transparent: true,
-            opacity: 0.6
+            opacity: 0.3
         });
         const points = new THREE.Points(geometryDots, materialDots);
         sphereGroup.add(points);
 
         // 2. Wireframe Connections (The "Network")
         const materialWire = new THREE.LineBasicMaterial({
-            color: 0x1f4f7b,
+            color: 0x94a3b8,
             transparent: true,
-            opacity: 0.06 // Very subtle lines
+            opacity: 0.08 // Very subtle lines
         });
         const wireframeGeometry = new THREE.WireframeGeometry(geometryDots);
         const lines = new THREE.LineSegments(wireframeGeometry, materialWire);
         sphereGroup.add(lines);
+
+        // 3. Core emitter: tiny floating human silhouette + soft glow.
+        const coreGroup = new THREE.Group();
+        sphereGroup.add(coreGroup);
+
+        const glowTexture = createRadialGlowTexture();
+        const silhouetteTexture = createHumanSilhouetteTexture();
+
+        const coreGlowMaterial = new THREE.SpriteMaterial({
+            map: glowTexture,
+            color: 0xffffff,
+            transparent: true,
+            opacity: 0.12,
+            depthWrite: false,
+            depthTest: false,
+            blending: THREE.AdditiveBlending
+        });
+        const coreGlow = new THREE.Sprite(coreGlowMaterial);
+        coreGlow.scale.set(12, 12, 1);
+        coreGroup.add(coreGlow);
+
+        // Volumetric-looking mist emitted from the core (no hard circular edge).
+        const mistCount = 320;
+        const mistPositions = new Float32Array(mistCount * 3);
+        for (let i = 0; i < mistCount; i++) {
+            // Gaussian spread around center to mimic light falloff from a point source.
+            const u1 = Math.max(1e-6, Math.random());
+            const u2 = Math.random();
+            const u3 = Math.max(1e-6, Math.random());
+            const u4 = Math.random();
+            const r1 = Math.sqrt(-2 * Math.log(u1));
+            const r2 = Math.sqrt(-2 * Math.log(u3));
+            const a1 = 2 * Math.PI * u2;
+            const a2 = 2 * Math.PI * u4;
+
+            mistPositions[(i * 3) + 0] = Math.cos(a1) * r1 * 6.5;
+            mistPositions[(i * 3) + 1] = Math.sin(a1) * r1 * 6.5;
+            mistPositions[(i * 3) + 2] = Math.cos(a2) * r2 * 2.4;
+        }
+        const mistGeometry = new THREE.BufferGeometry();
+        mistGeometry.setAttribute('position', new THREE.BufferAttribute(mistPositions, 3));
+        const mistMaterial = new THREE.PointsMaterial({
+            color: 0xffffff,
+            size: 1.35,
+            transparent: true,
+            opacity: 0.06,
+            map: glowTexture,
+            depthWrite: false,
+            depthTest: false,
+            blending: THREE.AdditiveBlending,
+            sizeAttenuation: true
+        });
+        const coreMist = new THREE.Points(mistGeometry, mistMaterial);
+        coreGroup.add(coreMist);
+
+        const silhouetteMaterial = new THREE.SpriteMaterial({
+            map: silhouetteTexture,
+            color: 0xffffff,
+            transparent: true,
+            opacity: 0.72,
+            depthWrite: false,
+            depthTest: false
+        });
+        const silhouette = new THREE.Sprite(silhouetteMaterial);
+        silhouette.scale.set(2.7, 4.8, 1);
+        coreGroup.add(silhouette);
+
+        let coreGlowBaseOpacity = 0.12;
+        let mistBaseOpacity = 0.06;
+        let silhouetteBaseOpacity = 0.72;
 
         function isInInteractionZone(clientX, clientY, pointerType) {
             const dx = clientX - windowHalfX;
@@ -220,21 +423,36 @@
         function updateColors() {
             const styles = getComputedStyle(document.documentElement);
             const accentHex = styles.getPropertyValue('--accent').trim();
+            const mutedHex = styles.getPropertyValue('--text-muted').trim();
+            const textMainHex = styles.getPropertyValue('--text-main').trim();
             const bgHex = styles.getPropertyValue('--bg').trim();
             const isLightMode = bgHex === '#f5f5f5' || bgHex === '#ffffff' || bgHex.includes('245');
 
-            const accentColor = new THREE.Color(accentHex || '#1f4f7b');
+            const baseColor = isLightMode ? (accentHex || '#1f4f7b') : (mutedHex || accentHex || '#94a3b8');
+            const accentColor = new THREE.Color(baseColor);
+            const glowColor = isLightMode
+                ? accentColor.clone()
+                : new THREE.Color(textMainHex || '#ffffff');
+            const silhouetteColor = new THREE.Color('#ffffff');
 
             materialDots.color = accentColor;
             materialWire.color = accentColor;
+            coreGlowMaterial.color.copy(glowColor);
+            mistMaterial.color.copy(glowColor);
+            silhouetteMaterial.color.copy(silhouetteColor);
 
             if (isLightMode) {
-                // Increased opacity from 0.3 to 0.7 for dots and 0.04 to 0.15 for wire in Light Mode
-                materialDots.opacity = 0.7;
-                materialWire.opacity = 0.15;
+                materialDots.opacity = 0.45;
+                materialWire.opacity = 0.1;
+                coreGlowBaseOpacity = 0.08;
+                mistBaseOpacity = 0.045;
+                silhouetteBaseOpacity = 0.58;
             } else {
-                materialDots.opacity = 0.6;
-                materialWire.opacity = 0.12;
+                materialDots.opacity = 0.26;
+                materialWire.opacity = 0.06;
+                coreGlowBaseOpacity = 0.12;
+                mistBaseOpacity = 0.06;
+                silhouetteBaseOpacity = 0.72;
             }
         }
 
@@ -246,6 +464,7 @@
         // --- ANIMATION LOOP ---
         function render() {
             requestAnimationFrame(render);
+            const t = performance.now() * 0.001;
 
             angularVelocity.x *= DRAG_DAMPING;
             angularVelocity.y *= DRAG_DAMPING;
@@ -255,6 +474,17 @@
 
             // Removed scroll-locked rotation to allow complete rotation
             // sphereGroup.rotation.x += (targetScrollY - sphereGroup.rotation.x) * 0.05;
+
+            const floatY = Math.sin(t * 1.25) * 0.42;
+            const pulse = 0.9 + (Math.sin(t * 1.7) * 0.1);
+            silhouette.position.y = floatY;
+            silhouette.material.rotation = Math.sin(t * 0.6) * 0.03;
+            coreGlow.position.y = floatY * 0.35;
+            coreGlowMaterial.opacity = coreGlowBaseOpacity * pulse;
+            mistMaterial.opacity = mistBaseOpacity * (0.95 + (Math.sin(t * 0.85 + 0.7) * 0.05));
+            coreMist.rotation.z += 0.0009;
+            coreMist.rotation.y += 0.0005;
+            silhouetteMaterial.opacity = silhouetteBaseOpacity * (0.94 + (Math.sin(t * 1.35 + 1.0) * 0.06));
 
             renderer.render(scene, camera);
         }

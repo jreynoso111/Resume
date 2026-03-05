@@ -129,7 +129,8 @@
 }
 
 .header-cta:hover {
-  background: #153554;
+  background: var(--accent-strong);
+  color: var(--text-on-accent);
 }
 
 .page-shell {
@@ -293,9 +294,9 @@
   inset: 0;
   background:
     radial-gradient(at 0% 0%, var(--accent) 0, transparent 50%),
-    radial-gradient(at 100% 0%, #153554 0, transparent 50%),
+    radial-gradient(at 100% 0%, var(--accent-strong) 0, transparent 50%),
     radial-gradient(at 100% 100%, var(--accent) 0, transparent 50%),
-    radial-gradient(at 0% 100%, #153554 0, transparent 50%);
+    radial-gradient(at 0% 100%, var(--accent-strong) 0, transparent 50%);
   opacity: 0.15;
 }
 
@@ -467,7 +468,7 @@ body.cms-admin-mode .screenshot-carousel__add {
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: rgba(10, 18, 28, 0.9);
+  background: rgba(0, 0, 0, 0.9);
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.2s ease;
@@ -486,7 +487,7 @@ body.cms-admin-mode .screenshot-carousel__add {
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.2);
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
-  background: #0f172a;
+  background: #111111;
 }
 
 .project-lightbox__close {
@@ -497,7 +498,7 @@ body.cms-admin-mode .screenshot-carousel__add {
   height: 42px;
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.35);
-  background: rgba(15, 23, 42, 0.8);
+  background: rgba(20, 20, 20, 0.8);
   color: #fff;
   font-size: 22px;
   line-height: 1;
@@ -505,7 +506,7 @@ body.cms-admin-mode .screenshot-carousel__add {
 }
 
 .project-lightbox__close:hover {
-  background: rgba(15, 23, 42, 0.95);
+  background: rgba(20, 20, 20, 0.95);
 }
 
 body.lightbox-open {
