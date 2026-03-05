@@ -92,7 +92,20 @@
   }
 
   function paragraphHtml(block) {
-    return `<p>${escapeHtml(block).replace(/\n/g, "<br>")}</p>`;
+    return `<p>${renderInlineFormatting(block).replace(/\n/g, "<br>")}</p>`;
+  }
+
+  function renderInlineFormatting(text) {
+    const safe = escapeHtml(text);
+    const withUnderline = safe.replace(/\+\+([^+\n][^+\n]*?)\+\+/g, "<u>$1</u>");
+    const withBold = withUnderline.replace(/\*\*([^*\n][^*\n]*?)\*\*/g, "<strong>$1</strong>");
+    const withItalic = withBold.replace(/(^|[^*])\*([^*\n][^*\n]*?)\*(?!\*)/g, "$1<em>$2</em>");
+    const withSize = withItalic.replace(/\[\[size:(\d{1,2})\]\]([\s\S]*?)\[\[\/size\]\]/g, (_m, sizeRaw, inner) => {
+      const sizeNum = Number(sizeRaw);
+      const size = Number.isFinite(sizeNum) ? Math.min(64, Math.max(10, Math.round(sizeNum))) : 16;
+      return `<span style="font-size:${size}px">${inner}</span>`;
+    });
+    return withSize;
   }
 
   function normalizeBlogBodyText(value) {
@@ -141,11 +154,11 @@
         }
 
         if (block.startsWith("## ")) {
-          return `<h2>${escapeHtml(block.slice(3).trim() || "Section")}</h2>`;
+          return `<h2>${renderInlineFormatting(block.slice(3).trim() || "Section")}</h2>`;
         }
 
         if (block.startsWith("### ")) {
-          return `<h3>${escapeHtml(block.slice(4).trim() || "Subsection")}</h3>`;
+          return `<h3>${renderInlineFormatting(block.slice(4).trim() || "Subsection")}</h3>`;
         }
 
         return paragraphHtml(block);

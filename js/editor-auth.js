@@ -1325,16 +1325,20 @@
       </details>
 
       <details class="cms-details">
-        <summary>Text size</summary>
+        <summary>Text style</summary>
         <div class="cms-section-box">
-          <div class="cms-section-title">Selected text block</div>
-          <div class="cms-section-label" id="cms-text-label">Click any text to adjust its size</div>
+          <div class="cms-section-title">Selected text</div>
+          <div class="cms-section-label" id="cms-text-label">Select text inside a paragraph to style it</div>
 
           <div class="cms-row">
             <button type="button" class="cms-btn-secondary" id="cms-text-smaller">A-</button>
             <button type="button" class="cms-btn-secondary" id="cms-text-bigger">A+</button>
           </div>
-          <button type="button" class="cms-btn-secondary" id="cms-text-reset" style="width:100%;">Reset size</button>
+          <div class="cms-row">
+            <button type="button" class="cms-btn-secondary" id="cms-text-bold"><b>B</b></button>
+            <button type="button" class="cms-btn-secondary" id="cms-text-italic"><i>I</i></button>
+            <button type="button" class="cms-btn-secondary" id="cms-text-underline"><u>U</u></button>
+          </div>
         </div>
       </details>
     `;
@@ -1396,7 +1400,9 @@
     state.panel.querySelector('#cms-add-section').addEventListener('click', addNewSection);
     state.panel.querySelector('#cms-text-smaller').addEventListener('click', () => adjustSelectedTextSize(-1));
     state.panel.querySelector('#cms-text-bigger').addEventListener('click', () => adjustSelectedTextSize(1));
-    state.panel.querySelector('#cms-text-reset').addEventListener('click', resetSelectedTextSize);
+    state.panel.querySelector('#cms-text-bold').addEventListener('click', () => toggleSelectedTextStyle('bold'));
+    state.panel.querySelector('#cms-text-italic').addEventListener('click', () => toggleSelectedTextStyle('italic'));
+    state.panel.querySelector('#cms-text-underline').addEventListener('click', () => toggleSelectedTextStyle('underline'));
   }
 
   function createLoginModal() {
@@ -2925,15 +2931,40 @@
     ].join('\n').replace(/\n{3,}/g, '\n\n').trim();
   }
 
-  function extractElementTextWithLineBreaks(element) {
+  function serializeInlineMarkdown(node) {
+    if (!node) return '';
+    if (node.nodeType === Node.TEXT_NODE) {
+      return String(node.nodeValue || '');
+    }
+    if (!(node instanceof HTMLElement)) return '';
+
+    const tag = String(node.tagName || '').toUpperCase();
+    if (tag === 'BR') return '\n';
+
+    const inner = Array.from(node.childNodes || []).map((child) => serializeInlineMarkdown(child)).join('');
+    if (!inner) return '';
+    if (tag === 'SPAN') {
+      const marker = String(node.getAttribute('data-cms-inline-size') || '').trim();
+      const parsed = Number(marker);
+      if (Number.isFinite(parsed) && parsed > 0) {
+        const size = clampInlineTextSize(parsed);
+        return `[[size:${size}]]${inner}[[/size]]`;
+      }
+    }
+    if (tag === 'STRONG' || tag === 'B') return `**${inner}**`;
+    if (tag === 'EM' || tag === 'I') return `*${inner}*`;
+    if (tag === 'U') return `++${inner}++`;
+    return inner;
+  }
+
+  function extractElementMarkdownWithLineBreaks(element) {
     if (!(element instanceof HTMLElement)) return '';
     const clone = element.cloneNode(true);
-    clone.querySelectorAll('br').forEach((node) => {
-      node.replaceWith('\n');
-    });
-    const raw = String(clone.textContent || '');
+    clone.querySelectorAll('script, style').forEach((node) => node.remove());
+    const raw = serializeInlineMarkdown(clone);
     const normalized = raw
       .replace(/\r\n?/g, '\n')
+      .replace(/\u00a0/g, ' ')
       .split('\n')
       .map((line) => line.replace(/\s+/g, ' ').trim())
       .join('\n')
@@ -2965,7 +2996,7 @@
     if (bodyRoot instanceof HTMLElement) {
       const children = Array.from(bodyRoot.children || []);
       if (children.length === 0) {
-        const text = normalizeBlogBodyTextForStorage(extractElementTextWithLineBreaks(bodyRoot));
+        const text = normalizeBlogBodyTextForStorage(extractElementMarkdownWithLineBreaks(bodyRoot));
         if (text) blocks.push(text);
       } else {
         children.forEach((child) => {
@@ -2987,7 +3018,7 @@
             return;
           }
 
-          const text = normalizeBlogBodyTextForStorage(extractElementTextWithLineBreaks(child));
+          const text = normalizeBlogBodyTextForStorage(extractElementMarkdownWithLineBreaks(child));
           if (text) blocks.push(text);
         });
       }
@@ -3550,11 +3581,28 @@
       return;
     }
 
-    const unwrapTags = new Set(['SPAN', 'FONT']);
+    const unwrapTags = new Set(['FONT']);
     const descendants = Array.from(editable.querySelectorAll('*'));
     descendants.forEach((node) => {
       const tag = node.tagName;
       if (tag === 'SCRIPT' || tag === 'STYLE') {
+        node.remove();
+        return;
+      }
+
+      if (tag === 'SPAN') {
+        const marker = String(node.getAttribute('data-cms-inline-size') || '').trim();
+        const parsed = Number(marker);
+        if (Number.isFinite(parsed) && parsed > 0) {
+          const clamped = clampInlineTextSize(parsed);
+          node.setAttribute('data-cms-inline-size', String(clamped));
+          node.style.cssText = `font-size:${clamped}px`;
+          node.removeAttribute('class');
+          return;
+        }
+        const parent = node.parentNode;
+        if (!parent) return;
+        while (node.firstChild) parent.insertBefore(node.firstChild, node);
         node.remove();
         return;
       }
@@ -3650,7 +3698,7 @@
   function updateTextLabel() {
     if (!state.textLabel) return;
     if (!state.selectedEditable || !document.contains(state.selectedEditable)) {
-      state.textLabel.textContent = 'Click any text to adjust its size';
+      state.textLabel.textContent = 'Select text inside a paragraph to style it';
       return;
     }
 
@@ -3660,32 +3708,90 @@
     state.textLabel.textContent = `<${tag}> ${preview}`;
   }
 
+  function getActiveTextSelectionRange() {
+    if (!state.selectedEditable || !document.contains(state.selectedEditable)) return null;
+    const selection = window.getSelection ? window.getSelection() : null;
+    if (!selection || selection.rangeCount === 0) return null;
+    const range = selection.getRangeAt(0);
+    if (range.collapsed) return null;
+
+    const startNode = range.startContainer;
+    const endNode = range.endContainer;
+    if (!state.selectedEditable.contains(startNode) || !state.selectedEditable.contains(endNode)) {
+      return null;
+    }
+    return { selection, range };
+  }
+
+  function clampInlineTextSize(value) {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return 16;
+    return Math.min(64, Math.max(10, Math.round(n)));
+  }
+
+  function findInlineSizeCarrier(node) {
+    if (!node) return null;
+    let el = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
+    while (el instanceof HTMLElement) {
+      if (el.hasAttribute('data-cms-inline-size')) return el;
+      if (el === state.selectedEditable) break;
+      el = el.parentElement;
+    }
+    return null;
+  }
+
   function adjustSelectedTextSize(direction) {
     if (!isAdmin()) return;
-    if (!state.selectedEditable || !document.contains(state.selectedEditable)) {
-      notify('Select a text block first.', 'warn');
+    const active = getActiveTextSelectionRange();
+    if (!active) {
+      notify('Select a part of the text first.', 'warn');
       return;
     }
 
-    const currentPx = parseFloat(window.getComputedStyle(state.selectedEditable).fontSize || '16') || 16;
-    const minPx = 10;
-    const maxPx = 64;
+    const { selection, range } = active;
+    const carrier = findInlineSizeCarrier(range.startContainer);
+    const baseElement = carrier
+      || (range.startContainer.nodeType === Node.ELEMENT_NODE ? range.startContainer : range.startContainer.parentElement)
+      || state.selectedEditable;
+    const basePx = carrier
+      ? clampInlineTextSize(carrier.getAttribute('data-cms-inline-size'))
+      : clampInlineTextSize(parseFloat(window.getComputedStyle(baseElement).fontSize || '16'));
     const step = direction > 0 ? 1 : -1;
-    const next = Math.min(maxPx, Math.max(minPx, Math.round(currentPx + step)));
-    state.selectedEditable.style.fontSize = `${next}px`;
-    scheduleAutosave('text-size');
+    const next = clampInlineTextSize(basePx + (step * 2));
+
+    const fragment = range.extractContents();
+    const span = document.createElement('span');
+    span.setAttribute('data-cms-inline-size', String(next));
+    span.style.fontSize = `${next}px`;
+    span.appendChild(fragment);
+    range.insertNode(span);
+
+    const nextRange = document.createRange();
+    nextRange.selectNodeContents(span);
+    selection.removeAllRanges();
+    selection.addRange(nextRange);
+
+    scheduleAutosave('text-size-inline');
     updateTextLabel();
   }
 
-  function resetSelectedTextSize() {
+  function toggleSelectedTextStyle(command) {
     if (!isAdmin()) return;
-    if (!state.selectedEditable || !document.contains(state.selectedEditable)) {
-      notify('Select a text block first.', 'warn');
+    const active = getActiveTextSelectionRange();
+    if (!active) {
+      notify('Select a part of the text first.', 'warn');
       return;
     }
-    state.selectedEditable.style.removeProperty('font-size');
-    scheduleAutosave('text-size-reset');
-    updateTextLabel();
+
+    try {
+      document.execCommand(command, false);
+      if (state.selectedEditable instanceof HTMLElement) {
+        sanitizeEditableFormatting(state.selectedEditable);
+      }
+      scheduleAutosave(`text-${command}`);
+    } catch (_e) {
+      notify('Could not apply text style.', 'warn');
+    }
   }
 
   function selectSection(section) {
