@@ -394,6 +394,13 @@
       background: rgba(11, 95, 255, 0.04);
     }
 
+    body.cms-admin-mode .blog-prose.blog-article-simple[data-cms-editable="1"] {
+      min-height: 280px;
+      padding: 14px 16px;
+      border-radius: 10px;
+      background: rgba(11, 95, 255, 0.04);
+    }
+
     body.cms-admin-mode [data-cms-section="1"] {
       position: relative;
       outline: 1px dashed rgba(11, 95, 255, 0.25);
@@ -1785,7 +1792,7 @@
 	    });
 	  }
 
-	  function stopEditorDomObserver() {
+  function stopEditorDomObserver() {
 	    if (state.editorDomRefreshTimer) {
 	      clearTimeout(state.editorDomRefreshTimer);
 	      state.editorDomRefreshTimer = null;
@@ -1794,7 +1801,15 @@
 	      try { state.editorDomObserver.disconnect(); } catch (_e) {}
 	      state.editorDomObserver = null;
 	    }
-	  }
+  }
+
+  function getUnifiedBlogPostBodyEditable() {
+    const path = getPreferredCurrentPagePath();
+    const isBlogPostPage = isBlogPostPath(path) || document.body.classList.contains('blog-post-page');
+    if (!isBlogPostPage) return null;
+    const bodyRoot = document.querySelector('.blog-prose.blog-article-simple') || document.querySelector('.blog-prose');
+    return bodyRoot instanceof HTMLElement ? bodyRoot : null;
+  }
 
 	  function refreshEditorTargets() {
 	    clearImageControls();
@@ -1820,6 +1835,21 @@
       if (picked.some((parent) => parent.contains(element))) return;
       picked.push(element);
     });
+
+    const unifiedBlogBody = getUnifiedBlogPostBodyEditable();
+    if (unifiedBlogBody instanceof HTMLElement) {
+      const filtered = picked.filter((element) => {
+        if (!(element instanceof HTMLElement)) return false;
+        if (element === unifiedBlogBody) return true;
+        if (unifiedBlogBody.contains(element)) return false;
+        return true;
+      });
+      if (!filtered.includes(unifiedBlogBody)) {
+        filtered.push(unifiedBlogBody);
+      }
+      picked.length = 0;
+      filtered.forEach((element) => picked.push(element));
+    }
 
     picked.forEach((element) => {
       element.setAttribute('data-cms-editable', '1');
@@ -2849,6 +2879,52 @@
     return out.trim();
   }
 
+  function getStandardBlogBodyTemplateForSync() {
+    return [
+      '## Context',
+      '',
+      'Describe the operational context and why this topic matters now.',
+      '',
+      '## Analysis',
+      '',
+      'Present the key evidence, constraints, and trade-offs.',
+      '',
+      '## Recommendation',
+      '',
+      'State the concrete decision, next steps, and expected outcome.'
+    ].join('\n');
+  }
+
+  function applyStandardBlogBodyStructureForSync(value) {
+    const raw = normalizeBlogBodyTextForStorage(value);
+    if (!raw) return getStandardBlogBodyTemplateForSync();
+    if (/^##\s+/m.test(raw)) return raw;
+
+    const blocks = raw
+      .split(/\n{2,}/g)
+      .map((part) => String(part || '').trim())
+      .filter(Boolean);
+
+    if (blocks.length === 0) return getStandardBlogBodyTemplateForSync();
+    const context = blocks[0] || '';
+    const recommendation = blocks.length > 1 ? (blocks[blocks.length - 1] || '') : '';
+    const analysis = blocks.slice(1, -1).join('\n\n').trim();
+
+    return [
+      '## Context',
+      '',
+      context || 'Add context.',
+      '',
+      '## Analysis',
+      '',
+      analysis || 'Add analysis.',
+      '',
+      '## Recommendation',
+      '',
+      recommendation || 'Add recommendation.'
+    ].join('\n').replace(/\n{3,}/g, '\n\n').trim();
+  }
+
   function extractElementTextWithLineBreaks(element) {
     if (!(element instanceof HTMLElement)) return '';
     const clone = element.cloneNode(true);
@@ -2921,7 +2997,7 @@
       slug,
       title: title || null,
       excerpt,
-      body: normalizeBlogBodyTextForStorage(blocks.join('\n\n')) || null
+      body: applyStandardBlogBodyStructureForSync(blocks.join('\n\n')) || null
     };
   }
 
