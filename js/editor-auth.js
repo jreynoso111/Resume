@@ -2837,6 +2837,116 @@
     return clean === 'pages/projects.html' || clean === 'projects.html';
   }
 
+  function normalizeBlogBodyTextForStorage(value) {
+    let out = String(value == null ? '' : value);
+    if (!out) return '';
+    out = out.replace(/\r\n?/g, '\n');
+    out = out.replace(/\\n/g, '\n');
+    if (/\/n\s*\/n/i.test(out)) {
+      out = out.replace(/\/n(?![a-z0-9_])/gi, '\n');
+    }
+    out = out.replace(/\n{3,}/g, '\n\n');
+    return out.trim();
+  }
+
+  function extractElementTextWithLineBreaks(element) {
+    if (!(element instanceof HTMLElement)) return '';
+    const clone = element.cloneNode(true);
+    clone.querySelectorAll('br').forEach((node) => {
+      node.replaceWith('\n');
+    });
+    const raw = String(clone.textContent || '');
+    const normalized = raw
+      .replace(/\r\n?/g, '\n')
+      .split('\n')
+      .map((line) => line.replace(/\s+/g, ' ').trim())
+      .join('\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+    return normalized;
+  }
+
+  function collectBlogPostRecordForSync(pathValue) {
+    const hasBlogPostDom = Boolean(document.querySelector('.blog-post-single'));
+    if (!isBlogPostPath(pathValue) && !hasBlogPostDom) return null;
+
+    let slug = '';
+    try {
+      const params = new URLSearchParams(location.search || '');
+      slug = normalizeBlogSlug(params.get('slug') || '');
+    } catch (_e) {
+      slug = '';
+    }
+    if (!slug) return null;
+
+    const titleNode = document.querySelector('.blog-post-title');
+    const excerptNode = document.querySelector('.blog-post-excerpt');
+    const bodyRoot = document.querySelector('.blog-prose.blog-article-simple') || document.querySelector('.blog-prose');
+    const title = compactText(titleNode ? titleNode.textContent : '');
+    const excerpt = compactText(excerptNode ? excerptNode.textContent : '') || null;
+
+    const blocks = [];
+    if (bodyRoot instanceof HTMLElement) {
+      const children = Array.from(bodyRoot.children || []);
+      if (children.length === 0) {
+        const text = normalizeBlogBodyTextForStorage(extractElementTextWithLineBreaks(bodyRoot));
+        if (text) blocks.push(text);
+      } else {
+        children.forEach((child) => {
+          if (!(child instanceof HTMLElement)) return;
+          const tag = String(child.tagName || '').toUpperCase();
+
+          if (tag === 'H2') {
+            const text = compactText(child.textContent || '');
+            if (text) blocks.push(`## ${text}`);
+            return;
+          }
+          if (tag === 'H3') {
+            const text = compactText(child.textContent || '');
+            if (text) blocks.push(`### ${text}`);
+            return;
+          }
+          if (tag === 'FIGURE') {
+            // Keep a single-image model: post cover only.
+            return;
+          }
+
+          const text = normalizeBlogBodyTextForStorage(extractElementTextWithLineBreaks(child));
+          if (text) blocks.push(text);
+        });
+      }
+    }
+
+    return {
+      slug,
+      title: title || null,
+      excerpt,
+      body: normalizeBlogBodyTextForStorage(blocks.join('\n\n')) || null
+    };
+  }
+
+  async function syncBlogPostRecord(sb, pathValue) {
+    const hasBlogPostDom = Boolean(document.querySelector('.blog-post-single'));
+    if (!isBlogPostPath(pathValue) && !hasBlogPostDom) return;
+    if (!sb || typeof sb.from !== 'function') return;
+
+    const row = collectBlogPostRecordForSync(pathValue);
+    if (!row || !row.slug) return;
+
+    const payload = {
+      excerpt: row.excerpt,
+      body: row.body,
+      updated_at: new Date().toISOString()
+    };
+    if (row.title) payload.title = row.title;
+
+    const { error } = await sb
+      .from('blog_posts')
+      .update(payload)
+      .eq('slug', row.slug);
+    if (error) throw error;
+  }
+
   function toProjectsPageHref(rawHref) {
     const normalized = normalizeProjectHref(rawHref);
     if (!normalized) return '';
@@ -3784,6 +3894,13 @@
         const msg = syncError && syncError.message ? syncError.message : String(syncError);
         console.warn('blog cover sync warning:', syncError);
         if (!silent) notify(`Blog cover sync warning: ${msg}`, 'warn');
+      }
+      try {
+        await syncBlogPostRecord(sb, path);
+      } catch (syncError) {
+        const msg = syncError && syncError.message ? syncError.message : String(syncError);
+        console.warn('blog post sync warning:', syncError);
+        if (!silent) notify(`Blog post sync warning: ${msg}`, 'warn');
       }
       const { error } = await sb.from(table).upsert({ path, html }, { onConflict: 'path' });
       if (error) throw error;

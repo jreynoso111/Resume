@@ -95,6 +95,19 @@
     return `<p>${escapeHtml(block).replace(/\n/g, "<br>")}</p>`;
   }
 
+  function normalizeBlogBodyText(value) {
+    let out = String(value == null ? "" : value);
+    if (!out) return "";
+    out = out.replace(/\r\n?/g, "\n");
+    out = out.replace(/\\n/g, "\n");
+    // Backward compatibility: some records stored "/n" markers.
+    if (/\/n\s*\/n/i.test(out)) {
+      out = out.replace(/\/n(?![a-z0-9_])/gi, "\n");
+    }
+    out = out.replace(/\n{3,}/g, "\n\n");
+    return out;
+  }
+
   function splitBodyBlocks(raw) {
     const normalized = String(raw || "").replace(/\r\n?/g, "\n");
     const withBlankLines = normalized
@@ -113,34 +126,18 @@
   }
 
   function renderArticleBody(rawBody, rootPrefix) {
-    const raw = String(rawBody == null ? "" : rawBody).trim();
+    const raw = normalizeBlogBodyText(rawBody).trim();
     if (!raw) {
       return '<p class="blog-note">No content yet. Add the article body in Admin Dashboard → Blog.</p>';
     }
 
     const blocks = splitBodyBlocks(raw);
-    let imageCount = 0;
 
     return blocks
       .map((block) => {
         const imgMatch = block.match(/^!\[(.*?)\]\((.*?)\)$/);
         if (imgMatch) {
-          if (imageCount >= 2) return "";
-          const alt = String(imgMatch[1] || "").trim() || "Article image";
-          const rawSrc = String(imgMatch[2] || "").trim();
-          const src = normalizeAssetUrl(rawSrc, rootPrefix);
-          const localFallback = localAssetUrl(rawSrc, rootPrefix);
-          const fallbackAttr =
-            localFallback && localFallback !== src
-              ? ` data-fallback-src="${escapeHtml(localFallback)}"`
-              : "";
-          if (!src) return "";
-          imageCount += 1;
-          return `
-            <figure class="blog-inline-image">
-              <img src="${escapeHtml(src)}"${fallbackAttr} alt="${escapeHtml(alt)}" loading="lazy">
-            </figure>
-          `;
+          return "";
         }
 
         if (block.startsWith("## ")) {
