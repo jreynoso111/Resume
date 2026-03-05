@@ -399,6 +399,7 @@
       padding: 14px 16px;
       border-radius: 10px;
       background: rgba(11, 95, 255, 0.04);
+      white-space: pre-wrap;
     }
 
     body.cms-admin-mode [data-cms-section="1"] {
@@ -1558,10 +1559,22 @@
       const editable = target.closest('[data-cms-editable="1"]');
       if (!(editable instanceof HTMLElement)) return;
 
-      const text = event.clipboardData ? String(event.clipboardData.getData('text/plain') || '') : '';
+      const clipboard = event.clipboardData || null;
+      const html = clipboard ? String(clipboard.getData('text/html') || '') : '';
+      const text = clipboard ? String(clipboard.getData('text/plain') || '') : '';
+
+      // Rich clipboard: let browser insert semantic HTML first, then sanitize to our safe subset.
+      if (html.trim()) {
+        setTimeout(() => {
+          sanitizeEditableFormatting(editable);
+          scheduleAutosave('text-paste-rich');
+        }, 0);
+        return;
+      }
+
       if (!text) return;
       event.preventDefault();
-      insertPlainTextAtCursor(text);
+      insertPlainTextBlockAtCursor(text);
       sanitizeEditableFormatting(editable);
       scheduleAutosave('text-paste');
     });
@@ -2964,12 +2977,13 @@
     const raw = serializeInlineMarkdown(clone);
     const normalized = raw
       .replace(/\r\n?/g, '\n')
+      .replace(/\u00a0{4}/g, '\t')
       .replace(/\u00a0/g, ' ')
       .split('\n')
-      .map((line) => line.replace(/\s+/g, ' ').trim())
+      .map((line) => line.replace(/[ \t]+$/g, ''))
       .join('\n')
       .replace(/\n{3,}/g, '\n\n')
-      .trim();
+      .replace(/^\n+|\n+$/g, '');
     return normalized;
   }
 
@@ -3505,6 +3519,35 @@
     selection.addRange(range);
   }
 
+  function insertFragmentAtCursor(fragment) {
+    const selection = window.getSelection ? window.getSelection() : null;
+    if (!selection || selection.rangeCount === 0) return;
+    const range = selection.getRangeAt(0);
+    range.deleteContents();
+
+    const lastNode = fragment.lastChild || null;
+    range.insertNode(fragment);
+
+    if (lastNode) {
+      range.setStartAfter(lastNode);
+      range.collapse(true);
+      selection.removeAllRanges();
+      selection.addRange(range);
+    }
+  }
+
+  function insertPlainTextBlockAtCursor(text) {
+    const raw = String(text || '').replace(/\r\n?/g, '\n');
+    const lines = raw.split('\n');
+    const frag = document.createDocumentFragment();
+    lines.forEach((line, idx) => {
+      const normalized = String(line || '').replace(/\t/g, '\u00a0\u00a0\u00a0\u00a0');
+      frag.appendChild(document.createTextNode(normalized));
+      if (idx < lines.length - 1) frag.appendChild(document.createElement('br'));
+    });
+    insertFragmentAtCursor(frag);
+  }
+
   function insertLineBreakAtCursor() {
     const selection = window.getSelection ? window.getSelection() : null;
     if (!selection || selection.rangeCount === 0) return;
@@ -3572,6 +3615,22 @@
     selection.addRange(range);
   }
 
+  function wrapElementContents(element, tagName) {
+    if (!(element instanceof HTMLElement)) return;
+    const wrapper = document.createElement(tagName);
+    while (element.firstChild) wrapper.appendChild(element.firstChild);
+    element.appendChild(wrapper);
+  }
+
+  function parseInlineFontSizePx(styleText) {
+    const raw = String(styleText || '').toLowerCase();
+    const px = raw.match(/font-size\s*:\s*([0-9]+(?:\.[0-9]+)?)px/);
+    if (px) return Number(px[1]);
+    const pt = raw.match(/font-size\s*:\s*([0-9]+(?:\.[0-9]+)?)pt/);
+    if (pt) return Number(pt[1]) * (4 / 3);
+    return NaN;
+  }
+
   function sanitizeEditableFormatting(editable) {
     if (!(editable instanceof HTMLElement)) return;
     flattenEditableBlockChildren(editable);
@@ -3600,6 +3659,35 @@
           node.removeAttribute('class');
           return;
         }
+
+        const styleRaw = String(node.getAttribute('style') || '');
+        const styleLower = styleRaw.toLowerCase();
+        const wantsBold = /font-weight\s*:\s*(bold|[6-9]00)/.test(styleLower);
+        const wantsItalic = /font-style\s*:\s*italic/.test(styleLower);
+        const wantsUnderline = /text-decoration[^;]*underline/.test(styleLower);
+        const sizeFromStyle = parseInlineFontSizePx(styleRaw);
+        const hasSemanticStyle = wantsBold || wantsItalic || wantsUnderline;
+
+        if (wantsUnderline) wrapElementContents(node, 'u');
+        if (wantsItalic) wrapElementContents(node, 'em');
+        if (wantsBold) wrapElementContents(node, 'strong');
+
+        if (Number.isFinite(sizeFromStyle) && sizeFromStyle > 0) {
+          const clamped = clampInlineTextSize(sizeFromStyle);
+          node.setAttribute('data-cms-inline-size', String(clamped));
+          node.style.cssText = `font-size:${clamped}px`;
+          node.removeAttribute('class');
+          return;
+        }
+
+        if (hasSemanticStyle) {
+          const parent = node.parentNode;
+          if (!parent) return;
+          while (node.firstChild) parent.insertBefore(node.firstChild, node);
+          node.remove();
+          return;
+        }
+
         const parent = node.parentNode;
         if (!parent) return;
         while (node.firstChild) parent.insertBefore(node.firstChild, node);
