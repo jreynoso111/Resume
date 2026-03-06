@@ -252,6 +252,64 @@
     return 'desktop';
   }
 
+  function buildGeoMetadata(raw) {
+    if (!raw || typeof raw !== 'object') return null;
+    const country = String(raw.country || '').trim();
+    const countryCode = String(raw.country_code || '').trim().toUpperCase();
+    const region = String(raw.region || '').trim();
+    const regionCode = String(raw.region_code || '').trim().toUpperCase();
+    const city = String(raw.city || '').trim();
+    const timezone = String(raw.timezone && raw.timezone.id ? raw.timezone.id : raw.timezone || '').trim();
+
+    if (!country && !region && !city) return null;
+    return {
+      country: country || null,
+      country_code: countryCode || null,
+      region: region || null,
+      region_code: regionCode || null,
+      state: region || null,
+      state_code: regionCode || null,
+      city: city || null,
+      geo_timezone: timezone || null
+    };
+  }
+
+  async function fetchGeoMetadata() {
+    const cacheKey = 'resume_analytics_geo_v1';
+    const cached = readStorage(window.sessionStorage, cacheKey);
+    if (cached) {
+      try {
+        return JSON.parse(cached);
+      } catch (_e) {}
+    }
+
+    if (typeof window.fetch !== 'function') return null;
+
+    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timeoutId = window.setTimeout(() => {
+      if (controller) controller.abort();
+    }, 1800);
+
+    try {
+      const response = await fetch('https://ipwho.is/', {
+        method: 'GET',
+        signal: controller ? controller.signal : undefined
+      });
+      if (!response.ok) return null;
+      const data = await response.json();
+      if (!data || data.success === false) return null;
+      const geo = buildGeoMetadata(data);
+      if (geo) {
+        writeStorage(window.sessionStorage, cacheKey, JSON.stringify(geo));
+      }
+      return geo;
+    } catch (_e) {
+      return null;
+    } finally {
+      window.clearTimeout(timeoutId);
+    }
+  }
+
   async function ensurePublicSupabaseConfig() {
     const cfg = window.__SUPABASE_CONFIG__;
     if (cfg && cfg.url && cfg.anonKey) return cfg;
@@ -271,10 +329,11 @@
     );
   }
 
-  function buildAnalyticsPayload() {
+  async function buildAnalyticsPayload() {
     const params = new URLSearchParams(window.location.search || '');
     const referrer = String(document.referrer || '').trim();
     const path = String(window.location.pathname || '/');
+    const geo = await fetchGeoMetadata();
     const payload = {
       event_type: 'page_view',
       page_path: path || '/',
@@ -296,7 +355,8 @@
       user_agent: String(navigator.userAgent || '').slice(0, 500) || null,
       metadata: {
         search: String(window.location.search || ''),
-        hash: String(window.location.hash || '')
+        hash: String(window.location.hash || ''),
+        ...(geo || {})
       }
     };
     return payload;
@@ -320,7 +380,7 @@
       }
     });
 
-    const payload = buildAnalyticsPayload();
+    const payload = await buildAnalyticsPayload();
     const { error } = await client.from('site_analytics_events').insert([payload]);
     if (error) {
       // Keep this non-fatal for visitors.
