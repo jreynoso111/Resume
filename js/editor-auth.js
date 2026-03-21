@@ -574,6 +574,32 @@
     }
   }
 
+  async function savePageSnapshotToLocalServer(path, html) {
+    const res = await fetch('/__cms/save', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ path, html })
+    });
+
+    let payload = null;
+    try {
+      payload = await res.json();
+    } catch (_e) {
+      payload = null;
+    }
+
+    if (!res.ok || !payload || payload.ok !== true) {
+      const message = payload && payload.error
+        ? String(payload.error)
+        : `Local save failed (${res.status})`;
+      throw new Error(message);
+    }
+
+    return payload;
+  }
+
   function loadScript(src) {
     return new Promise((resolve, reject) => {
       const existing = Array.from(document.scripts || []).find((s) => (s.getAttribute('src') || s.src || '') === src);
@@ -603,7 +629,7 @@
 
     // Try loading config from the site root based on current page depth.
     try {
-      await loadScript(toPageAssetPath('js/supabase-config.js'));
+      await loadScript(toPageAssetPath('js/supabase-config.js?v=2'));
     } catch (error) {
       return null;
     }
@@ -4139,49 +4165,67 @@
 
     try {
       const html = buildCleanHtmlSnapshot();
-      const cfg = await getSupabaseConfig();
-      const sb = await getSupabaseClient();
-      if (!sb || !cfg || !cfg.cms || !cfg.cms.pagesTable) {
-        throw new Error('Supabase CMS is required. Check js/supabase-config.js and sign in as admin.');
-      }
-
-      const table = String(cfg.cms.pagesTable || 'cms_pages');
       const path = getPreferredCurrentPagePath();
+      const serverMode = await detectServerMode();
+      let savedLocally = false;
+
       if (path.startsWith('admin/')) {
         if (!silent) notify('Publishing admin pages is disabled.', 'warn');
         return;
       }
-      try {
-        await syncProjectsGridRecords(sb, path);
-      } catch (syncError) {
-        const msg = syncError && syncError.message ? syncError.message : String(syncError);
-        console.warn('projects sync warning:', syncError);
-        if (!silent) notify(`Projects sync warning: ${msg}`, 'warn');
+
+      if (serverMode) {
+        await savePageSnapshotToLocalServer(path, html);
+        savedLocally = true;
       }
-      try {
-        await syncBlogCoverRecords(sb, path);
-      } catch (syncError) {
-        const msg = syncError && syncError.message ? syncError.message : String(syncError);
-        console.warn('blog cover sync warning:', syncError);
-        if (!silent) notify(`Blog cover sync warning: ${msg}`, 'warn');
+
+      const cfg = await getSupabaseConfig();
+      const sb = await getSupabaseClient();
+      const canPublishToSupabase = Boolean(sb && cfg && cfg.cms && cfg.cms.pagesTable);
+
+      if (canPublishToSupabase) {
+        const table = String(cfg.cms.pagesTable || 'cms_pages');
+        try {
+          await syncProjectsGridRecords(sb, path);
+        } catch (syncError) {
+          const msg = syncError && syncError.message ? syncError.message : String(syncError);
+          console.warn('projects sync warning:', syncError);
+          if (!silent) notify(`Projects sync warning: ${msg}`, 'warn');
+        }
+        try {
+          await syncBlogCoverRecords(sb, path);
+        } catch (syncError) {
+          const msg = syncError && syncError.message ? syncError.message : String(syncError);
+          console.warn('blog cover sync warning:', syncError);
+          if (!silent) notify(`Blog cover sync warning: ${msg}`, 'warn');
+        }
+        try {
+          await syncBlogPostRecord(sb, path);
+        } catch (syncError) {
+          const msg = syncError && syncError.message ? syncError.message : String(syncError);
+          console.warn('blog post sync warning:', syncError);
+          if (!silent) notify(`Blog post sync warning: ${msg}`, 'warn');
+        }
+        const { error } = await sb.from(table).upsert({ path, html }, { onConflict: 'path' });
+        if (error) throw error;
+        await tryInsertCmsPublishLog(sb, path, reason, html);
+      } else if (!savedLocally) {
+        throw new Error('No publish target available. Start the local dev server or check js/supabase-config.js.');
       }
-      try {
-        await syncBlogPostRecord(sb, path);
-      } catch (syncError) {
-        const msg = syncError && syncError.message ? syncError.message : String(syncError);
-        console.warn('blog post sync warning:', syncError);
-        if (!silent) notify(`Blog post sync warning: ${msg}`, 'warn');
-      }
-      const { error } = await sb.from(table).upsert({ path, html }, { onConflict: 'path' });
-      if (error) throw error;
-      await tryInsertCmsPublishLog(sb, path, reason, html);
+
       if ((Number(state.localChangeVersion) || 0) === changeVersionAtPublishStart) {
         state.hasUnpublishedChanges = false;
         state.lastLocalChangeReason = '';
       }
 
       if (!silent) {
-        notify(`Published: ${path}`, 'success');
+        if (savedLocally && canPublishToSupabase) {
+          notify(`Saved locally and published: ${path}`, 'success');
+        } else if (savedLocally) {
+          notify(`Saved locally: ${path}`, 'success');
+        } else {
+          notify(`Published: ${path}`, 'success');
+        }
       }
     } catch (error) {
       console.error(error);

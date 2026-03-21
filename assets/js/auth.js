@@ -152,7 +152,7 @@
       const current = window.__SUPABASE_CONFIG__;
       if (current && current.url && current.anonKey) return current;
 
-      await loadScriptOnce(getAppHref("js/supabase-config.js"), () => {
+      await loadScriptOnce(getAppHref("js/supabase-config.js?v=2"), () => {
         const cfg = window.__SUPABASE_CONFIG__;
         return Boolean(cfg && cfg.url && cfg.anonKey);
       });
