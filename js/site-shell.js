@@ -314,7 +314,7 @@
     const cfg = window.__SUPABASE_CONFIG__;
     if (cfg && cfg.url && cfg.anonKey) return cfg;
     const basePath = getShellBasePath();
-    await loadScriptOnce(`${basePath}js/supabase-config.js`, () => {
+    await loadScriptOnce(`${basePath}js/supabase-config.js?v=2`, () => {
       const c = window.__SUPABASE_CONFIG__;
       return Boolean(c && c.url && c.anonKey);
     });

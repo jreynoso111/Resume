@@ -83,7 +83,7 @@
     async function ensureSupabaseConfig(rootPrefix) {
         const current = window.__SUPABASE_CONFIG__;
         if (current && current.url && current.anonKey) return current;
-        const src = `${normalizeRootPrefix(rootPrefix)}js/supabase-config.js`;
+        const src = `${normalizeRootPrefix(rootPrefix)}js/supabase-config.js?v=2`;
         try {
             await loadScript(src);
         } catch (_e) {

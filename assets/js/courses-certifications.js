@@ -255,7 +255,7 @@
     const cfg = window.__SUPABASE_CONFIG__;
     if (cfg && cfg.url && cfg.anonKey) return cfg;
     try {
-      await loadScript(`${rootPrefix}js/supabase-config.js`);
+      await loadScript(`${rootPrefix}js/supabase-config.js?v=2`);
     } catch (_e) {
       return null;
     }
