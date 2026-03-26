@@ -1925,7 +1925,8 @@ body.about-page #philosophy + div + .standard-text + .standard-text {
 
 /* RESPONSIVE (phones + tablets) */
 @media (max-width: 980px) {
-  .hero-grid {
+  .hero-grid,
+  .hero-intro .hero-grid {
     grid-template-columns: minmax(0, 1fr);
   }
 
@@ -1953,6 +1954,13 @@ body.about-page #philosophy + div + .standard-text + .standard-text {
 
   .hero-intro .hero-copy {
     padding-top: 10px;
+  }
+
+  .hero-intro .hero-copy,
+  .hero-intro .hero-quick-grid,
+  .hero-proof-strip {
+    width: 100%;
+    max-width: none;
   }
 
   .hero-proof-strip {
@@ -2055,6 +2063,7 @@ body.about-page #philosophy + div + .standard-text + .standard-text {
 
   .hero-intro .hero-grid {
     gap: 18px;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .hero-intro .hero-copy {
@@ -2102,6 +2111,19 @@ body.about-page #philosophy + div + .standard-text + .standard-text {
     grid-template-columns: minmax(0, 1fr);
     gap: 10px;
     padding-top: 4px;
+  }
+
+  .hero-kicker,
+  .hero-name,
+  .hero-role-line,
+  .hero-intro .hero-subtitle,
+  .hero-quick-label,
+  .hero-quick-value,
+  .hero-quick-text,
+  .hero-proof-value,
+  .hero-proof-label {
+    word-break: normal;
+    overflow-wrap: anywhere;
   }
 
   .hero-quick-card {
@@ -2357,6 +2379,29 @@ body.about-page #philosophy + div + .standard-text + .standard-text {
 
   .hero-intro .pill {
     text-align: center;
+  }
+
+  .hero-quick-grid {
+    gap: 8px;
+  }
+
+  .hero-quick-card {
+    padding: 12px 14px;
+    border-radius: 14px;
+  }
+
+  .hero-quick-label {
+    font-size: 9px;
+    margin-bottom: 4px;
+  }
+
+  .hero-quick-value {
+    font-size: 16px;
+    margin-bottom: 0;
+  }
+
+  .hero-quick-text {
+    display: none;
   }
 
   .hero-proof-item:nth-child(2) .hero-proof-value {
