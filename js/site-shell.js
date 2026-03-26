@@ -252,26 +252,63 @@
     return 'desktop';
   }
 
+  function firstFilledText(...values) {
+    for (const value of values) {
+      const text = String(value || '').trim();
+      if (text) return text;
+    }
+    return '';
+  }
+
   function buildGeoMetadata(raw) {
     if (!raw || typeof raw !== 'object') return null;
-    const country = String(raw.country || '').trim();
-    const countryCode = String(raw.country_code || '').trim().toUpperCase();
-    const region = String(raw.region || '').trim();
-    const regionCode = String(raw.region_code || '').trim().toUpperCase();
-    const city = String(raw.city || '').trim();
-    const timezone = String(raw.timezone && raw.timezone.id ? raw.timezone.id : raw.timezone || '').trim();
+    const country = firstFilledText(raw.country, raw.country_name, raw.countryName);
+    const countryCode = firstFilledText(raw.country_code, raw.countryCode, raw.countryCodeIso3).toUpperCase();
+    const region = firstFilledText(raw.region, raw.region_name, raw.state, raw.state_prov, raw.province);
+    const regionCode = firstFilledText(raw.region_code, raw.regionCode, raw.state_code, raw.region_iso_code).toUpperCase();
+    const city = firstFilledText(raw.city, raw.city_name);
+    const timezone = firstFilledText(
+      raw.timezone && raw.timezone.id,
+      raw.timezone,
+      raw.time_zone && raw.time_zone.name
+    );
 
     if (!country && !region && !city) return null;
     return {
       country: country || null,
+      country_name: country || null,
       country_code: countryCode || null,
       region: region || null,
+      region_name: region || null,
       region_code: regionCode || null,
       state: region || null,
       state_code: regionCode || null,
       city: city || null,
       geo_timezone: timezone || null
     };
+  }
+
+  async function fetchJsonWithTimeout(url, timeoutMs) {
+    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timeoutId = window.setTimeout(() => {
+      if (controller) controller.abort();
+    }, timeoutMs);
+
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        signal: controller ? controller.signal : undefined,
+        headers: {
+          Accept: 'application/json'
+        }
+      });
+      if (!response.ok) return null;
+      return await response.json();
+    } catch (_e) {
+      return null;
+    } finally {
+      window.clearTimeout(timeoutId);
+    }
   }
 
   async function fetchGeoMetadata() {
@@ -285,29 +322,29 @@
 
     if (typeof window.fetch !== 'function') return null;
 
-    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-    const timeoutId = window.setTimeout(() => {
-      if (controller) controller.abort();
-    }, 1800);
+    const sources = [
+      async () => {
+        const data = await fetchJsonWithTimeout('https://ipwho.is/', 1800);
+        if (!data || data.success === false) return null;
+        return data;
+      },
+      async () => {
+        const data = await fetchJsonWithTimeout('https://ipapi.co/json/', 1800);
+        if (!data || data.error) return null;
+        return data;
+      }
+    ];
 
-    try {
-      const response = await fetch('https://ipwho.is/', {
-        method: 'GET',
-        signal: controller ? controller.signal : undefined
-      });
-      if (!response.ok) return null;
-      const data = await response.json();
-      if (!data || data.success === false) return null;
+    for (const load of sources) {
+      const data = await load();
       const geo = buildGeoMetadata(data);
       if (geo) {
         writeStorage(window.sessionStorage, cacheKey, JSON.stringify(geo));
+        return geo;
       }
-      return geo;
-    } catch (_e) {
-      return null;
-    } finally {
-      window.clearTimeout(timeoutId);
     }
+
+    return null;
   }
 
   async function ensurePublicSupabaseConfig() {
