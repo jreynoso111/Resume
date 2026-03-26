@@ -96,6 +96,7 @@ body {
   line-height: 1.6;
 
   -webkit-font-smoothing: antialiased;
+  overflow-x: clip;
 
 }
 
@@ -581,6 +582,7 @@ body.nav-open {
   font-weight: 600;
 
   color: var(--accent-strong);
+  line-height: 1.15;
 
 }
 
@@ -1625,6 +1627,15 @@ body.about-page #philosophy + div + .standard-text + .standard-text {
   align-items: start;
 }
 
+.hero-grid > *,
+.highlights-inner > *,
+.experience-card,
+.mini-card,
+.cc-card,
+.cc-card > * {
+  min-width: 0;
+}
+
 .hero-intro .hero-copy {
   padding-top: 28px;
 }
@@ -1667,6 +1678,7 @@ body.about-page #philosophy + div + .standard-text + .standard-text {
   letter-spacing: -0.03em;
   color: var(--accent-strong);
   font-weight: 600;
+  overflow-wrap: anywhere;
 }
 
 .hero-rule {
@@ -1765,6 +1777,7 @@ body.about-page #philosophy + div + .standard-text + .standard-text {
   font-weight: 700;
   color: var(--text-main);
   margin-bottom: 4px;
+  overflow-wrap: anywhere;
 }
 
 .hero-quick-text {
@@ -1804,6 +1817,7 @@ body.about-page #philosophy + div + .standard-text + .standard-text {
   letter-spacing: -0.05em;
   color: var(--text-main);
   margin-bottom: 6px;
+  overflow-wrap: anywhere;
 }
 
 .hero-proof-label {
@@ -1934,20 +1948,21 @@ body.about-page #philosophy + div + .standard-text + .standard-text {
   }
 
   .hero-intro .hero-grid {
-    gap: 28px;
+    gap: 24px;
   }
 
   .hero-intro .hero-copy {
-    padding-top: 18px;
+    padding-top: 10px;
   }
 
   .hero-proof-strip {
     grid-template-columns: minmax(0, 1fr);
+    margin-top: 22px;
   }
 
   .hero-quick-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    padding-top: 18px;
+    grid-template-columns: minmax(0, 1fr);
+    padding-top: 8px;
   }
 
   .hero-proof-item + .hero-proof-item {
@@ -1996,58 +2011,361 @@ body.about-page #philosophy + div + .standard-text + .standard-text {
 
 @media (max-width: 640px) {
   .shell {
-    padding: 0 14px;
+    padding: 0 16px;
+  }
+
+  .nav {
+    padding: 8px 0;
+    gap: 12px;
+  }
+
+  .logo-wrap {
+    gap: 8px;
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  .logo-mark {
+    width: 32px;
+    height: 32px;
+    font-size: 12px;
+  }
+
+  .logo-text-block {
+    min-width: 0;
+  }
+
+  .logo-title {
+    font-size: 13px;
+    overflow-wrap: anywhere;
+  }
+
+  .logo-sub {
+    font-size: 10px;
+    line-height: 1.2;
   }
 
   .hero {
-    padding: 18px 0 4px;
+    padding: 14px 0 2px;
   }
 
   .hero-intro {
-    padding: 22px 0 16px;
+    padding: 18px 0 14px;
+  }
+
+  .hero-intro .hero-grid {
+    gap: 18px;
+  }
+
+  .hero-intro .hero-copy {
+    padding-top: 6px;
   }
 
   .hero-kicker {
-    margin-bottom: 14px;
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    margin-bottom: 10px;
   }
 
   .hero-name {
-    font-size: clamp(36px, 12vw, 46px);
+    font-size: clamp(34px, 11vw, 42px);
+    margin-bottom: 10px;
   }
 
   .hero-role-line {
-    font-size: 18px;
+    font-size: 16px;
+    max-width: none;
   }
 
-  .hero-subtitle {
+  .hero-intro .hero-subtitle {
     font-size: 13px;
+    line-height: 1.65;
+    max-width: none;
+  }
+
+  .hero-intro .hero-actions {
+    gap: 14px;
+    margin-top: 18px;
+  }
+
+  .hero-intro .hero-pills {
+    gap: 6px;
+  }
+
+  .hero-intro .pill {
+    padding: 5px 8px;
+    font-size: 9px;
+    letter-spacing: 0.06em;
   }
 
   .hero-quick-grid {
     grid-template-columns: minmax(0, 1fr);
-    padding-top: 12px;
+    gap: 10px;
+    padding-top: 4px;
   }
 
   .hero-quick-card {
-    padding: 14px 16px;
+    padding: 14px;
+    border-radius: 16px;
+  }
+
+  .hero-quick-value {
+    font-size: 18px;
+  }
+
+  .hero-quick-text {
+    font-size: 11px;
+    line-height: 1.5;
   }
 
   .hero-intro .hero-cta-row {
     width: 100%;
+    gap: 10px;
   }
 
   .hero-intro .hero-cta-row > * {
-    flex: 1 1 auto;
+    flex: 1 1 100%;
+    min-width: 0;
     justify-content: center;
   }
 
+  .btn-primary,
+  .hero-secondary-btn {
+    min-height: 44px;
+    padding: 10px 14px;
+  }
+
+  .hero-proof-strip {
+    margin-top: 18px;
+    border-radius: 16px;
+  }
+
   .hero-proof-item {
-    padding: 18px 16px;
+    padding: 16px 14px;
     min-height: auto;
+  }
+
+  .hero-proof-value {
+    font-size: clamp(20px, 8vw, 28px);
+    line-height: 1.08;
+  }
+
+  .hero-proof-item:nth-child(2) .hero-proof-value {
+    font-size: clamp(16px, 6.8vw, 22px);
+    line-height: 1.12;
+  }
+
+  .hero-proof-label {
+    max-width: none;
+    font-size: 11px;
+    line-height: 1.5;
+  }
+
+  .section-title {
+    font-size: 17px;
+  }
+
+  .section-sub {
+    font-size: 12px;
+    margin-bottom: 12px;
+  }
+
+  .experience-card {
+    padding: 12px 14px;
+  }
+
+  .exp-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .exp-role {
+    font-size: 13px;
+    overflow-wrap: anywhere;
+  }
+
+  .exp-company {
+    font-size: 12px;
+    overflow-wrap: anywhere;
+  }
+
+  .exp-tags {
+    margin: 8px 0 4px;
+    font-size: 10px;
+  }
+
+  .exp-tags span {
+    padding: 2px 7px;
+    margin-right: 3px;
+  }
+
+  .exp-details ul {
+    padding-left: 16px;
+  }
+
+  .mini-grid {
+    gap: 8px;
+  }
+
+  .mini-card {
+    padding: 12px;
+  }
+
+  .mini-main {
+    font-size: 12.5px;
+    overflow-wrap: anywhere;
+  }
+
+  .mini-meta {
+    line-height: 1.55;
+  }
+
+  .cc-controls {
+    gap: 8px;
+    margin: 10px 0 12px;
+  }
+
+  .cc-header-row {
+    gap: 10px;
+  }
+
+  .cc-admin-controls,
+  .cc-header-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .cc-tabs,
+  .cc-sort {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .cc-tabs::-webkit-scrollbar,
+  .cc-sort::-webkit-scrollbar {
+    display: none;
+  }
+
+  .cc-tab,
+  .cc-sort-btn {
+    flex: 0 0 auto;
+    padding: 7px 10px;
+  }
+
+  .cc-search {
+    font-size: 16px;
+    padding: 11px 12px;
+  }
+
+  .cc-grid {
+    gap: 8px;
+  }
+
+  .cc-card {
+    padding: 12px;
+  }
+
+  .cc-card-top,
+  .cc-meta,
+  .cc-card-footer {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .cc-card-footer {
+    gap: 8px;
+  }
+
+  .cc-year {
+    align-self: flex-start;
+  }
+
+  .cc-title,
+  .cc-issuer {
+    overflow-wrap: anywhere;
+  }
+
+  .cc-actions {
+    width: 100%;
+    justify-content: flex-start;
   }
 
   .hero-meta-row {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .footer-row,
+  .footer-links {
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 480px) {
+  .nav {
+    gap: 10px;
+  }
+
+  .nav-cta {
+    display: none;
+  }
+
+  .nav-toggle {
+    padding: 8px 9px;
+  }
+
+  .logo-mark {
+    width: 30px;
+    height: 30px;
+  }
+
+  .logo-title {
+    font-size: 12px;
+  }
+
+  .logo-sub {
+    display: none;
+  }
+
+  .hero-name {
+    font-size: clamp(30px, 12vw, 38px);
+  }
+
+  .hero-role-line {
+    font-size: 15px;
+  }
+
+  .hero-intro .hero-subtitle {
+    font-size: 12.5px;
+  }
+
+  .hero-intro .hero-cta-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .hero-intro .hero-cta-row > * {
+    width: 100%;
+  }
+
+  .hero-intro .hero-pills {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .hero-intro .pill {
+    text-align: center;
+  }
+
+  .hero-proof-item:nth-child(2) .hero-proof-value {
+    font-size: 15px;
+  }
+
+  .cc-btn {
+    width: 100%;
+    justify-content: center;
   }
 }
 
