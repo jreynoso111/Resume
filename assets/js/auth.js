@@ -2,7 +2,7 @@
   "use strict";
 
   const PROFILE_TABLE = "profiles";
-  const SUPABASE_CDN = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
+  const SUPABASE_VENDOR_PATH = "assets/vendor/supabase/supabase-js.v2.js";
 
   let basePathnameCache = null;
   let configPromise = null;
@@ -169,7 +169,7 @@
 
   async function ensureSupabaseLibrary() {
     if (window.supabase && typeof window.supabase.createClient === "function") return;
-    await loadScriptOnce(SUPABASE_CDN, () => {
+    await loadScriptOnce(getAppHref(SUPABASE_VENDOR_PATH), () => {
       return Boolean(window.supabase && typeof window.supabase.createClient === "function");
     });
   }
@@ -185,7 +185,7 @@
         auth: {
           autoRefreshToken: true,
           persistSession: true,
-          detectSessionInUrl: true,
+          detectSessionInUrl: false,
         },
       });
     })();

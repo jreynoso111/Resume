@@ -1,31 +1,91 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const ADMIN_EMAIL = "jreynoso111@gmail.com";
+const DEFAULT_ADMIN_EMAIL = "jreynoso111@gmail.com";
+const DEFAULT_BUCKET = "resume-cms";
+const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
+const ALLOWED_MIME_TYPES = new Set([
+  "image/avif",
+  "image/gif",
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+]);
 
-function corsHeaders() {
+function parseAllowedOrigins(raw: string) {
+  return new Set(
+    String(raw || "")
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean),
+  );
+}
+
+function resolveAllowOrigin(req: Request) {
+  const allowedOrigins = parseAllowedOrigins(Deno.env.get("CMS_ALLOWED_ORIGINS") ?? "");
+  if (allowedOrigins.size === 0) return "*";
+  const origin = String(req.headers.get("Origin") ?? "").trim();
+  if (!origin) return "null";
+  return allowedOrigins.has(origin) ? origin : "null";
+}
+
+function corsHeaders(req: Request) {
   return {
-    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Origin": resolveAllowOrigin(req),
     "Access-Control-Allow-Headers":
       "authorization, x-client-info, apikey, content-type",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Vary": "Origin",
   } as const;
 }
 
-function json(body: unknown, status = 200) {
+function json(req: Request, body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { "Content-Type": "application/json", ...corsHeaders() },
+    headers: { "Content-Type": "application/json", ...corsHeaders(req) },
   });
+}
+
+function normalizeObjectPath(raw: unknown) {
+  const path = String(raw || "").trim().replace(/^\/+/, "");
+  if (!path || path.length > 512) return "";
+  if (path.includes("\\") || path.includes("..")) return "";
+  if (!/^[a-zA-Z0-9/_\-.]+$/.test(path)) return "";
+  const segments = path.split("/").filter(Boolean);
+  return segments.length > 0 ? segments.join("/") : "";
+}
+
+function hasAllowedMimeType(file: File) {
+  const mime = String(file.type || "").trim().toLowerCase();
+  if (mime && ALLOWED_MIME_TYPES.has(mime)) return true;
+  const name = String(file.name || "").trim().toLowerCase();
+  return /\.(?:avif|gif|jpe?g|png|webp)$/i.test(name);
+}
+
+function isAuthorizedAdmin(
+  user: { id?: string | null; email?: string | null; app_metadata?: Record<string, unknown> | null },
+) {
+  const role = String(user.app_metadata?.role ?? "").trim().toLowerCase();
+  if (role === "admin" || role === "editor") return true;
+
+  const expectedUserId = String(Deno.env.get("CMS_ADMIN_USER_ID") ?? "").trim();
+  const expectedEmail = String(Deno.env.get("CMS_ADMIN_EMAIL") ?? DEFAULT_ADMIN_EMAIL)
+    .trim()
+    .toLowerCase();
+  const currentUserId = String(user.id ?? "").trim();
+  const currentEmail = String(user.email ?? "").trim().toLowerCase();
+
+  if (expectedUserId && currentUserId && expectedUserId === currentUserId) return true;
+  return Boolean(expectedEmail && currentEmail && expectedEmail === currentEmail);
 }
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: corsHeaders() });
+    return new Response(null, { status: 204, headers: corsHeaders(req) });
   }
 
   if (req.method !== "POST") {
-    return json({ ok: false, error: "Method not allowed" }, 405);
+    return json(req, { ok: false, error: "Method not allowed" }, 405);
   }
 
   try {
@@ -34,12 +94,12 @@ Deno.serve(async (req) => {
     const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ??
       "";
     if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceRoleKey) {
-      return json({ ok: false, error: "Server not configured" }, 500);
+      return json(req, { ok: false, error: "Server not configured" }, 500);
     }
 
     const authHeader = req.headers.get("Authorization") ?? "";
     if (!authHeader) {
-      return json({ ok: false, error: "Missing Authorization header" }, 401);
+      return json(req, { ok: false, error: "Missing Authorization header" }, 401);
     }
 
     const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
@@ -49,22 +109,27 @@ Deno.serve(async (req) => {
 
     const { data: userRes, error: userErr } = await supabaseAuth.auth.getUser();
     if (userErr || !userRes?.user) {
-      return json({ ok: false, error: "Unauthorized" }, 401);
+      return json(req, { ok: false, error: "Unauthorized" }, 401);
     }
 
-    const email = String(userRes.user.email ?? "").trim().toLowerCase();
-    if (!email || email !== ADMIN_EMAIL) {
-      return json({ ok: false, error: "Forbidden" }, 403);
+    if (!isAuthorizedAdmin(userRes.user)) {
+      return json(req, { ok: false, error: "Forbidden" }, 403);
     }
 
     const form = await req.formData();
-    const bucket = String(form.get("bucket") || "resume-cms");
-    const path = String(form.get("path") || "").replace(/^\/+/, "");
+    const bucket = String(form.get("bucket") || DEFAULT_BUCKET).trim();
+    const path = normalizeObjectPath(form.get("path"));
     const file = form.get("file");
 
-    if (!path) return json({ ok: false, error: "Missing path" }, 400);
+    if (bucket !== DEFAULT_BUCKET) {
+      return json(req, { ok: false, error: "Invalid bucket" }, 400);
+    }
+    if (!path) return json(req, { ok: false, error: "Invalid path" }, 400);
     if (!(file instanceof File)) {
-      return json({ ok: false, error: "Missing file" }, 400);
+      return json(req, { ok: false, error: "Missing file" }, 400);
+    }
+    if (!hasAllowedMimeType(file)) {
+      return json(req, { ok: false, error: "Unsupported file type" }, 415);
     }
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
@@ -72,6 +137,10 @@ Deno.serve(async (req) => {
     });
 
     const bytes = new Uint8Array(await file.arrayBuffer());
+    if (bytes.byteLength > MAX_UPLOAD_BYTES) {
+      return json(req, { ok: false, error: "File too large" }, 413);
+    }
+
     const { error: uploadErr } = await supabaseAdmin.storage.from(bucket).upload(
       path,
       bytes,
@@ -80,20 +149,19 @@ Deno.serve(async (req) => {
         contentType: file.type || undefined,
       },
     );
-    if (uploadErr) return json({ ok: false, error: uploadErr.message }, 400);
+    if (uploadErr) return json(req, { ok: false, error: uploadErr.message }, 400);
 
     const { data: pub } = supabaseAdmin.storage.from(bucket).getPublicUrl(path);
     const publicUrl = pub?.publicUrl ?? "";
     if (!publicUrl) {
-      return json({ ok: false, error: "Could not resolve public URL" }, 500);
+      return json(req, { ok: false, error: "Could not resolve public URL" }, 500);
     }
 
-    return json({ ok: true, publicUrl });
+    return json(req, { ok: true, publicUrl });
   } catch (err) {
     const msg = err && typeof err === "object" && "message" in err
       ? String((err as { message: unknown }).message)
       : String(err);
-    return json({ ok: false, error: msg }, 500);
+    return json(req, { ok: false, error: msg }, 500);
   }
 });
-

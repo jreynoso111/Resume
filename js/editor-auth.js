@@ -642,7 +642,7 @@
 
   async function ensureSupabaseLibrary() {
     if (window.supabase && typeof window.supabase.createClient === 'function') return;
-    await loadScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2');
+    await loadScript(toPageAssetPath('assets/vendor/supabase/supabase-js.v2.js'));
   }
 
   async function getSupabaseClient() {
@@ -1135,26 +1135,43 @@
 	      const BLOG_POST_V = 10;
 	      const PROJECT_DETAIL_LAYOUT_V = 10;
       const footerScript = `<script src="${rootPrefix}js/footer.js?v=${FOOTER_V}"></script>`;
-      const headerScript = `<script src="${rootPrefix}js/header.js?v=${HEADER_V}"></script>`;
-      const editorScript = `<script src="${rootPrefix}js/editor-auth.js?v=${EDITOR_V}"></script>`;
-      const shellScript = `<script src="${rootPrefix}js/site-shell.js?v=${SHELL_V}"></script>`;
-      const lightboxScript = `<script src="${rootPrefix}js/project-image-lightbox.js?v=${PROJECT_LIGHTBOX_V}"></script>`;
-      const carouselScript = `<script src="${rootPrefix}js/project-screenshots-carousel.js?v=${PROJECT_CAROUSEL_V}"></script>`;
+	      const headerScript = `<script src="${rootPrefix}js/header.js?v=${HEADER_V}"></script>`;
+	      const editorScript = `<script src="${rootPrefix}js/editor-auth.js?v=${EDITOR_V}"></script>`;
+	      const shellScript = `<script src="${rootPrefix}js/site-shell.js?v=${SHELL_V}"></script>`;
+	      const lightboxScript = `<script src="${rootPrefix}js/project-image-lightbox.js?v=${PROJECT_LIGHTBOX_V}"></script>`;
+	      const carouselScript = `<script src="${rootPrefix}js/project-screenshots-carousel.js?v=${PROJECT_CAROUSEL_V}"></script>`;
+	      const supabaseVendorScript = `<script src="${rootPrefix}assets/vendor/supabase/supabase-js.v2.js"></script>`;
+	      const supabaseOrigin = String((cfg && cfg.url) || '').trim();
+	      const securityMeta = [
+	        `<meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; img-src 'self' data: blob: ${supabaseOrigin}; media-src 'self' data: blob: ${supabaseOrigin}; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; connect-src 'self' ${supabaseOrigin}; form-action 'self'">`,
+	        '<meta name="referrer" content="strict-origin-when-cross-origin">'
+	      ].join('\n  ');
 
       let out = safeHtml;
 
       // Ensure the snapshot marker exists so the client can avoid infinite hydration loops.
-      if (!/<meta\b[^>]*\bname=(['"])cms-snapshot\1/i.test(out)) {
-        out = out.replace(
-          /<head\b[^>]*>/i,
-          (m) => `${m}\n  <meta name="cms-snapshot" content="1">`
-        );
-      }
+	      if (!/<meta\b[^>]*\bname=(['"])cms-snapshot\1/i.test(out)) {
+	        out = out.replace(
+	          /<head\b[^>]*>/i,
+	          (m) => `${m}\n  <meta name="cms-snapshot" content="1">`
+	        );
+	      }
+	      if (!/<meta\b[^>]*http-equiv=(['"])Content-Security-Policy\1/i.test(out)) {
+	        out = out.replace(/<head\b[^>]*>/i, (m) => `${m}\n  ${securityMeta}`);
+	      }
+	      if (!/<meta\b[^>]*\bname=(['"])referrer\1/i.test(out)) {
+	        out = out.replace(
+	          /<head\b[^>]*>/i,
+	          (m) => `${m}\n  <meta name="referrer" content="strict-origin-when-cross-origin">`
+	        );
+	      }
 
-	      // Repair a previously-published broken script tag (`src="js/"`, `src="../js/"`, etc.).
-	      out = out.replace(/<script\b[^>]*\bsrc=(['"])(?:\.\.\/)*js\/\1[^>]*>\s*<\/script>/gi, '');
-	      // Strip legacy auth module snapshots that conflict with editor-auth session handling.
-	      out = out.replace(/<script\b[^>]*\bsrc=(['"])[^'"]*assets\/js\/auth\.js(?:\?[^'"]*)?\1[^>]*>\s*<\/script>/gi, '');
+		      // Repair a previously-published broken script tag (`src="js/"`, `src="../js/"`, etc.).
+		      out = out.replace(/<script\b[^>]*\bsrc=(['"])(?:\.\.\/)*js\/\1[^>]*>\s*<\/script>/gi, '');
+		      out = out.replace(/<script\b[^>]*\bsrc=(['"])https:\/\/cdn\.jsdelivr\.net\/npm\/@supabase\/supabase-js@2\1[^>]*>\s*<\/script>/gi, '');
+		      out = out.replace(/<script\b[^>]*\bsrc=(['"])[^'"]*assets\/vendor\/supabase\/supabase-js\.v2\.js(?:\?[^'"]*)?\1[^>]*>\s*<\/script>/gi, '');
+		      // Strip legacy auth module snapshots that conflict with editor-auth session handling.
+		      out = out.replace(/<script\b[^>]*\bsrc=(['"])[^'"]*assets\/js\/auth\.js(?:\?[^'"]*)?\1[^>]*>\s*<\/script>/gi, '');
 
 	      // Strip dynamic background scripts that should remain code-driven.
 	      // These can get frozen into CMS snapshots via DOM cloning and cause double-init.
@@ -1204,10 +1221,14 @@
       }
 
       // Ensure editor script exists so the gear button can always load.
-      if (!/js\/editor-auth\.js/i.test(out)) {
-        out = out.replace(/<\/body>/i, `${editorScript}\n</body>`);
-        if (!/js\/editor-auth\.js/i.test(out)) out = `${out}\n${editorScript}\n`;
-      }
+	      if (!/js\/editor-auth\.js/i.test(out)) {
+	        out = out.replace(/<\/body>/i, `${editorScript}\n</body>`);
+	        if (!/js\/editor-auth\.js/i.test(out)) out = `${out}\n${editorScript}\n`;
+	      }
+	      if (!/assets\/vendor\/supabase\/supabase-js\.v2\.js/i.test(out) && /js\/supabase-config\.js/i.test(out)) {
+	        out = out.replace(/<\/body>/i, `${supabaseVendorScript}\n</body>`);
+	        if (!/assets\/vendor\/supabase\/supabase-js\.v2\.js/i.test(out)) out = `${out}\n${supabaseVendorScript}\n`;
+	      }
 
       // Ensure the site shell exists so dynamic theme + background can re-initialize after hydration.
       if (!/js\/site-shell\.js/i.test(out)) {
@@ -4285,7 +4306,7 @@
 	    root.querySelectorAll('script[src]').forEach((el) => {
 		      const src = String(el.getAttribute('src') || '');
 		      if (!src) return;
-		      if (src.includes('three.min.js')) return el.remove();
+		      if (/three(?:\.r128)?\.min\.js/i.test(src)) return el.remove();
 		      // These are injected by js/site-shell.js at runtime.
 		      const cleaned = src.split('?', 1)[0].split('#', 1)[0].replace(/\\\\/g, '/');
 		      if (cleaned.endsWith('js/particles.js')) return el.remove();
@@ -4364,7 +4385,7 @@
     const anchor = document.createElement('a');
     anchor.href = url;
     anchor.download = filename || 'download.bin';
-    anchor.rel = 'noopener';
+    anchor.rel = 'noopener noreferrer';
     document.body.appendChild(anchor);
     anchor.click();
     anchor.remove();

@@ -1,4 +1,6 @@
 (function () {
+  const SUPABASE_VENDOR_PATH = 'assets/vendor/supabase/supabase-js.v2.js';
+  const THREE_VENDOR_PATH = 'assets/vendor/three/three.r128.min.js';
 
 
   function init() {
@@ -60,7 +62,7 @@
 
       if (typeof THREE === 'undefined') {
         const s3 = document.createElement('script');
-        s3.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
+        s3.src = basePath + THREE_VENDOR_PATH;
         s3.onload = load3D;
         document.body.appendChild(s3);
       } else {
@@ -312,6 +314,9 @@
   }
 
   async function fetchGeoMetadata() {
+    const analyticsConfig = window.__SITE_ANALYTICS_CONFIG__;
+    if (!analyticsConfig || analyticsConfig.enableGeoLookup !== true) return null;
+
     const cacheKey = 'resume_analytics_geo_v1';
     const cached = readStorage(window.sessionStorage, cacheKey);
     if (cached) {
@@ -360,8 +365,9 @@
 
   async function ensureSupabaseLibrary() {
     if (window.supabase && typeof window.supabase.createClient === 'function') return;
+    const basePath = getShellBasePath();
     await loadScriptOnce(
-      'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
+      `${basePath}${SUPABASE_VENDOR_PATH}`,
       () => window.supabase && typeof window.supabase.createClient === 'function'
     );
   }

@@ -1,5 +1,5 @@
 (function () {
-    const SUPABASE_CDN = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+    const SUPABASE_VENDOR_PATH = 'assets/vendor/supabase/supabase-js.v2.js';
     const fallbackProjectLinks = [];
     let projectLinks = [];
     let projectLinksPromise = null;
@@ -97,7 +97,8 @@
     async function ensureSupabaseLibrary() {
         if (window.supabase && typeof window.supabase.createClient === 'function') return true;
         try {
-            await loadScript(SUPABASE_CDN);
+            const rootPrefix = inferRootPrefixFromHeaderScript();
+            await loadScript(`${normalizeRootPrefix(rootPrefix)}${SUPABASE_VENDOR_PATH}`);
         } catch (_e) {
             return false;
         }

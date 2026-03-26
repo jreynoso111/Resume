@@ -276,7 +276,7 @@
 
   async function ensureSupabaseLibrary() {
     if (window.supabase && typeof window.supabase.createClient === "function") return;
-    await loadScript("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2");
+    await loadScript(`${getRootPrefix()}assets/vendor/supabase/supabase-js.v2.js`);
   }
 
   async function createSupabaseClient(cfg) {
@@ -353,12 +353,20 @@
 
   async function isAuthenticatedAdmin(sb, cfg) {
     if (!sb || !cfg) return false;
+    const allowAnyAuthenticatedUserAsAdmin = Boolean(
+      cfg && cfg.allowAnyAuthenticatedUserAsAdmin === true
+    );
+    const adminUserId = String((cfg && cfg.adminUserId) || "").trim();
     const adminEmail = String((cfg && cfg.adminEmail) || "")
       .trim()
       .toLowerCase();
-    if (!adminEmail) return false;
     try {
       const { data } = await sb.auth.getSession();
+      const userId = String(
+        data && data.session && data.session.user && data.session.user.id
+          ? data.session.user.id
+          : ""
+      ).trim();
       const userEmail = String(
         data && data.session && data.session.user && data.session.user.email
           ? data.session.user.email
@@ -366,7 +374,10 @@
       )
         .trim()
         .toLowerCase();
-      return Boolean(userEmail && userEmail === adminEmail);
+      if (allowAnyAuthenticatedUserAsAdmin && userId) return true;
+      if (adminUserId && userId && userId === adminUserId) return true;
+      if (adminEmail && userEmail && userEmail === adminEmail) return true;
+      return false;
     } catch (_e) {
       return false;
     }
