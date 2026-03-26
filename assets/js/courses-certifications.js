@@ -1174,7 +1174,8 @@
       query: "",
       sortBy: "year",
       items: [],
-      itemsSource: "defaults", // defaults | supabase
+      itemsSource: "unavailable", // unavailable | supabase
+      emptyMessage: "Loading courses and certifications...",
       sb: null,
       cfg: null,
       supabaseReady: false,
@@ -1230,7 +1231,10 @@
 
       if (sorted.length === 0) {
         emptyEl.hidden = false;
-        buildEmptyState(emptyEl, "No matching items.");
+        const message = state.query || state.activeKind !== "all"
+          ? "No matching items."
+          : state.emptyMessage;
+        buildEmptyState(emptyEl, message);
         return;
       }
 
@@ -1309,16 +1313,18 @@
     async function loadData() {
       const cfg = await getSupabaseConfig(state.rootPrefix);
       if (!cfg) {
-        state.items = DEFAULT_ITEMS.map(normalizeItem);
-        state.itemsSource = "defaults";
+        state.items = [];
+        state.itemsSource = "unavailable";
+        state.emptyMessage = "Courses and certifications are temporarily unavailable.";
         state.supabaseReady = false;
         return;
       }
 
       const sb = await createSupabaseClient(cfg);
       if (!sb) {
-        state.items = DEFAULT_ITEMS.map(normalizeItem);
-        state.itemsSource = "defaults";
+        state.items = [];
+        state.itemsSource = "unavailable";
+        state.emptyMessage = "Courses and certifications are temporarily unavailable.";
         state.supabaseReady = false;
         return;
       }
@@ -1341,13 +1347,16 @@
         if (rows.length > 0) {
           state.items = rows;
           state.itemsSource = "supabase";
+          state.emptyMessage = "No courses or certifications published yet.";
         } else {
-          state.items = DEFAULT_ITEMS.map(normalizeItem);
-          state.itemsSource = "defaults";
+          state.items = [];
+          state.itemsSource = "supabase";
+          state.emptyMessage = "No courses or certifications published yet.";
         }
       } catch (_e) {
-        state.items = DEFAULT_ITEMS.map(normalizeItem);
-        state.itemsSource = "defaults";
+        state.items = [];
+        state.itemsSource = "unavailable";
+        state.emptyMessage = "Unable to load courses and certifications right now.";
         state.supabaseReady = false;
       }
     }
