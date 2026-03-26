@@ -1611,6 +1611,208 @@ body.about-page #philosophy + div + .standard-text + .standard-text {
 
 }
 
+.hero-intro {
+  padding: 28px 0 20px;
+}
+
+.hero-intro .shell {
+  position: relative;
+}
+
+.hero-intro .hero-grid {
+  grid-template-columns: minmax(0, 1.45fr) minmax(280px, 0.95fr);
+  gap: 42px;
+  align-items: start;
+}
+
+.hero-intro .hero-copy {
+  padding-top: 28px;
+}
+
+.hero-kicker {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--accent-strong);
+  margin-bottom: 14px;
+}
+
+.hero-intro .hero-label-row {
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.hero-intro .hero-label {
+  padding: 7px 12px;
+  border-color: rgba(var(--accent-rgb), 0.22);
+  background: color-mix(in srgb, var(--bg-soft) 82%, transparent);
+  color: var(--accent-strong);
+  backdrop-filter: blur(8px);
+}
+
+.hero-name {
+  font-size: clamp(46px, 6vw, 72px);
+  line-height: 0.95;
+  letter-spacing: -0.055em;
+  font-weight: 800;
+  color: var(--text-main);
+  margin-bottom: 14px;
+}
+
+.hero-role-line {
+  max-width: 720px;
+  font-size: clamp(22px, 3vw, 28px);
+  line-height: 1.16;
+  letter-spacing: -0.03em;
+  color: var(--accent-strong);
+  font-weight: 600;
+}
+
+.hero-rule {
+  width: 86px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--accent);
+  margin: 22px 0 18px;
+}
+
+.hero-intro .hero-subtitle {
+  font-size: 15px;
+  line-height: 1.8;
+  max-width: 620px;
+  margin-bottom: 0;
+  color: var(--text-muted);
+  text-shadow: none;
+}
+
+.hero-intro .hero-actions {
+  gap: 18px;
+  margin-top: 24px;
+}
+
+.hero-secondary-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-subtle);
+  background: color-mix(in srgb, var(--bg-soft) 80%, transparent);
+  color: var(--text-main);
+  font-size: 13px;
+  font-weight: 600;
+  backdrop-filter: blur(8px);
+  transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+}
+
+.hero-secondary-btn:hover {
+  transform: translateY(-1px);
+  border-color: rgba(var(--accent-rgb), 0.36);
+  background: color-mix(in srgb, var(--bg-soft) 92%, transparent);
+}
+
+.hero-intro .hero-pills {
+  margin-bottom: 0;
+  gap: 8px;
+}
+
+.hero-intro .pill {
+  padding: 5px 9px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--bg-soft) 82%, transparent);
+  border-color: var(--border-subtle);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 10px;
+  font-weight: 700;
+  backdrop-filter: blur(8px);
+}
+
+.hero-quick-grid {
+  display: grid;
+  gap: 12px;
+  padding-top: 52px;
+}
+
+.hero-quick-card {
+  padding: 16px 18px;
+  border-radius: 18px;
+  border: 1px solid var(--border-subtle);
+  background: color-mix(in srgb, var(--bg-soft) 78%, transparent);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+}
+
+.hero-quick-card-accent {
+  border-color: rgba(var(--accent-rgb), 0.24);
+}
+
+.hero-quick-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.hero-quick-value {
+  font-size: 20px;
+  line-height: 1.2;
+  letter-spacing: -0.03em;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 4px;
+}
+
+.hero-quick-text {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+.hero-proof-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  margin-top: 28px;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  background: color-mix(in srgb, var(--bg-soft) 84%, transparent);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+}
+
+.hero-proof-item {
+  padding: 22px 20px;
+  min-height: 132px;
+  display: grid;
+  align-content: center;
+}
+
+.hero-proof-item + .hero-proof-item {
+  border-left: 1px solid var(--border-subtle);
+}
+
+.hero-proof-value {
+  font-size: clamp(22px, 2.6vw, 30px);
+  line-height: 1.05;
+  font-weight: 800;
+  letter-spacing: -0.05em;
+  color: var(--text-main);
+  margin-bottom: 6px;
+}
+
+.hero-proof-label {
+  max-width: 280px;
+  font-size: 12px;
+  line-height: 1.65;
+  color: var(--text-muted);
+}
+
 
 
 /* HIGHLIGHTS (Index) */
@@ -1679,6 +1881,14 @@ body.about-page #philosophy + div + .standard-text + .standard-text {
 
 }
 
+.highlights-intro {
+  padding-top: 18px;
+}
+
+.highlights-intro.highlights-overlap {
+  margin-top: 0;
+}
+
 @media (min-width: 1024px) {
   .highlights-overlap {
     margin-top: -44px;
@@ -1690,6 +1900,12 @@ body.about-page #philosophy + div + .standard-text + .standard-text {
 
   .highlights-right {
     margin-top: 56px;
+  }
+
+  .highlights-intro.highlights-overlap,
+  .highlights-intro .highlights-left,
+  .highlights-intro .highlights-right {
+    margin-top: 0;
   }
 }
 
@@ -1711,6 +1927,32 @@ body.about-page #philosophy + div + .standard-text + .standard-text {
 
   .hero-summary-facts {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .hero-intro {
+    padding: 26px 0 18px;
+  }
+
+  .hero-intro .hero-grid {
+    gap: 28px;
+  }
+
+  .hero-intro .hero-copy {
+    padding-top: 18px;
+  }
+
+  .hero-proof-strip {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .hero-quick-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding-top: 18px;
+  }
+
+  .hero-proof-item + .hero-proof-item {
+    border-left: 0;
+    border-top: 1px solid var(--border-subtle);
   }
 
   .highlights-inner {
@@ -1761,12 +2003,47 @@ body.about-page #philosophy + div + .standard-text + .standard-text {
     padding: 18px 0 4px;
   }
 
-  .hero-title {
-    font-size: clamp(22px, 6.2vw, 30px);
+  .hero-intro {
+    padding: 22px 0 16px;
+  }
+
+  .hero-kicker {
+    margin-bottom: 14px;
+  }
+
+  .hero-name {
+    font-size: clamp(36px, 12vw, 46px);
+  }
+
+  .hero-role-line {
+    font-size: 18px;
   }
 
   .hero-subtitle {
     font-size: 13px;
+  }
+
+  .hero-quick-grid {
+    grid-template-columns: minmax(0, 1fr);
+    padding-top: 12px;
+  }
+
+  .hero-quick-card {
+    padding: 14px 16px;
+  }
+
+  .hero-intro .hero-cta-row {
+    width: 100%;
+  }
+
+  .hero-intro .hero-cta-row > * {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+
+  .hero-proof-item {
+    padding: 18px 16px;
+    min-height: auto;
   }
 
   .hero-meta-row {
