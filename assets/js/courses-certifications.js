@@ -286,6 +286,29 @@
     return window.supabase.createClient(cfg.url, cfg.anonKey);
   }
 
+  async function fetchCredentialsPublic(cfg) {
+    if (!cfg || !cfg.url || !cfg.anonKey) throw new Error("Missing Supabase public config.");
+    const base = String(cfg.url || "").replace(/\/$/, "");
+    const url =
+      `${base}/rest/v1/${encodeURIComponent(TABLE)}` +
+      "?select=id,kind,title,issuer,year,category,note,proof_image_url,proof_url,sort_order,created_at,updated_at" +
+      "&order=sort_order.asc,id.asc";
+
+    const res = await fetch(url, {
+      headers: {
+        apikey: String(cfg.anonKey || ""),
+        Authorization: `Bearer ${String(cfg.anonKey || "")}`,
+      },
+    });
+
+    if (!res.ok) {
+      throw new Error(`Public credentials fetch failed (${res.status}).`);
+    }
+
+    const data = await res.json().catch(() => []);
+    return Array.isArray(data) ? data.map(normalizeItem) : [];
+  }
+
   function normalizeKind(raw) {
     const kind = String(raw || "").trim().toLowerCase();
     if (kind === "certification" || kind === "course") return kind;
@@ -379,6 +402,17 @@
   function buildEmptyState(emptyEl, message) {
     if (!emptyEl) return;
     emptyEl.textContent = String(message || "No items found.");
+  }
+
+  function readEmbeddedFallback(section) {
+    const script = section.querySelector('[data-cc-fallback="1"]');
+    if (!script) return [];
+    try {
+      const parsed = JSON.parse(String(script.textContent || "[]"));
+      return Array.isArray(parsed) ? parsed.map(normalizeItem) : [];
+    } catch (_e) {
+      return [];
+    }
   }
 
   function matchesQuery(item, q) {
@@ -1176,6 +1210,7 @@
       items: [],
       itemsSource: "unavailable", // unavailable | supabase
       emptyMessage: "Loading courses and certifications...",
+      fallbackItems: [],
       sb: null,
       cfg: null,
       supabaseReady: false,
@@ -1189,6 +1224,7 @@
 
     const modal = createModal(section);
     state.modal = modal;
+    state.fallbackItems = readEmbeddedFallback(section);
 
     // Only create the "Add new" button for admin sessions, so it never exists for public viewers.
     function ensureAdminAddButton() {
@@ -1313,37 +1349,19 @@
     async function loadData() {
       const cfg = await getSupabaseConfig(state.rootPrefix);
       if (!cfg) {
-        state.items = [];
-        state.itemsSource = "unavailable";
-        state.emptyMessage = "Courses and certifications are temporarily unavailable.";
-        state.supabaseReady = false;
-        return;
-      }
-
-      const sb = await createSupabaseClient(cfg);
-      if (!sb) {
-        state.items = [];
-        state.itemsSource = "unavailable";
-        state.emptyMessage = "Courses and certifications are temporarily unavailable.";
+        state.items = state.fallbackItems.slice();
+        state.itemsSource = state.fallbackItems.length ? "snapshot" : "unavailable";
+        state.emptyMessage = state.fallbackItems.length
+          ? "Showing the latest published snapshot."
+          : "Courses and certifications are temporarily unavailable.";
         state.supabaseReady = false;
         return;
       }
 
       state.cfg = cfg;
-      state.sb = sb;
-      state.supabaseReady = true;
-      state.adminAuthed = await isAuthenticatedAdmin(sb, cfg);
-
-      if (sb && sb.auth && typeof sb.auth.onAuthStateChange === "function") {
-        sb.auth.onAuthStateChange(async () => {
-          state.adminAuthed = await isAuthenticatedAdmin(state.sb, state.cfg);
-          updateAdminUi();
-          render();
-        });
-      }
 
       try {
-        const rows = await fetchCredentials(sb);
+        const rows = await fetchCredentialsPublic(cfg);
         if (rows.length > 0) {
           state.items = rows;
           state.itemsSource = "supabase";
@@ -1354,10 +1372,30 @@
           state.emptyMessage = "No courses or certifications published yet.";
         }
       } catch (_e) {
-        state.items = [];
-        state.itemsSource = "unavailable";
-        state.emptyMessage = "Unable to load courses and certifications right now.";
+        state.items = state.fallbackItems.slice();
+        state.itemsSource = state.fallbackItems.length ? "snapshot" : "unavailable";
+        state.emptyMessage = state.fallbackItems.length
+          ? "Showing the latest published snapshot."
+          : "Unable to load courses and certifications right now.";
+      }
+
+      try {
+        const sb = await createSupabaseClient(cfg);
+        state.sb = sb;
+        state.supabaseReady = Boolean(sb);
+        state.adminAuthed = sb ? await isAuthenticatedAdmin(sb, cfg) : false;
+
+        if (sb && sb.auth && typeof sb.auth.onAuthStateChange === "function") {
+          sb.auth.onAuthStateChange(async () => {
+            state.adminAuthed = await isAuthenticatedAdmin(state.sb, state.cfg);
+            updateAdminUi();
+            render();
+          });
+        }
+      } catch (_e) {
+        state.sb = null;
         state.supabaseReady = false;
+        state.adminAuthed = false;
       }
     }
 
