@@ -64,6 +64,9 @@
 	    authSession: null,
 	    authEmail: '',
 	    authIsAdmin: false,
+	    authRoleLookupPromise: null,
+	    authRoleValue: '',
+	    authRoleResolvedUserId: '',
 	    hasUnpublishedChanges: false,
 	    lastLocalChangeReason: '',
 	    localChangeVersion: 0,
@@ -661,6 +664,59 @@
     return state.supabaseClient;
   }
 
+  function normalizeRoleValue(value) {
+    return String(value || '').trim().toLowerCase();
+  }
+
+  function isElevatedRole(value) {
+    const role = normalizeRoleValue(value);
+    return role === 'admin' || role === 'editor';
+  }
+
+  function getSessionRole(user) {
+    if (!user || typeof user !== 'object') return '';
+    return normalizeRoleValue(
+      (user.app_metadata && user.app_metadata.role) ||
+      (user.user_metadata && user.user_metadata.role) ||
+      ''
+    );
+  }
+
+  async function getCurrentProfileRole() {
+    const currentUserId = state.authSession && state.authSession.user && state.authSession.user.id
+      ? String(state.authSession.user.id).trim()
+      : '';
+    if (!currentUserId) {
+      state.authRoleValue = '';
+      state.authRoleResolvedUserId = '';
+      return '';
+    }
+    if (state.authRoleResolvedUserId === currentUserId) {
+      return state.authRoleValue;
+    }
+    if (state.authRoleLookupPromise) {
+      return state.authRoleLookupPromise;
+    }
+    state.authRoleLookupPromise = (async () => {
+      const sb = await getSupabaseClient();
+      if (!sb) return '';
+      const { data, error } = await sb
+        .from('profiles')
+        .select('role')
+        .eq('id', currentUserId)
+        .maybeSingle();
+      const role = !error && data ? normalizeRoleValue(data.role) : '';
+      state.authRoleValue = role;
+      state.authRoleResolvedUserId = currentUserId;
+      return role;
+    })()
+      .catch(() => '')
+      .finally(() => {
+        state.authRoleLookupPromise = null;
+      });
+    return state.authRoleLookupPromise;
+  }
+
   async function fallbackPasswordAuth(email, password) {
     const cfg = await getSupabaseConfig();
     if (!cfg || !cfg.url || !cfg.anonKey) return { ok: false, message: 'Supabase is not configured.' };
@@ -789,12 +845,16 @@
       state.authIsAdmin = true;
       return;
     }
-    const adminEmail = cfg && cfg.adminEmail ? String(cfg.adminEmail).trim().toLowerCase() : '';
-    const adminUserId = cfg && cfg.adminUserId ? String(cfg.adminUserId).trim() : '';
-    const currentEmail = String(state.authEmail || '').trim().toLowerCase();
-    const byEmail = Boolean(adminEmail && currentEmail && adminEmail === currentEmail);
-    const byUserId = Boolean(adminUserId && currentUserId && adminUserId === currentUserId);
-    state.authIsAdmin = byEmail || byUserId;
+    const sessionUser = state.authSession && state.authSession.user ? state.authSession.user : null;
+    const sessionRole = getSessionRole(sessionUser);
+    if (isElevatedRole(sessionRole)) {
+      state.authRoleValue = sessionRole;
+      state.authRoleResolvedUserId = currentUserId;
+      state.authIsAdmin = true;
+      return;
+    }
+    const profileRole = await getCurrentProfileRole();
+    state.authIsAdmin = isElevatedRole(profileRole);
   }
 
   function getSessionExpiryMs(session) {
@@ -1142,12 +1202,9 @@
 	      const carouselScript = `<script src="${rootPrefix}js/project-screenshots-carousel.js?v=${PROJECT_CAROUSEL_V}"></script>`;
 	      const supabaseVendorScript = `<script src="${rootPrefix}assets/vendor/supabase/supabase-js.v2.js"></script>`;
 	      const supabaseOrigin = String((cfg && cfg.url) || '').trim();
-	      const securityMeta = [
-	        `<meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; img-src 'self' data: blob: ${supabaseOrigin}; media-src 'self' data: blob: ${supabaseOrigin}; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; connect-src 'self' ${supabaseOrigin}; form-action 'self'">`,
-	        '<meta name="referrer" content="strict-origin-when-cross-origin">'
-	      ].join('\n  ');
+	      const securityMeta = '<meta name="referrer" content="strict-origin-when-cross-origin">';
 
-      let out = safeHtml;
+      let out = sanitizeSerializedHtml(safeHtml);
 
       // Ensure the snapshot marker exists so the client can avoid infinite hydration loops.
 	      if (!/<meta\b[^>]*\bname=(['"])cms-snapshot\1/i.test(out)) {
@@ -1155,9 +1212,6 @@
 	          /<head\b[^>]*>/i,
 	          (m) => `${m}\n  <meta name="cms-snapshot" content="1">`
 	        );
-	      }
-	      if (!/<meta\b[^>]*http-equiv=(['"])Content-Security-Policy\1/i.test(out)) {
-	        out = out.replace(/<head\b[^>]*>/i, (m) => `${m}\n  ${securityMeta}`);
 	      }
 	      if (!/<meta\b[^>]*\bname=(['"])referrer\1/i.test(out)) {
 	        out = out.replace(
@@ -1522,8 +1576,6 @@
 
     createLoginModal();
     const emailInput = state.loginModal.querySelector('#cms-login-email');
-    if (cfg && cfg.adminEmail && !emailInput.value) emailInput.value = cfg.adminEmail;
-
     const errBox = state.loginModal.querySelector('#cms-login-error');
     errBox.style.display = 'none';
     errBox.textContent = '';
@@ -1610,12 +1662,11 @@
       const html = clipboard ? String(clipboard.getData('text/html') || '') : '';
       const text = clipboard ? String(clipboard.getData('text/plain') || '') : '';
 
-      // Rich clipboard: let browser insert semantic HTML first, then sanitize to our safe subset.
       if (html.trim()) {
-        setTimeout(() => {
-          sanitizeEditableFormatting(editable);
-          scheduleAutosave('text-paste-rich');
-        }, 0);
+        event.preventDefault();
+        insertFragmentAtCursor(buildRichTextPasteFragment(html, text));
+        sanitizeEditableFormatting(editable);
+        scheduleAutosave('text-paste-rich');
         return;
       }
 
@@ -3537,6 +3588,266 @@
     }
   }
 
+  function unwrapNode(node) {
+    if (!(node instanceof HTMLElement)) return;
+    const parent = node.parentNode;
+    if (!parent) return;
+    while (node.firstChild) parent.insertBefore(node.firstChild, node);
+    node.remove();
+  }
+
+  function normalizePotentiallyDangerousScheme(value) {
+    return String(value || '')
+      .replace(/[\u0000-\u0020\u007f]+/g, '')
+      .toLowerCase();
+  }
+
+  function isPlainRelativeUrl(value) {
+    const raw = String(value || '').trim();
+    if (!raw) return false;
+    if (raw.startsWith('/') || raw.startsWith('./') || raw.startsWith('../') || raw.startsWith('#')) {
+      return true;
+    }
+    return !/^[a-zA-Z][a-zA-Z\d+.-]*:/.test(raw);
+  }
+
+  function isSafeAttributeUrl(rawValue, attrName, tagName) {
+    const value = String(rawValue || '').trim();
+    if (!value) return false;
+
+    const compact = normalizePotentiallyDangerousScheme(value);
+    if (compact.startsWith('javascript:') || compact.startsWith('vbscript:')) return false;
+
+    const attr = String(attrName || '').toLowerCase();
+    const tag = String(tagName || '').toUpperCase();
+
+    if (attr === 'href' && compact.startsWith('data:')) return false;
+    if (attr === 'xlink:href') return false;
+    if (attr === 'href' && value.startsWith('#')) return true;
+
+    try {
+      const parsed = new URL(value, location.href);
+      const protocol = String(parsed.protocol || '').toLowerCase();
+      if (attr === 'href') {
+        return protocol === 'http:' || protocol === 'https:' || protocol === 'mailto:' || protocol === 'tel:';
+      }
+      if (attr === 'src' || attr === 'poster') {
+        if (tag === 'IMG' || tag === 'VIDEO' || tag === 'AUDIO' || tag === 'SOURCE') {
+          return protocol === 'http:' || protocol === 'https:' || protocol === 'data:' || protocol === 'blob:';
+        }
+        return protocol === 'http:' || protocol === 'https:';
+      }
+      if (attr === 'action' || attr === 'formaction') {
+        return protocol === 'http:' || protocol === 'https:';
+      }
+      return protocol === 'http:' || protocol === 'https:';
+    } catch (_e) {
+      return isPlainRelativeUrl(value);
+    }
+  }
+
+  function sanitizeElementAttributes(element) {
+    if (!(element instanceof Element)) return;
+
+    Array.from(element.attributes).forEach((attribute) => {
+      const name = String(attribute.name || '').toLowerCase();
+      if (!name) return;
+
+      if (name.startsWith('on') || name === 'srcdoc') {
+        element.removeAttribute(attribute.name);
+        return;
+      }
+
+      if (name === 'href' || name === 'src' || name === 'poster' || name === 'action' || name === 'formaction' || name === 'xlink:href') {
+        if (!isSafeAttributeUrl(attribute.value, name, element.tagName)) {
+          element.removeAttribute(attribute.name);
+        }
+      }
+    });
+
+    if (element.tagName === 'A') {
+      const href = String(element.getAttribute('href') || '').trim();
+      if (!href) {
+        element.removeAttribute('target');
+        element.removeAttribute('rel');
+        return;
+      }
+
+      const target = String(element.getAttribute('target') || '').trim().toLowerCase();
+      if (target === '_blank') {
+        element.setAttribute('rel', 'noopener noreferrer');
+      } else if (target) {
+        element.removeAttribute('target');
+      }
+    }
+  }
+
+  function buildPlainTextFragment(text) {
+    const raw = String(text || '').replace(/\r\n?/g, '\n');
+    const lines = raw.split('\n');
+    const frag = document.createDocumentFragment();
+    lines.forEach((line, idx) => {
+      const normalized = String(line || '').replace(/\t/g, '\u00a0\u00a0\u00a0\u00a0');
+      frag.appendChild(document.createTextNode(normalized));
+      if (idx < lines.length - 1) frag.appendChild(document.createElement('br'));
+    });
+    return frag;
+  }
+
+  function wrapFragment(node, tagName, attributes) {
+    const wrapper = document.createElement(tagName);
+    const attrs = attributes && typeof attributes === 'object' ? attributes : null;
+    if (attrs) {
+      Object.entries(attrs).forEach(([key, value]) => {
+        if (value === null || value === undefined || value === '') return;
+        wrapper.setAttribute(key, String(value));
+      });
+    }
+    wrapper.appendChild(node);
+    return wrapper;
+  }
+
+  function applyClipboardInlineFormatting(node, sourceElement) {
+    let current = node;
+    const styleRaw = String(sourceElement.getAttribute('style') || '');
+    const styleLower = styleRaw.toLowerCase();
+    const wantsBold = sourceElement.tagName === 'B'
+      || sourceElement.tagName === 'STRONG'
+      || /font-weight\s*:\s*(bold|[6-9]00)/.test(styleLower);
+    const wantsItalic = sourceElement.tagName === 'I'
+      || sourceElement.tagName === 'EM'
+      || /font-style\s*:\s*italic/.test(styleLower);
+    const wantsUnderline = sourceElement.tagName === 'U'
+      || /text-decoration[^;]*underline/.test(styleLower);
+    const sizeMarker = String(sourceElement.getAttribute('data-cms-inline-size') || '').trim();
+    const sizeValue = Number.isFinite(Number(sizeMarker)) && Number(sizeMarker) > 0
+      ? Number(sizeMarker)
+      : parseInlineFontSizePx(styleRaw);
+
+    if (Number.isFinite(sizeValue) && sizeValue > 0) {
+      const clamped = clampInlineTextSize(sizeValue);
+      current = wrapFragment(current, 'span', {
+        'data-cms-inline-size': String(clamped),
+        style: `font-size:${clamped}px`
+      });
+    }
+    if (wantsUnderline) current = wrapFragment(current, 'u');
+    if (wantsItalic) current = wrapFragment(current, 'em');
+    if (wantsBold) current = wrapFragment(current, 'strong');
+    return current;
+  }
+
+  function sanitizeClipboardNode(node) {
+    if (!node) return null;
+
+    if (node.nodeType === Node.TEXT_NODE) {
+      return document.createTextNode(node.textContent || '');
+    }
+
+    if (node.nodeType !== Node.ELEMENT_NODE) return null;
+
+    const element = node;
+    const tag = element.tagName.toUpperCase();
+    const dropTags = new Set(['SCRIPT', 'STYLE', 'IFRAME', 'OBJECT', 'EMBED', 'SVG', 'MATH', 'FORM', 'INPUT', 'TEXTAREA', 'BUTTON', 'SELECT', 'OPTION', 'META', 'LINK', 'BASE', 'NOSCRIPT', 'IMG', 'VIDEO', 'AUDIO', 'CANVAS']);
+    if (dropTags.has(tag)) return null;
+    if (tag === 'BR') return document.createElement('br');
+
+    const childFragment = document.createDocumentFragment();
+    Array.from(element.childNodes || []).forEach((child) => {
+      const safeChild = sanitizeClipboardNode(child);
+      if (!safeChild) return;
+      childFragment.appendChild(safeChild);
+    });
+
+    let safeNode = childFragment;
+    if (tag === 'A') {
+      const href = String(element.getAttribute('href') || '').trim();
+      if (href && isSafeAttributeUrl(href, 'href', 'A')) {
+        const anchor = document.createElement('a');
+        anchor.setAttribute('href', href);
+        const target = String(element.getAttribute('target') || '').trim().toLowerCase();
+        if (target === '_blank') {
+          anchor.setAttribute('target', '_blank');
+          anchor.setAttribute('rel', 'noopener noreferrer');
+        }
+        anchor.appendChild(childFragment);
+        safeNode = anchor;
+      }
+    }
+
+    const blockTags = new Set(['P', 'DIV', 'SECTION', 'ARTICLE', 'HEADER', 'FOOTER', 'ASIDE', 'MAIN', 'LI', 'UL', 'OL', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'PRE', 'BLOCKQUOTE']);
+    safeNode = applyClipboardInlineFormatting(safeNode, element);
+
+    if (blockTags.has(tag)) {
+      const blockFragment = document.createDocumentFragment();
+      if (tag === 'LI' && (safeNode.textContent || '').trim()) {
+        blockFragment.appendChild(document.createTextNode('\u2022 '));
+      }
+      blockFragment.appendChild(safeNode);
+      if ((blockFragment.textContent || '').trim() || blockFragment.querySelector && blockFragment.querySelector('br')) {
+        blockFragment.appendChild(document.createElement('br'));
+      }
+      return blockFragment;
+    }
+
+    return safeNode;
+  }
+
+  function buildRichTextPasteFragment(html, fallbackText) {
+    const rawHtml = String(html || '').trim();
+    if (!rawHtml) return buildPlainTextFragment(fallbackText);
+
+    const parser = new DOMParser();
+    const parsed = parser.parseFromString(rawHtml, 'text/html');
+    const fragment = document.createDocumentFragment();
+    Array.from(parsed.body.childNodes || []).forEach((child) => {
+      const safeChild = sanitizeClipboardNode(child);
+      if (!safeChild) return;
+      fragment.appendChild(safeChild);
+    });
+
+    while (fragment.lastChild && fragment.lastChild.nodeType === Node.ELEMENT_NODE && fragment.lastChild.tagName === 'BR') {
+      fragment.lastChild.remove();
+    }
+
+    if (!fragment.hasChildNodes()) {
+      return buildPlainTextFragment(fallbackText || parsed.body.textContent || '');
+    }
+
+    return fragment;
+  }
+
+  function sanitizeSnapshotDom(root) {
+    if (!root) return;
+
+    const editables = root.querySelectorAll ? Array.from(root.querySelectorAll('[data-cms-editable="1"]')) : [];
+    editables.forEach((editable) => {
+      if (editable instanceof HTMLElement) sanitizeEditableFormatting(editable);
+    });
+
+    const inlineScripts = root.querySelectorAll
+      ? Array.from(root.querySelectorAll('script:not([src])'))
+      : [];
+    inlineScripts.forEach((script) => {
+      const type = String(script.getAttribute('type') || '').trim().toLowerCase();
+      if (type === 'application/json' || type === 'application/ld+json') return;
+      script.remove();
+    });
+
+    if (root.documentElement instanceof Element) sanitizeElementAttributes(root.documentElement);
+    if (root instanceof Element) sanitizeElementAttributes(root);
+
+    const elements = root.querySelectorAll ? Array.from(root.querySelectorAll('*')) : [];
+    elements.forEach((element) => sanitizeElementAttributes(element));
+  }
+
+  function sanitizeSerializedHtml(rawHtml) {
+    const parser = new DOMParser();
+    const parsed = parser.parseFromString(String(rawHtml || ''), 'text/html');
+    sanitizeSnapshotDom(parsed);
+    return `<!DOCTYPE html>\n${parsed.documentElement.outerHTML}`;
+  }
+
   function compactText(value) {
     return String(value || '').replace(/\s+/g, ' ').trim();
   }
@@ -3584,15 +3895,7 @@
   }
 
   function insertPlainTextBlockAtCursor(text) {
-    const raw = String(text || '').replace(/\r\n?/g, '\n');
-    const lines = raw.split('\n');
-    const frag = document.createDocumentFragment();
-    lines.forEach((line, idx) => {
-      const normalized = String(line || '').replace(/\t/g, '\u00a0\u00a0\u00a0\u00a0');
-      frag.appendChild(document.createTextNode(normalized));
-      if (idx < lines.length - 1) frag.appendChild(document.createElement('br'));
-    });
-    insertFragmentAtCursor(frag);
+    insertFragmentAtCursor(buildPlainTextFragment(text));
   }
 
   function insertLineBreakAtCursor() {
@@ -3680,19 +3983,33 @@
 
   function sanitizeEditableFormatting(editable) {
     if (!(editable instanceof HTMLElement)) return;
+    sanitizeElementAttributes(editable);
     flattenEditableBlockChildren(editable);
     const rootTag = editable.tagName;
     if (rootTag === 'H1' || rootTag === 'H2' || rootTag === 'H3' || rootTag === 'H4' || rootTag === 'H5' || rootTag === 'H6') {
-      editable.innerHTML = editable.textContent || '';
+      editable.textContent = editable.textContent || '';
       return;
     }
 
-    const unwrapTags = new Set(['FONT']);
+    const unwrapTags = new Set(['FONT', 'MARK', 'SMALL', 'SUB', 'SUP']);
+    const allowedTags = new Set(['A', 'B', 'BR', 'EM', 'I', 'SPAN', 'STRONG', 'U']);
+    const removeTags = new Set(['SCRIPT', 'STYLE', 'IFRAME', 'OBJECT', 'EMBED', 'SVG', 'MATH', 'FORM', 'INPUT', 'TEXTAREA', 'BUTTON', 'SELECT', 'OPTION', 'IMG', 'VIDEO', 'AUDIO', 'CANVAS', 'META', 'LINK', 'BASE', 'NOSCRIPT']);
     const descendants = Array.from(editable.querySelectorAll('*'));
     descendants.forEach((node) => {
+      sanitizeElementAttributes(node);
       const tag = node.tagName;
-      if (tag === 'SCRIPT' || tag === 'STYLE') {
+      if (removeTags.has(tag)) {
         node.remove();
+        return;
+      }
+
+      if (tag === 'A') {
+        if (!node.getAttribute('href')) {
+          unwrapNode(node);
+          return;
+        }
+        node.removeAttribute('style');
+        node.removeAttribute('class');
         return;
       }
 
@@ -3743,10 +4060,12 @@
       }
 
       if (unwrapTags.has(tag)) {
-        const parent = node.parentNode;
-        if (!parent) return;
-        while (node.firstChild) parent.insertBefore(node.firstChild, node);
-        node.remove();
+        unwrapNode(node);
+        return;
+      }
+
+      if (!allowedTags.has(tag)) {
+        unwrapNode(node);
         return;
       }
 
@@ -4291,6 +4610,8 @@
         el.remove();
       }
     });
+
+    sanitizeSnapshotDom(root);
 
 	    const head = root.querySelector('head');
 	    if (head && !head.querySelector('meta[name="cms-snapshot"]')) {

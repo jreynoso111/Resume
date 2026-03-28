@@ -1,5 +1,6 @@
 (() => {
-  const isAdmin = window.isAdmin === true;
+  const isAdmin = window.isAdmin === true
+    || (document.body && document.body.getAttribute('data-editor-admin') === 'true');
   const toggleButton = document.getElementById('editor-toggle');
   const editorRoot = document.getElementById('editor-root');
   const toolbar = document.querySelector('.toolbar');

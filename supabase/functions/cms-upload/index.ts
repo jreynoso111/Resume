@@ -1,7 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const DEFAULT_ADMIN_EMAIL = "jreynoso111@gmail.com";
 const DEFAULT_BUCKET = "resume-cms";
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 const ALLOWED_MIME_TYPES = new Set([
@@ -11,6 +10,12 @@ const ALLOWED_MIME_TYPES = new Set([
   "image/png",
   "image/webp",
 ]);
+const DEFAULT_ALLOWED_ORIGIN_PATTERNS = [
+  /^https:\/\/(?:www\.)?jreynoso\.net$/i,
+  /^https:\/\/jreynoso111\.github\.io$/i,
+  /^https?:\/\/localhost(?::\d+)?$/i,
+  /^https?:\/\/127\.0\.0\.1(?::\d+)?$/i,
+];
 
 function parseAllowedOrigins(raw: string) {
   return new Set(
@@ -21,12 +26,18 @@ function parseAllowedOrigins(raw: string) {
   );
 }
 
+function isDefaultAllowedOrigin(origin: string) {
+  return DEFAULT_ALLOWED_ORIGIN_PATTERNS.some((pattern) => pattern.test(origin));
+}
+
 function resolveAllowOrigin(req: Request) {
-  const allowedOrigins = parseAllowedOrigins(Deno.env.get("CMS_ALLOWED_ORIGINS") ?? "");
-  if (allowedOrigins.size === 0) return "*";
   const origin = String(req.headers.get("Origin") ?? "").trim();
   if (!origin) return "null";
-  return allowedOrigins.has(origin) ? origin : "null";
+  const allowedOrigins = parseAllowedOrigins(Deno.env.get("CMS_ALLOWED_ORIGINS") ?? "");
+  if (allowedOrigins.size > 0) {
+    return allowedOrigins.has(origin) ? origin : "null";
+  }
+  return isDefaultAllowedOrigin(origin) ? origin : "null";
 }
 
 function corsHeaders(req: Request) {
@@ -62,14 +73,38 @@ function hasAllowedMimeType(file: File) {
   return /\.(?:avif|gif|jpe?g|png|webp)$/i.test(name);
 }
 
-function isAuthorizedAdmin(
+function normalizeRoleValue(value: unknown) {
+  return String(value ?? "").trim().toLowerCase();
+}
+
+function isElevatedRole(value: unknown) {
+  const role = normalizeRoleValue(value);
+  if (role === "admin" || role === "editor") return true;
+  return false;
+}
+
+async function getProfileRole(
+  supabaseAuth: ReturnType<typeof createClient>,
+  userId: string,
+) {
+  if (!userId) return "";
+  const { data, error } = await supabaseAuth
+    .from("profiles")
+    .select("role")
+    .eq("id", userId)
+    .maybeSingle();
+  if (error || !data) return "";
+  return normalizeRoleValue(data.role);
+}
+
+async function isAuthorizedAdmin(
+  supabaseAuth: ReturnType<typeof createClient>,
   user: { id?: string | null; email?: string | null; app_metadata?: Record<string, unknown> | null },
 ) {
-  const role = String(user.app_metadata?.role ?? "").trim().toLowerCase();
-  if (role === "admin" || role === "editor") return true;
-
+  if (isElevatedRole(user.app_metadata?.role)) return true;
+  if (isElevatedRole(await getProfileRole(supabaseAuth, String(user.id ?? "").trim()))) return true;
   const expectedUserId = String(Deno.env.get("CMS_ADMIN_USER_ID") ?? "").trim();
-  const expectedEmail = String(Deno.env.get("CMS_ADMIN_EMAIL") ?? DEFAULT_ADMIN_EMAIL)
+  const expectedEmail = String(Deno.env.get("CMS_ADMIN_EMAIL") ?? "")
     .trim()
     .toLowerCase();
   const currentUserId = String(user.id ?? "").trim();
@@ -112,7 +147,7 @@ Deno.serve(async (req) => {
       return json(req, { ok: false, error: "Unauthorized" }, 401);
     }
 
-    if (!isAuthorizedAdmin(userRes.user)) {
+    if (!await isAuthorizedAdmin(supabaseAuth, userRes.user)) {
       return json(req, { ok: false, error: "Forbidden" }, 403);
     }
 

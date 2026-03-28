@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; img-src 'self' data: blob: https://xxrllcpoklgavakmzhnb.supabase.co; media-src 'self' data: blob: https://xxrllcpoklgavakmzhnb.supabase.co; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; connect-src 'self' https://xxrllcpoklgavakmzhnb.supabase.co; form-action 'self'">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <title>Admin-only editor (minimal demo)</title>
   <style>
@@ -100,7 +99,7 @@
     }
   </style>
 </head>
-<body>
+<body data-editor-admin="true">
   <div class="toolbar">
     <strong>Editor demo (admin)</strong>
     <button id="editor-toggle" type="button">Enable editor</button>
@@ -128,9 +127,6 @@
     </div>
   </div>
 
-  <script>
-    window.isAdmin = true;
-  </script>
   <script src="../js/editor-mode.js"></script>
 </body>
 </html>

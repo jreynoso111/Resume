@@ -30,11 +30,40 @@ def _write_bytes(root: str, rel: str, data: bytes) -> None:
 class Handler(SimpleHTTPRequestHandler):
     server_version = "ResumeDevServer/1.0"
 
+    def _get_security_headers(self, path: str):
+        default_csp = (
+            "default-src 'self'; base-uri 'self'; object-src 'none'; img-src 'self' data: blob: https:; "
+            "media-src 'self' data: blob: https:; script-src 'self'; style-src 'self' 'unsafe-inline' "
+            "https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; connect-src 'self' https:; "
+            "form-action 'self'"
+        )
+        if path == "/admin/dashboard.html":
+            return {
+                "Content-Security-Policy": (
+                    "default-src 'self'; base-uri 'self'; object-src 'none'; img-src 'self' data: blob: https:; "
+                    "media-src 'self' data: blob: https:; script-src 'self' "
+                    "'sha256-j6jze/KNzX7uxTlJ985Eb7uarz/gAZrqLrei3C3EUSI=' "
+                    "'sha256-LGDOBJlBxBVazooYETafp/qTDoTlqcJum7zT3QbmOO0='; "
+                    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; "
+                    "connect-src 'self' https:; form-action 'self'"
+                ),
+                "Referrer-Policy": "strict-origin-when-cross-origin",
+            }
+        if path.endswith(".html") or path in {"/", ""}:
+            return {
+                "Content-Security-Policy": default_csp,
+                "Referrer-Policy": "strict-origin-when-cross-origin",
+            }
+        return {}
+
     def end_headers(self):
         # Local dev only: disable browser caching so updated assets show immediately.
         self.send_header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
         self.send_header("Pragma", "no-cache")
         self.send_header("Expires", "0")
+        path = self.path.split("?", 1)[0].split("#", 1)[0]
+        for header, value in self._get_security_headers(path).items():
+            self.send_header(header, value)
         super().end_headers()
 
     def _send_json(self, code: int, payload: dict) -> None:

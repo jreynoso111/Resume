@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; img-src 'self' data: blob: https://xxrllcpoklgavakmzhnb.supabase.co; media-src 'self' data: blob: https://xxrllcpoklgavakmzhnb.supabase.co; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; connect-src 'self' https://xxrllcpoklgavakmzhnb.supabase.co; form-action 'self'">
   <meta name="referrer" content="strict-origin-when-cross-origin">
     <title>Admin Dashboard - Juan R. Reynoso</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -283,13 +282,13 @@
 
     <main>
 	        <div class="tabs">
-	            <button class="tab-btn active" onclick="openTab('tab-general')">General & Hero</button>
-	            <button class="tab-btn" onclick="openTab('tab-experience')">Experience</button>
-	            <button class="tab-btn" onclick="openTab('tab-education')">Education</button>
-	            <button class="tab-btn" onclick="openTab('tab-skills')">Skills</button>
-	            <button class="tab-btn" onclick="openTab('tab-projects')">Projects</button>
-	            <button class="tab-btn" onclick="openTab('tab-blog')">Blog</button>
-	            <button class="tab-btn" onclick="openTab('tab-analytics')">Analytics</button>
+	            <button class="tab-btn active" type="button" data-tab-target="tab-general">General & Hero</button>
+	            <button class="tab-btn" type="button" data-tab-target="tab-experience">Experience</button>
+	            <button class="tab-btn" type="button" data-tab-target="tab-education">Education</button>
+	            <button class="tab-btn" type="button" data-tab-target="tab-skills">Skills</button>
+	            <button class="tab-btn" type="button" data-tab-target="tab-projects">Projects</button>
+	            <button class="tab-btn" type="button" data-tab-target="tab-blog">Blog</button>
+	            <button class="tab-btn" type="button" data-tab-target="tab-analytics">Analytics</button>
 	        </div>
 
         <div id="tab-general" class="tab-content active">
@@ -533,6 +532,7 @@
                             </div>
                             <button type="button" class="btn-secondary" id="blog-cover-upload-btn">Upload</button>
                         </div>
+                        <small id="blog-cover-upload-status" style="display:none; color:#4b5563; margin-top:8px;"></small>
                         <input type="text" id="blog-post-cover-url" placeholder="Image URL (or relative path like assets/images/...)" style="margin-top:10px;" />
                         <div id="blog-post-cover-preview" style="display:none; margin-top:10px;">
                             <img id="blog-post-cover-preview-img" alt="Blog cover preview" style="width:100%; max-width:520px; border-radius:10px; border:1px solid #e5e7eb;" />
@@ -662,37 +662,89 @@
 	        let booted = false;
 	        let projectsById = new Map();
         let blogPostsById = new Map();
-        let analyticsLoading = false;
-        let analyticsLoaded = false;
-
-        function getAdminEmail() {
-            return String((cfg && cfg.adminEmail) || '').trim().toLowerCase();
-        }
-
-        function getAdminUserId() {
-            return String((cfg && cfg.adminUserId) || '').trim();
-        }
+        let blogCoverUploadInFlight = false;
+        let authRoleLookupPromise = null;
+        let authRoleValue = '';
+        let authRoleResolvedUserId = '';
+	        let analyticsLoading = false;
+	        let analyticsLoaded = false;
 
         function isUnsafeMode() {
             return cfg && cfg.unsafeNoAuth === true;
         }
 
-        function isAdminEmail(email) {
-            const a = getAdminEmail();
-            const e = String(email || '').trim().toLowerCase();
-            return Boolean(a && e && a === e);
+        function normalizeRoleValue(value) {
+            return String(value || '').trim().toLowerCase();
         }
 
-        function isAdminUser(user) {
-            const email = user && user.email ? user.email : '';
-            if (isAdminEmail(email)) return true;
-            const expectedId = getAdminUserId();
+        function isElevatedRole(value) {
+            const role = normalizeRoleValue(value);
+            return role === 'admin' || role === 'editor';
+        }
+
+        function getSessionRole(user) {
+            if (!user || typeof user !== 'object') return '';
+            return normalizeRoleValue(
+                (user.app_metadata && user.app_metadata.role) ||
+                (user.user_metadata && user.user_metadata.role) ||
+                ''
+            );
+        }
+
+        async function getCurrentProfileRole(user) {
             const currentId = user && user.id ? String(user.id).trim() : '';
-            return Boolean(expectedId && currentId && expectedId === currentId);
+            if (!currentId) {
+                authRoleValue = '';
+                authRoleResolvedUserId = '';
+                return '';
+            }
+            if (authRoleResolvedUserId === currentId) {
+                return authRoleValue;
+            }
+            if (authRoleLookupPromise) {
+                return authRoleLookupPromise;
+            }
+            authRoleLookupPromise = (async () => {
+                const { data, error } = await sb
+                    .from('profiles')
+                    .select('role')
+                    .eq('id', currentId)
+                    .maybeSingle();
+                const role = !error && data ? normalizeRoleValue(data.role) : '';
+                authRoleValue = role;
+                authRoleResolvedUserId = currentId;
+                return role;
+            })()
+                .catch(() => '')
+                .finally(() => {
+                    authRoleLookupPromise = null;
+                });
+            return authRoleLookupPromise;
+        }
+
+        async function isAdminUser(user) {
+            const sessionRole = getSessionRole(user);
+            if (isElevatedRole(sessionRole)) {
+                authRoleValue = sessionRole;
+                authRoleResolvedUserId = user && user.id ? String(user.id).trim() : '';
+                return true;
+            }
+            const profileRole = await getCurrentProfileRole(user);
+            return isElevatedRole(profileRole);
         }
 
         function sleep(ms) {
             return new Promise((resolve) => setTimeout(resolve, ms));
+        }
+
+        function nextFrame() {
+            return new Promise((resolve) => {
+                if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
+                    window.requestAnimationFrame(() => resolve());
+                    return;
+                }
+                window.setTimeout(resolve, 0);
+            });
         }
 
         async function getStableSession(maxAttempts = 4, delayMs = 180) {
@@ -746,7 +798,7 @@
             if (isUnsafeMode()) return true;
             const session = await getStableSession();
             const user = session && session.user ? session.user : null;
-            const ok = Boolean(session && isAdminUser(user));
+            const ok = Boolean(session && await isAdminUser(user));
             if (!ok) {
                 await refreshAuthUi();
             }
@@ -765,7 +817,7 @@
             // Mark the button as active.
             const btns = document.querySelectorAll('.tab-btn');
             btns.forEach(btn => {
-                if(btn.getAttribute('onclick').includes(tabId)) {
+                if(btn.getAttribute('data-tab-target') === tabId) {
                     btn.classList.add('active');
                 }
             });
@@ -778,6 +830,44 @@
                 loadBlogPosts();
             }
         }
+
+        document.addEventListener('click', async (event) => {
+            const target = event.target;
+            if (!(target instanceof Element)) return;
+
+            const tabBtn = target.closest('.tab-btn[data-tab-target]');
+            if (tabBtn instanceof HTMLElement) {
+                event.preventDefault();
+                const tabId = String(tabBtn.getAttribute('data-tab-target') || '').trim();
+                if (tabId) openTab(tabId);
+                return;
+            }
+
+            const actionEl = target.closest('[data-action]');
+            if (!(actionEl instanceof HTMLElement)) return;
+            event.preventDefault();
+
+            const action = String(actionEl.getAttribute('data-action') || '').trim();
+            const id = Number(actionEl.getAttribute('data-id') || '');
+            if (action === 'delete-item') {
+                const table = String(actionEl.getAttribute('data-table') || '').trim();
+                if (table && Number.isFinite(id) && id > 0) {
+                    await window.deleteItem(table, id);
+                }
+                return;
+            }
+            if (action === 'edit-project' && Number.isFinite(id) && id > 0) {
+                window.editProject(id);
+                return;
+            }
+            if (action === 'edit-blog-post' && Number.isFinite(id) && id > 0) {
+                await window.editBlogPost(id);
+                return;
+            }
+            if (action === 'delete-blog-post' && Number.isFinite(id) && id > 0) {
+                await window.deleteBlogPost(id);
+            }
+        });
 
         // --- DELETE HELPERS ---
 	        window.deleteItem = async (table, id) => {
@@ -1281,7 +1371,7 @@
                     list.innerHTML += `
                     <li class="item-row">
                         <div><b>${escapeHtml(x.role)}</b> at ${escapeHtml(x.company)} <br><small>${escapeHtml(x.start_date)}</small></div>
-                        <button class="btn-delete" onclick="deleteItem('experience',${x.id})">Delete</button>
+                        <button class="btn-delete" type="button" data-action="delete-item" data-table="experience" data-id="${x.id}">Delete</button>
                     </li>`;
                 });
             } catch (err) {
@@ -1330,7 +1420,7 @@
                     list.innerHTML = '<li class="item-row"><div>No education yet.</div></li>';
                     return;
                 }
-                data.forEach(x => list.innerHTML += `<li class="item-row"><div><b>${escapeHtml(x.degree)}</b> - ${escapeHtml(x.school)}</div><button class="btn-delete" onclick="deleteItem('education',${x.id})">Delete</button></li>`);
+                data.forEach(x => list.innerHTML += `<li class="item-row"><div><b>${escapeHtml(x.degree)}</b> - ${escapeHtml(x.school)}</div><button class="btn-delete" type="button" data-action="delete-item" data-table="education" data-id="${x.id}">Delete</button></li>`);
             } catch (err) {
                 console.error('Supabase loadEdu exception:', err);
                 list.innerHTML = renderLoadError('education', err);
@@ -1383,7 +1473,7 @@
 	                    list.innerHTML += `
 	                    <li class="item-row">
 	                        <div><b>${escapeHtml(kindLabel)}</b>: ${escapeHtml(x.title)}${meta ? `<br><small>${escapeHtml(meta)}</small>` : ''}</div>
-	                        <button class="btn-delete" onclick="deleteItem('credentials',${x.id})">Delete</button>
+	                        <button class="btn-delete" type="button" data-action="delete-item" data-table="credentials" data-id="${x.id}">Delete</button>
 	                    </li>`;
 	                });
 	            } catch (err) {
@@ -1425,7 +1515,7 @@
                     if (!heroData || heroData.length === 0) {
                         listHero.innerHTML = '<li style="color:#6b7280; font-size:0.9rem;">No pills yet.</li>';
                     } else {
-                        heroData.forEach(x => listHero.innerHTML += `<li style="background:#fff; padding:5px 10px; border:1px solid #ddd; border-radius:20px; display:flex; gap:10px; align-items:center;">${escapeHtml(x.name)} <span style="cursor:pointer; color:red; font-weight:bold;" onclick="deleteItem('skills',${x.id})">&times;</span></li>`);
+                        heroData.forEach(x => listHero.innerHTML += `<li style="background:#fff; padding:5px 10px; border:1px solid #ddd; border-radius:20px; display:flex; gap:10px; align-items:center;">${escapeHtml(x.name)} <button class="btn-delete" type="button" data-action="delete-item" data-table="skills" data-id="${x.id}">Delete</button></li>`);
                     }
                 }
 
@@ -1440,7 +1530,7 @@
                     if (!mainData || mainData.length === 0) {
                         listMain.innerHTML = '<li class="item-row"><div>No skills yet.</div></li>';
                     } else {
-                        mainData.forEach(x => listMain.innerHTML += `<li class="item-row"><div><b>${escapeHtml(x.name)}</b><br><small>${escapeHtml(x.description || '')}</small></div><button class="btn-delete" onclick="deleteItem('skills',${x.id})">Delete</button></li>`);
+                        mainData.forEach(x => listMain.innerHTML += `<li class="item-row"><div><b>${escapeHtml(x.name)}</b><br><small>${escapeHtml(x.description || '')}</small></div><button class="btn-delete" type="button" data-action="delete-item" data-table="skills" data-id="${x.id}">Delete</button></li>`);
                     }
                 }
             } catch (err) {
@@ -1563,28 +1653,40 @@
             if (!token) throw new Error('Not signed in.');
             // Trim a trailing slash from the Supabase URL so the Functions endpoint is well-formed.
             const endpoint = `${String(cfg.url || '').replace(/\/$/, '')}/functions/v1/${encodeURIComponent(fn)}`;
+            const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+            const timeoutId = controller ? window.setTimeout(() => controller.abort(), 30000) : 0;
 
             const form = new FormData();
             form.append('bucket', bucket);
             form.append('path', objectPath);
             form.append('file', file, file && file.name ? file.name : 'upload');
 
-            const res = await fetch(endpoint, {
-                method: 'POST',
-                headers: {
-                    apikey: String(cfg.anonKey || ''),
-                    Authorization: `Bearer ${token}`
-                },
-                body: form
-            });
-            const payload = await res.json().catch(() => ({}));
-            if (!res.ok || !payload || payload.ok !== true) {
-                const msg = payload && payload.error ? payload.error : `Upload failed (HTTP ${res.status})`;
-                throw new Error(msg);
+            try {
+                const res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        apikey: String(cfg.anonKey || ''),
+                        Authorization: `Bearer ${token}`
+                    },
+                    body: form,
+                    signal: controller ? controller.signal : undefined
+                });
+                const payload = await res.json().catch(() => ({}));
+                if (!res.ok || !payload || payload.ok !== true) {
+                    const msg = payload && payload.error ? payload.error : `Upload failed (HTTP ${res.status})`;
+                    throw new Error(msg);
+                }
+                const publicUrl = payload && payload.publicUrl ? String(payload.publicUrl) : '';
+                if (!publicUrl) throw new Error('Upload succeeded but no URL was returned.');
+                return publicUrl;
+            } catch (err) {
+                if (controller && controller.signal && controller.signal.aborted) {
+                    throw new Error('Upload timed out. Try again with a smaller image or check the network.');
+                }
+                throw err;
+            } finally {
+                if (timeoutId) window.clearTimeout(timeoutId);
             }
-            const publicUrl = payload && payload.publicUrl ? String(payload.publicUrl) : '';
-            if (!publicUrl) throw new Error('Upload succeeded but no URL was returned.');
-            return publicUrl;
         }
 
         function resolveAdminPreviewUrl(rawUrl) {
@@ -1613,6 +1715,108 @@
             }
 
             return `../${cleaned}`;
+        }
+
+        function setBlogCoverUploadStatus(message, tone) {
+            const el = document.getElementById('blog-cover-upload-status');
+            if (!el) return;
+            const text = String(message || '').trim();
+            if (!text) {
+                el.style.display = 'none';
+                el.textContent = '';
+                return;
+            }
+            el.style.display = 'block';
+            el.textContent = text;
+            el.style.color = tone === 'error' ? '#b91c1c' : tone === 'success' ? '#15803d' : '#4b5563';
+        }
+
+        async function decodeImageForUpload(file) {
+            if (typeof createImageBitmap === 'function') {
+                const bitmap = await createImageBitmap(file);
+                return {
+                    width: bitmap.width,
+                    height: bitmap.height,
+                    source: bitmap,
+                    cleanup() {
+                        if (typeof bitmap.close === 'function') bitmap.close();
+                    }
+                };
+            }
+
+            return await new Promise((resolve, reject) => {
+                const objectUrl = URL.createObjectURL(file);
+                const img = new Image();
+                img.onload = () => {
+                    resolve({
+                        width: img.naturalWidth || img.width || 0,
+                        height: img.naturalHeight || img.height || 0,
+                        source: img,
+                        cleanup() {
+                            URL.revokeObjectURL(objectUrl);
+                        }
+                    });
+                };
+                img.onerror = () => {
+                    URL.revokeObjectURL(objectUrl);
+                    reject(new Error('Unable to read the selected image.'));
+                };
+                img.src = objectUrl;
+            });
+        }
+
+        async function optimizeImageForUpload(file) {
+            if (!(file instanceof File) || !/^image\//i.test(String(file.type || ''))) {
+                return file;
+            }
+            if (/^image\/(svg\+xml|gif)$/i.test(String(file.type || ''))) {
+                return file;
+            }
+
+            const shouldInspect = Number(file.size || 0) > 4 * 1024 * 1024;
+            let decoded = null;
+            try {
+                decoded = await decodeImageForUpload(file);
+                const maxDimension = Math.max(Number(decoded.width || 0), Number(decoded.height || 0));
+                const shouldResize = maxDimension > 2400;
+                if (!shouldInspect && !shouldResize) {
+                    return file;
+                }
+
+                const scale = shouldResize ? (2400 / maxDimension) : 1;
+                const targetWidth = Math.max(1, Math.round(decoded.width * scale));
+                const targetHeight = Math.max(1, Math.round(decoded.height * scale));
+                const canvas = document.createElement('canvas');
+                canvas.width = targetWidth;
+                canvas.height = targetHeight;
+                const ctx = canvas.getContext('2d', { alpha: true });
+                if (!ctx) throw new Error('Unable to prepare the selected image.');
+                ctx.drawImage(decoded.source, 0, 0, targetWidth, targetHeight);
+
+                const outputType = /^image\/(png|webp|jpeg)$/i.test(String(file.type || '')) ? String(file.type).toLowerCase() : 'image/jpeg';
+                const quality = outputType === 'image/png' ? undefined : 0.86;
+                const blob = await new Promise((resolve, reject) => {
+                    canvas.toBlob((nextBlob) => {
+                        if (nextBlob) resolve(nextBlob);
+                        else reject(new Error('Unable to optimize the selected image.'));
+                    }, outputType, quality);
+                });
+                if (!(blob instanceof Blob) || blob.size <= 0) {
+                    throw new Error('Unable to optimize the selected image.');
+                }
+                if (blob.size >= file.size && !shouldResize) {
+                    return file;
+                }
+
+                const baseName = String(file.name || 'upload').replace(/\.[^.]+$/, '');
+                const ext = outputType === 'image/png' ? 'png' : outputType === 'image/webp' ? 'webp' : 'jpg';
+                return new File([blob], `${baseName}.${ext}`, {
+                    type: outputType,
+                    lastModified: Date.now()
+                });
+            } finally {
+                if (decoded && typeof decoded.cleanup === 'function') decoded.cleanup();
+            }
         }
 
         function updateProjectPreview() {
@@ -1699,8 +1903,8 @@
                             <small>${escapeHtml(p.href)} · order ${escapeHtml(p.sort_order)} · ${p.is_published ? 'published' : 'hidden'}</small>
                         </div>
                         <div style="display:flex; gap:8px; align-items:center;">
-                            <button class="btn-secondary" onclick="editProject(${p.id})">Edit</button>
-                            <button class="btn-delete" onclick="deleteItem('projects',${p.id})">Delete</button>
+                            <button class="btn-secondary" type="button" data-action="edit-project" data-id="${p.id}">Edit</button>
+                            <button class="btn-delete" type="button" data-action="delete-item" data-table="projects" data-id="${p.id}">Delete</button>
                         </div>
                     </li>`;
                 });
@@ -1969,13 +2173,97 @@
             updateBlogPostCoverPreview();
         }
 
-        window.editBlogPost = (id) => {
+        function compareBlogPosts(a, b) {
+            const aTime = new Date(a && (a.updated_at || a.published_at || a.created_at) || 0).getTime() || 0;
+            const bTime = new Date(b && (b.updated_at || b.published_at || b.created_at) || 0).getTime() || 0;
+            if (aTime !== bTime) return bTime - aTime;
+            return Number((b && b.id) || 0) - Number((a && a.id) || 0);
+        }
+
+        function getSortedBlogPostRows() {
+            return Array.from(blogPostsById.values()).sort(compareBlogPosts);
+        }
+
+        function renderBlogPostsList(rows) {
+            const list = document.getElementById('blog-posts-list');
+            if (!list) return;
+            list.innerHTML = '';
+            if (!Array.isArray(rows) || rows.length === 0) {
+                list.innerHTML = '<li class="item-row"><div>No blog posts yet.</div></li>';
+                return;
+            }
+
+            rows.forEach((row) => {
+                const status = row.is_published ? 'published' : 'draft';
+                const when = formatAdminDateTime(row.published_at || row.updated_at || row.created_at);
+                const slug = String(row.slug || '').trim();
+                const href = slug ? `../pages/blog-post.html?slug=${encodeURIComponent(slug)}` : '../pages/blog.html';
+                const snippet = String(row.excerpt || '').trim().replace(/\s+/g, ' ').slice(0, 120);
+
+                list.innerHTML += `
+                <li class="item-row">
+                    <div>
+                        <b>${escapeHtml(row.title || 'Untitled post')}</b><br>
+                        <small>/${escapeHtml(slug || 'no-slug')} · ${escapeHtml(status)}${when ? ` · ${escapeHtml(when)}` : ''}</small>
+                        ${snippet ? `<br><small>${escapeHtml(snippet)}${snippet.length >= 120 ? '...' : ''}</small>` : ''}
+                    </div>
+                    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end;">
+                        <a class="btn-secondary" href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer">View</a>
+                        <button class="btn-secondary" type="button" data-action="edit-blog-post" data-id="${row.id}">Edit</button>
+                        <button class="btn-delete" type="button" data-action="delete-blog-post" data-id="${row.id}">Delete</button>
+                    </div>
+                </li>`;
+            });
+        }
+
+        function buildBlogPostDraftFromForm(existing) {
+            const prev = existing && typeof existing === 'object' ? existing : {};
+            const idRaw = String(document.getElementById('blog-post-id').value || '').trim();
+            return {
+                ...prev,
+                id: idRaw ? Number(idRaw) : (prev.id || null),
+                title: String(document.getElementById('blog-post-title').value || '').trim(),
+                slug: String(document.getElementById('blog-post-slug').value || '').trim(),
+                excerpt: String(document.getElementById('blog-post-excerpt').value || '').trim(),
+                body: String(document.getElementById('blog-post-body').value || ''),
+                cover_image_url: String(document.getElementById('blog-post-cover-url').value || '').trim(),
+                is_published: String(document.getElementById('blog-post-published').value || 'false') === 'true',
+                published_at: toIsoFromDatetimeLocal(document.getElementById('blog-post-published-at').value || '') || null
+            };
+        }
+
+        async function fetchBlogPostDetails(id) {
             const idNum = Number(id);
-            const post = blogPostsById.get(idNum);
-            if (!post) return;
-            setBlogPostFormMode('edit', post);
-            openTab('tab-blog');
-        };
+            if (!Number.isFinite(idNum) || idNum <= 0) return null;
+            const { data, error } = await sb
+                .from('blog_posts')
+                .select('id,slug,title,excerpt,body,is_published,published_at,updated_at,created_at,cover_image_url')
+                .eq('id', idNum)
+                .limit(1)
+                .single();
+            if (error) throw error;
+            if (data && data.id) {
+                const prev = blogPostsById.get(idNum) || {};
+                blogPostsById.set(idNum, { ...prev, ...data });
+            }
+            return data || null;
+        }
+
+	        window.editBlogPost = async (id) => {
+	            const idNum = Number(id);
+	            if (!Number.isFinite(idNum) || idNum <= 0) return;
+	            try {
+	                const cached = blogPostsById.get(idNum);
+	                const post = (cached && Object.prototype.hasOwnProperty.call(cached, 'body'))
+	                    ? cached
+	                    : await fetchBlogPostDetails(idNum);
+	                if (!post) return;
+	                setBlogPostFormMode('edit', post);
+	                openTab('tab-blog');
+	            } catch (err) {
+	                alert('Error loading post: ' + (err && err.message ? err.message : String(err)));
+	            }
+	        };
 
         window.deleteBlogPost = async (id) => {
             if (!(await requireAdmin())) return;
@@ -1996,12 +2284,12 @@
             const list = document.getElementById('blog-posts-list');
             if (!list) return;
             list.innerHTML = 'Loading...';
-            try {
-                const { data, error } = await sb
-                    .from('blog_posts')
-                    .select('id,slug,title,excerpt,body,is_published,published_at,updated_at,created_at,cover_image_url')
-                    .order('updated_at', { ascending: false })
-                    .order('id', { ascending: false });
+	            try {
+	                const { data, error } = await sb
+	                    .from('blog_posts')
+	                    .select('id,slug,title,excerpt,is_published,published_at,updated_at,created_at,cover_image_url')
+	                    .order('updated_at', { ascending: false })
+	                    .order('id', { ascending: false });
                 if (error) {
                     console.error('Supabase loadBlogPosts error:', error);
                     list.innerHTML = renderLoadError('blog posts', error);
@@ -2009,36 +2297,16 @@
                 }
 
                 blogPostsById = new Map();
-                list.innerHTML = '';
-
                 if (!data || data.length === 0) {
-                    list.innerHTML = '<li class="item-row"><div>No blog posts yet.</div></li>';
+                    renderBlogPostsList([]);
                     setBlogPostFormMode('add');
                     return;
                 }
 
-                data.forEach((row) => {
-                    blogPostsById.set(row.id, row);
-                    const status = row.is_published ? 'published' : 'draft';
-                    const when = formatAdminDateTime(row.published_at || row.updated_at || row.created_at);
-                    const slug = String(row.slug || '').trim();
-                    const href = slug ? `../pages/blog-post.html?slug=${encodeURIComponent(slug)}` : '../pages/blog.html';
-                    const snippet = String(row.excerpt || row.body || '').trim().replace(/\s+/g, ' ').slice(0, 120);
-
-                    list.innerHTML += `
-                    <li class="item-row">
-                        <div>
-                            <b>${escapeHtml(row.title || 'Untitled post')}</b><br>
-                            <small>/${escapeHtml(slug || 'no-slug')} · ${escapeHtml(status)}${when ? ` · ${escapeHtml(when)}` : ''}</small>
-                            ${snippet ? `<br><small>${escapeHtml(snippet)}${snippet.length >= 120 ? '...' : ''}</small>` : ''}
-                        </div>
-                        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end;">
-                            <a class="btn-secondary" href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer">View</a>
-                            <button class="btn-secondary" onclick="editBlogPost(${row.id})">Edit</button>
-                            <button class="btn-delete" onclick="deleteBlogPost(${row.id})">Delete</button>
-                        </div>
-                    </li>`;
+	                data.forEach((row) => {
+	                    blogPostsById.set(row.id, row);
                 });
+                renderBlogPostsList(getSortedBlogPostRows());
 
             } catch (err) {
                 console.error('Supabase loadBlogPosts exception:', err);
@@ -2074,15 +2342,34 @@
             el.value = slugify(el.value || '');
         });
 
-        document.getElementById('blog-cover-upload-btn').addEventListener('click', async () => {
-            try {
-                if (!(await requireAdmin())) return;
-                const fileInput = document.getElementById('blog-cover-file');
-                const file = (fileInput.files || [])[0];
-                if (!file) {
-                    alert('Choose an image first.');
+	        document.getElementById('blog-cover-upload-btn').addEventListener('click', async (event) => {
+	            if (event && typeof event.preventDefault === 'function') event.preventDefault();
+	            if (blogCoverUploadInFlight) return;
+	            const uploadBtn = document.getElementById('blog-cover-upload-btn');
+	            const fileInput = document.getElementById('blog-cover-file');
+	            try {
+	                blogCoverUploadInFlight = true;
+                    const selectedFile = (fileInput && fileInput.files ? fileInput.files : [])[0];
+	                if (uploadBtn) {
+	                    uploadBtn.disabled = true;
+	                    uploadBtn.textContent = 'Uploading...';
+	                }
+	                if (fileInput) fileInput.disabled = true;
+                    setBlogCoverUploadStatus('Preparing image...', 'info');
+                    await nextFrame();
+	                if (!(await requireAdmin())) return;
+	                if (!selectedFile) {
+	                    alert('Choose an image first.');
                     return;
                 }
+                if (Number(selectedFile.size || 0) > 10 * 1024 * 1024) {
+                    alert('The blog cover image must be 10 MB or smaller.');
+                    return;
+                }
+                let file = selectedFile;
+                setBlogCoverUploadStatus('Optimizing image...', 'info');
+                await nextFrame();
+                file = await optimizeImageForUpload(selectedFile);
                 const ext = extFromFile(file);
                 const urlEl = document.getElementById('blog-post-cover-url');
                 const current = String(urlEl.value || '').trim();
@@ -2103,30 +2390,44 @@
                     objectPath = `${objectPath}.${ext}`;
                 }
 
+                setBlogCoverUploadStatus('Uploading image...', 'info');
+                await nextFrame();
                 const publicUrl = await uploadViaEdgeFunction({ file, objectPath });
                 const versionedUrl = withAssetVersion(publicUrl);
                 urlEl.value = versionedUrl;
                 updateBlogPostCoverPreview();
 
                 // In edit mode, save immediately so refresh keeps the replacement.
-                const idRaw = String(document.getElementById('blog-post-id').value || '').trim();
-                if (idRaw) {
-                    const idNum = Number(idRaw);
-                    const { error } = await sb.from('blog_posts').update({ cover_image_url: versionedUrl }).eq('id', idNum);
-                    if (error) throw error;
-                    if (blogPostsById.has(idNum)) {
-                        const prev = blogPostsById.get(idNum) || {};
-                        blogPostsById.set(idNum, { ...prev, cover_image_url: versionedUrl });
-                    }
-                    await loadBlogPosts();
-                    alert('Cover uploaded and saved.');
-                } else {
-                    alert('Cover uploaded. Click "Create post" to save the post.');
-                }
-            } catch (err) {
-                alert('Upload failed: ' + (err && err.message ? err.message : String(err)));
-            }
-        });
+	                const idRaw = String(document.getElementById('blog-post-id').value || '').trim();
+	                if (idRaw) {
+	                    const idNum = Number(idRaw);
+                    setBlogCoverUploadStatus('Saving post...', 'info');
+	                    const { error } = await sb.from('blog_posts').update({ cover_image_url: versionedUrl }).eq('id', idNum);
+	                    if (error) throw error;
+                        const nextDraft = buildBlogPostDraftFromForm(blogPostsById.get(idNum) || {});
+                        nextDraft.cover_image_url = versionedUrl;
+                        nextDraft.updated_at = new Date().toISOString();
+                        blogPostsById.set(idNum, nextDraft);
+                        renderBlogPostsList(getSortedBlogPostRows());
+                        setBlogPostFormMode('edit', nextDraft);
+                        setBlogCoverUploadStatus('Cover uploaded and saved.', 'success');
+	                    alert('Cover uploaded and saved.');
+	                } else {
+                    setBlogCoverUploadStatus('Cover uploaded. Save the post to keep it.', 'success');
+	                    alert('Cover uploaded. Click "Create post" to save the post.');
+	                }
+	            } catch (err) {
+                    setBlogCoverUploadStatus(err && err.message ? err.message : 'Upload failed.', 'error');
+	                alert('Upload failed: ' + (err && err.message ? err.message : String(err)));
+	            } finally {
+	                blogCoverUploadInFlight = false;
+	                if (uploadBtn) {
+	                    uploadBtn.disabled = false;
+	                    uploadBtn.textContent = 'Upload';
+	                }
+	                if (fileInput) fileInput.disabled = false;
+	            }
+	        });
 
         document.getElementById('blog-post-form').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -2166,6 +2467,7 @@
 
             try {
                 let focusId = null;
+                let createdAt = payload.updated_at;
                 if (idRaw) {
                     const idNum = Number(idRaw);
                     const { error } = await sb.from('blog_posts').update(payload).eq('id', idNum);
@@ -2183,16 +2485,24 @@
                     alert('Post created.');
                 }
 
-                await loadBlogPosts();
-                if (focusId && blogPostsById.has(focusId)) {
-                    const post = blogPostsById.get(focusId);
-                    setBlogPostFormMode('edit', post);
-                } else {
+	                if (focusId) {
+                        const post = buildBlogPostDraftFromForm({
+                            id: focusId,
+                            updated_at: payload.updated_at,
+                            created_at: createdAt,
+                            cover_image_url: payload.cover_image_url,
+                            is_published: payload.is_published,
+                            published_at: payload.published_at
+                        });
+                        blogPostsById.set(focusId, post);
+                        renderBlogPostsList(getSortedBlogPostRows());
+	                    setBlogPostFormMode('edit', post);
+	                    return;
+	                }
                     setBlogPostFormMode('add');
-                }
-            } catch (err) {
-                alert('Error: ' + (err && err.message ? err.message : String(err)));
-            }
+	            } catch (err) {
+	                alert('Error: ' + (err && err.message ? err.message : String(err)));
+	            }
         });
 
         setBlogPostFormMode('add');
@@ -2341,12 +2651,13 @@
                 setAuthStatus('');
                 if (logoutBtn) logoutBtn.style.display = 'none';
                 setAuthOverlayVisible(true);
-                if (authEmail && !authEmail.value && getAdminEmail()) authEmail.value = getAdminEmail();
+                authRoleValue = '';
+                authRoleResolvedUserId = '';
                 showAuthError('');
                 return;
             }
 
-            if (!isAdminUser(user)) {
+            if (!await isAdminUser(user)) {
                 analyticsLoaded = false;
                 setAuthStatus('');
                 if (logoutBtn) logoutBtn.style.display = '';

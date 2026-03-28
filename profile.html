@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; img-src 'self' data: blob: https://xxrllcpoklgavakmzhnb.supabase.co; media-src 'self' data: blob: https://xxrllcpoklgavakmzhnb.supabase.co; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; connect-src 'self' https://xxrllcpoklgavakmzhnb.supabase.co; form-action 'self'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; img-src 'self' data: blob: https://xxrllcpoklgavakmzhnb.supabase.co; media-src 'self' data: blob: https://xxrllcpoklgavakmzhnb.supabase.co; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; connect-src 'self' https://xxrllcpoklgavakmzhnb.supabase.co; form-action 'self'">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <title>Profile | Juan R. Reynoso</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -74,118 +74,7 @@
   </div>
 
   <script src="assets/js/auth.js?v=2"></script>
-  <script>
-    (function () {
-      const emailEl = document.getElementById('profile-email');
-      const roleEl = document.getElementById('profile-role');
-      const fullNameInput = document.getElementById('profile-full-name');
-      const form = document.getElementById('profile-form');
-      const saveBtn = document.getElementById('profile-save');
-      const logoutBtn = document.getElementById('profile-logout');
-      const errorBox = document.getElementById('profile-error');
-      const okBox = document.getElementById('profile-ok');
-
-      let currentUser = null;
-      let currentRole = 'viewer';
-
-      function setError(message) {
-        errorBox.textContent = String(message || '');
-      }
-
-      function setOk(message) {
-        okBox.textContent = String(message || '');
-      }
-
-      function setBusy(next) {
-        const busy = Boolean(next);
-        saveBtn.disabled = busy;
-        logoutBtn.disabled = busy;
-        saveBtn.textContent = busy ? 'Saving...' : 'Save';
-      }
-
-      async function loadProfile(auth, user) {
-        let profile = await auth.getProfile(user.id);
-        if (!profile) {
-          profile = await auth.ensureProfile({ user: user });
-        }
-
-        currentRole = String((profile && profile.role) || 'viewer');
-        emailEl.textContent = String(user.email || '—');
-        roleEl.textContent = currentRole;
-        fullNameInput.value = profile && profile.full_name ? String(profile.full_name) : '';
-      }
-
-      async function init() {
-        const auth = window.ResumeAuth;
-        if (!auth) {
-          setError('Authentication module failed to load.');
-          return;
-        }
-
-        try {
-          const session = await auth.requireAuth({ redirectTo: auth.getAppHref('login.html') });
-          if (!session || !session.user) return;
-
-          currentUser = session.user;
-          await loadProfile(auth, currentUser);
-        } catch (e) {
-          setError(e && e.message ? e.message : String(e));
-          return;
-        }
-
-        form.addEventListener('submit', async (event) => {
-          event.preventDefault();
-          setError('');
-          setOk('');
-          if (!currentUser) return;
-
-          setBusy(true);
-          try {
-            const auth = window.ResumeAuth;
-            const sb = await auth.getClient();
-            const fullName = String(fullNameInput.value || '').trim() || null;
-            const { error } = await sb
-              .from('profiles')
-              .update({ full_name: fullName })
-              .eq('id', currentUser.id);
-            if (error) {
-              await auth.ensureProfile({ user: currentUser, full_name: fullName });
-              const retry = await sb
-                .from('profiles')
-                .update({ full_name: fullName })
-                .eq('id', currentUser.id);
-              if (retry.error) throw retry.error;
-            }
-
-            await loadProfile(auth, currentUser);
-            setOk('Profile updated.');
-          } catch (e) {
-            setError(e && e.message ? e.message : String(e));
-          } finally {
-            setBusy(false);
-          }
-        });
-
-        logoutBtn.addEventListener('click', async () => {
-          setError('');
-          setOk('');
-          setBusy(true);
-          try {
-            await window.ResumeAuth.logout({ redirectTo: window.ResumeAuth.getAppHref('login.html') });
-          } catch (e) {
-            setError(e && e.message ? e.message : String(e));
-            setBusy(false);
-          }
-        });
-      }
-
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init, { once: true });
-      } else {
-        init();
-      }
-    })();
-  </script>
+  <script src="assets/js/account-pages.js?v=1"></script>
   <script src="js/header.js?v=13"></script>
   <script src="js/footer.js?v=20"></script>
   <script src="js/site-shell.js?v=7"></script>

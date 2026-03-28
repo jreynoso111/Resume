@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; img-src 'self' data: blob: https://xxrllcpoklgavakmzhnb.supabase.co; media-src 'self' data: blob: https://xxrllcpoklgavakmzhnb.supabase.co; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; connect-src 'self' https://xxrllcpoklgavakmzhnb.supabase.co; form-action 'self'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; img-src 'self' data: blob: https://xxrllcpoklgavakmzhnb.supabase.co; media-src 'self' data: blob: https://xxrllcpoklgavakmzhnb.supabase.co; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; connect-src 'self' https://xxrllcpoklgavakmzhnb.supabase.co; form-action 'self'">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <title>Register | Juan R. Reynoso</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -67,111 +67,7 @@
   </div>
 
   <script src="assets/js/auth.js?v=2"></script>
-  <script>
-    (function () {
-      const form = document.getElementById('register-form');
-      const emailInput = document.getElementById('register-email');
-      const passwordInput = document.getElementById('register-password');
-      const submitBtn = document.getElementById('register-submit');
-      const googleBtn = document.getElementById('google-register');
-      const errorBox = document.getElementById('register-error');
-
-      function setError(message) {
-        errorBox.textContent = String(message || '');
-      }
-
-      function setBusy(next) {
-        const busy = Boolean(next);
-        submitBtn.disabled = busy;
-        googleBtn.disabled = busy;
-        submitBtn.textContent = busy ? 'Creating account...' : 'Register';
-      }
-
-      function getNextPath(auth) {
-        const params = new URLSearchParams(window.location.search || '');
-        const raw = String(params.get('next') || '');
-        if (!raw) return '';
-        return typeof auth.normalizeNextPath === 'function' ? auth.normalizeNextPath(raw) : '';
-      }
-
-      async function init() {
-        const auth = window.ResumeAuth;
-        if (!auth) {
-          setError('Authentication module failed to load.');
-          return;
-        }
-
-        const nextPath = getNextPath(auth);
-        const redirectAfterAuth = () => {
-          if (nextPath) {
-            window.location.replace(nextPath);
-            return;
-          }
-          window.location.replace(auth.getAppHref('profile.html'));
-        };
-
-        form.addEventListener('submit', async (event) => {
-          event.preventDefault();
-          setError('');
-
-          const email = String(emailInput.value || '').trim();
-          const password = String(passwordInput.value || '');
-          if (!email || !password) {
-            setError('Enter your email and password.');
-            return;
-          }
-
-          setBusy(true);
-          try {
-            const sb = await auth.getClient();
-            const { data, error } = await sb.auth.signUp({ email, password });
-            if (error) throw error;
-
-            if (data && data.user && data.session) {
-              await auth.ensureProfile({ user: data.user });
-              redirectAfterAuth();
-              return;
-            }
-
-            if (data && data.user) {
-              setError('Registration successful. Check your email to confirm your account, then log in.');
-              return;
-            }
-
-            setError('Registration successful. Please log in.');
-          } catch (e) {
-            setError(e && e.message ? e.message : String(e));
-          } finally {
-            setBusy(false);
-          }
-        });
-
-        googleBtn.addEventListener('click', async () => {
-          setError('');
-          setBusy(true);
-          try {
-            const sb = await auth.getClient();
-            const { error } = await sb.auth.signInWithOAuth({
-              provider: 'google',
-              options: {
-                redirectTo: auth.getOAuthRedirectTo(nextPath)
-              }
-            });
-            if (error) throw error;
-          } catch (e) {
-            setError(e && e.message ? e.message : String(e));
-            setBusy(false);
-          }
-        });
-      }
-
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init, { once: true });
-      } else {
-        init();
-      }
-    })();
-  </script>
+  <script src="assets/js/account-pages.js?v=1"></script>
   <script src="js/header.js?v=13"></script>
   <script src="js/footer.js?v=20"></script>
   <script src="js/site-shell.js?v=7"></script>

@@ -227,6 +227,12 @@
     } catch (_e) {}
   }
 
+  function removeStorage(storage, key) {
+    try {
+      storage.removeItem(key);
+    } catch (_e) {}
+  }
+
   function getOrCreateVisitorId() {
     const key = 'resume_analytics_visitor_id';
     let current = readStorage(window.localStorage, key);
@@ -372,6 +378,37 @@
     );
   }
 
+  function buildSanitizedLocationMetadata() {
+    return {
+      has_search: Boolean(window.location.search),
+      has_hash: Boolean(window.location.hash)
+    };
+  }
+
+  function getRecentPageViewKey(path) {
+    return `resume_analytics_page_view_v1:${String(path || '/').trim() || '/'}`;
+  }
+
+  function hasRecentPageView(path, ttlMs) {
+    const key = getRecentPageViewKey(path);
+    const raw = readStorage(window.sessionStorage, key);
+    if (!raw) return false;
+    const recordedAt = Number(raw);
+    if (!Number.isFinite(recordedAt) || recordedAt <= 0) {
+      removeStorage(window.sessionStorage, key);
+      return false;
+    }
+    if ((Date.now() - recordedAt) > ttlMs) {
+      removeStorage(window.sessionStorage, key);
+      return false;
+    }
+    return true;
+  }
+
+  function markRecentPageView(path) {
+    writeStorage(window.sessionStorage, getRecentPageViewKey(path), String(Date.now()));
+  }
+
   async function buildAnalyticsPayload() {
     const params = new URLSearchParams(window.location.search || '');
     const referrer = String(document.referrer || '').trim();
@@ -397,8 +434,7 @@
           : null,
       user_agent: String(navigator.userAgent || '').slice(0, 500) || null,
       metadata: {
-        search: String(window.location.search || ''),
-        hash: String(window.location.hash || ''),
+        ...buildSanitizedLocationMetadata(),
         ...(geo || {})
       }
     };
@@ -424,17 +460,39 @@
     });
 
     const payload = await buildAnalyticsPayload();
-    const { error } = await client.from('site_analytics_events').insert([payload]);
+    const dedupeTtlMs = 15 * 60 * 1000;
+    if (hasRecentPageView(payload.page_path, dedupeTtlMs)) return;
+
+    const { error } = await client.rpc('record_site_page_view', {
+      p_page_path: payload.page_path,
+      p_page_title: payload.page_title,
+      p_referrer: payload.referrer,
+      p_utm_source: payload.utm_source,
+      p_utm_medium: payload.utm_medium,
+      p_utm_campaign: payload.utm_campaign,
+      p_device_type: payload.device_type,
+      p_session_id: payload.session_id,
+      p_visitor_id: payload.visitor_id,
+      p_language: payload.language,
+      p_screen_width: payload.screen_width,
+      p_screen_height: payload.screen_height,
+      p_timezone: payload.timezone,
+      p_user_agent: payload.user_agent,
+      p_metadata: payload.metadata
+    });
     if (error) {
       // Keep this non-fatal for visitors.
       console.warn('[analytics] page_view insert failed:', error.message || error);
+      return;
     }
+    markRecentPageView(payload.page_path);
   }
 
   function initWebAnalytics() {
     const path = String(window.location.pathname || '').toLowerCase();
     if (window.location.protocol === 'file:') return;
     if (path.startsWith('/admin/') || path === '/admin' || path.includes('/admin/')) return;
+    if (path.endsWith('/auth/callback.html')) return;
     sendPageView().catch(() => {
       // Silent fail by design; analytics should never block rendering.
     });

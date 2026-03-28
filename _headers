@@ -1,0 +1,7 @@
+/*
+  Referrer-Policy: strict-origin-when-cross-origin
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; img-src 'self' data: blob: https:; media-src 'self' data: blob: https:; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; connect-src 'self' https:; form-action 'self'
+
+/admin/dashboard.html
+  Referrer-Policy: strict-origin-when-cross-origin
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; img-src 'self' data: blob: https:; media-src 'self' data: blob: https:; script-src 'self' 'sha256-j6jze/KNzX7uxTlJ985Eb7uarz/gAZrqLrei3C3EUSI=' 'sha256-LGDOBJlBxBVazooYETafp/qTDoTlqcJum7zT3QbmOO0='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; connect-src 'self' https:; form-action 'self'
