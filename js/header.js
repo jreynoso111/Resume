@@ -329,7 +329,7 @@
           <div class="logo-wrap">
             <div class="logo-mark"><div class="logo-inner">JR</div></div>
             <div class="logo-text-block">
-              <div class="logo-title" id="profile-name">Maintenance &amp; Inventory Management</div>
+              <div class="logo-title" id="profile-name">Technical Operations &amp; Asset Management</div>
             </div>
           </div>
 
@@ -367,7 +367,7 @@
           <div class="logo-wrap">
             <div class="logo-mark"><div class="logo-inner">JR</div></div>
             <div class="logo-text-block">
-              <div class="logo-title">Maintenance &amp; Inventory Management</div>
+              <div class="logo-title">Technical Operations &amp; Asset Management</div>
             </div>
           </div>
           <div class="nav-main">
@@ -407,7 +407,7 @@
 	          <div class="logo-wrap">
 	            <div class="logo-mark"><div class="logo-inner">JR</div></div>
 	            <div class="logo-text-block">
-	              <div class="logo-title">Maintenance &amp; Inventory Management</div>
+	              <div class="logo-title">Technical Operations &amp; Asset Management</div>
 	            </div>
 	          </div>
 	          <div class="nav-main">
@@ -444,7 +444,7 @@
         <div class="profile-block">
           <div class="avatar-circle">JR</div>
           <div class="profile-main">
-            <div class="profile-name">Maintenance &amp; Inventory Management</div>
+            <div class="profile-name">Technical Operations &amp; Asset Management</div>
           </div>
         </div>
         <nav class="nav-tabs">
@@ -479,7 +479,7 @@
         <div class="header-left">
           <div class="header-avatar">JR</div>
           <div>
-            <div class="header-title">Maintenance &amp; Inventory Management</div>
+            <div class="header-title">Technical Operations &amp; Asset Management</div>
           </div>
         </div>
 

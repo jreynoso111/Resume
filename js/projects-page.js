@@ -113,6 +113,70 @@
       return String(d.getTime());
     }
 
+    function normalizeCaseStudy(raw) {
+      let value = raw;
+      if (typeof value === "string") {
+        try {
+          value = JSON.parse(value);
+        } catch (_e) {
+          return null;
+        }
+      }
+      if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+      const normalized = {
+        context: String(value.context || "").trim(),
+        problem: String(value.problem || "").trim(),
+        approach: String(value.approach || "").trim(),
+        solution: String(value.solution || "").trim(),
+        impact: String(value.impact || "").trim(),
+        tools: Array.isArray(value.tools)
+          ? value.tools.map((tool) => String(tool || "").trim()).filter(Boolean)
+          : [],
+        evidence: Array.isArray(value.evidence)
+          ? value.evidence.map((item) => String(item || "").trim()).filter(Boolean)
+          : [],
+      };
+      return normalized.problem || normalized.approach || normalized.solution || normalized.impact
+        ? normalized
+        : null;
+    }
+
+    async function loadCaseStudyMap(rootPrefix) {
+      try {
+        const response = await fetch(`${rootPrefix || ""}data/project-case-studies.json`, {
+          credentials: "same-origin",
+        });
+        if (!response.ok) return new Map();
+        const payload = await response.json();
+        const projects = payload && payload.projects && typeof payload.projects === "object"
+          ? payload.projects
+          : {};
+        const entries = Object.entries(projects)
+          .map(([slug, value]) => [slug, normalizeCaseStudy(value)])
+          .filter((entry) => entry[0] && entry[1]);
+        return new Map(entries);
+      } catch (_e) {
+        return new Map();
+      }
+    }
+
+    function resolveCaseStudy(project, slug, caseStudies) {
+      const embedded = normalizeCaseStudy(project && project.case_study);
+      if (embedded) return embedded;
+      return slug && caseStudies instanceof Map ? caseStudies.get(slug) || null : null;
+    }
+
+    function readEmbeddedProjects() {
+      const script = document.querySelector('script[type="application/json"][data-projects-fallback="1"]');
+      if (!script) return [];
+      try {
+        const payload = JSON.parse(String(script.textContent || "[]"));
+        return Array.isArray(payload) ? payload.filter((item) => item && typeof item === "object") : [];
+      } catch (_e) {
+        return [];
+      }
+    }
+
   async function init() {
     const grid = document.getElementById("projects-grid");
     if (!grid) return;
@@ -135,16 +199,15 @@
         document.getElementById("site-footer").dataset &&
         document.getElementById("site-footer").dataset.rootPath) ||
       "../";
+    const caseStudies = await loadCaseStudyMap(rootPrefix);
+    armImageFallbacks(grid);
 
     const LOCAL_PREVIEW_SLUGS = new Set([
       "fleet-maintenance-analytics",
       "inventory-control-dashboard",
       "gps-movement-analytics",
       "techloc-fleet-service-control",
-      "turnstile-deployment-management-line-2b-expansion",
-      "warranty-claim-analytics-metro-santo-domingo",
-      "fare-system-transaction-fraud-detection-metro-santo-domingo",
-      "pulse-operational-workspace",
+      "repossession-risk-monitoring",
     ]);
 
     function mergeLocalProjects(list) {
@@ -156,6 +219,8 @@
       });
       return merged;
     }
+
+    const fallbackProjects = mergeLocalProjects(readEmbeddedProjects());
 
     function renderCards(list, noteHtml) {
       const note = noteHtml ? `<div style="color: var(--text-muted); font-size: 12px; margin-bottom: 10px;">${noteHtml}</div>` : "";
@@ -177,16 +242,33 @@
           : "";
         const imgAlt = escapeHtml(title);
         const descHtml = desc ? `<p class="project-desc">${escapeHtml(desc)}</p>` : "";
+        const caseStudy = resolveCaseStudy(p, slug, caseStudies);
+        const caseStudyPreview = caseStudy
+          ? `
+              <div class="project-case-study-marker">Professional case study</div>
+              <div class="project-case-study-preview">
+                ${caseStudy.problem ? `<p><span>Problem</span>${escapeHtml(caseStudy.problem)}</p>` : ""}
+                ${caseStudy.impact ? `<p><span>Value</span>${escapeHtml(caseStudy.impact)}</p>` : ""}
+              </div>
+              ${caseStudy.tools.length
+                ? `<div class="project-card-tags" aria-label="Tools and domains">${caseStudy.tools
+                    .slice(0, 3)
+                    .map((tool) => `<span>${escapeHtml(tool)}</span>`)
+                    .join("")}</div>`
+                : ""}
+            `
+          : "";
         const imgHtml = imgSrc
           ? `<img src="${escapeHtml(imgSrc)}"${fallbackAttr} alt="${imgAlt}" loading="lazy">`
           : "";
 
         return `
-          <article class="project-card"${projectId ? ` data-project-id="${escapeHtml(projectId)}"` : ''}>
+          <article class="project-card${caseStudy ? " project-card--case-study" : ""}"${projectId ? ` data-project-id="${escapeHtml(projectId)}"` : ''}>
             <a href="${escapeHtml(href)}" class="project-img-frame">${imgHtml}</a>
             <div class="project-content">
               <h2 class="project-title"><a href="${escapeHtml(href)}">${escapeHtml(title)}</a></h2>
               ${descHtml}
+              ${caseStudyPreview}
               <a href="${escapeHtml(href)}" class="project-link">View Case Study →</a>
             </div>
           </article>
@@ -201,7 +283,9 @@
     }
 
     if (!cfg.url || !cfg.anonKey || !window.supabase) {
-      setGridHtml(renderCards(LOCAL_PROJECTS, ""));
+      if (!grid.querySelector(".project-card")) {
+        setGridHtml(renderCards(fallbackProjects.length ? fallbackProjects : LOCAL_PROJECTS, ""));
+      }
       return;
     }
 
@@ -214,12 +298,16 @@
       .order("id", { ascending: true });
 
     if (error) {
-      setGridHtml(renderCards(LOCAL_PROJECTS, ""));
+      if (!grid.querySelector(".project-card")) {
+        setGridHtml(renderCards(fallbackProjects.length ? fallbackProjects : LOCAL_PROJECTS, ""));
+      }
       return;
     }
 
     if (!data || data.length === 0) {
-      setGridHtml(renderCards(LOCAL_PROJECTS, ""));
+      if (!grid.querySelector(".project-card")) {
+        setGridHtml(renderCards(fallbackProjects.length ? fallbackProjects : LOCAL_PROJECTS, ""));
+      }
       return;
     }
 
@@ -230,8 +318,7 @@
     init().catch((err) => {
       const grid = document.getElementById("projects-grid");
       if (!grid) return;
-      const msg = escapeHtml(err && err.message ? err.message : String(err));
-      grid.innerHTML = `<div style="color:#b91c1c; font-size: 13px;">Error loading projects: ${msg}</div>`;
+      console.warn("Could not refresh the pre-rendered project snapshot.", err);
     });
   });
 })();

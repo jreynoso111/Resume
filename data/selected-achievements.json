@@ -1,0 +1,38 @@
+[
+  {
+    "title": "Fleet Reporting Automation",
+    "context": "Daily fleet oversight depended on NetSuite exports, GPS logs, maintenance invoices, parts inventory, and separate tracking sheets.",
+    "action": "Built a unified analytical model with automated ingestion, Power Query transformations, KPI dashboards, and VIN-level history.",
+    "impact": "Reduced manual report preparation by over 90%, standardized daily oversight, and enabled faster detection of operational anomalies and financial risk.",
+    "tags": ["Power BI", "Power Query", "Fleet Analytics"],
+    "url": "pages/projects/fleet-maintenance-analytics.html",
+    "source": "pages/projects/fleet-maintenance-analytics.html — Project Overview, Main Features, Key Components, and Operational Impact"
+  },
+  {
+    "title": "Inventory Control Consolidation",
+    "context": "Inventory status was split across NetSuite, yard sheets, title records, inspections, and deal pipelines, creating conflicting spreadsheets and manual reconciliation.",
+    "action": "Developed a centralized dashboard with status rules, automated operational blocks, VIN-level drill-through, aging analysis, and yard visibility.",
+    "impact": "Removed conflicting inventory checks, corrected dozens of availability statuses, exposed documentation and location blocks, and established validated real-time visibility.",
+    "tags": ["Inventory", "Data Quality", "Operations"],
+    "url": "pages/projects/inventory-control-dashboard.html",
+    "source": "pages/projects/inventory-control-dashboard.html — Project Overview, Main Features, Key Components, and Operational Impact"
+  },
+  {
+    "title": "Warranty Claim Analytics",
+    "context": "Metro maintenance history was dispersed across records that did not provide a consistent, auditable basis for spare-parts warranty decisions.",
+    "action": "Designed an Excel model that structured failures by system, dates, responsibility, asset, spare part, station, and contractual criteria.",
+    "impact": "Created a defensible claim package with stronger traceability and a faster executive submission process for reimbursement or replacement decisions.",
+    "tags": ["Excel", "Maintenance", "Warranty"],
+    "url": "pages/projects/warranty-claim-analytics-metro-santo-domingo.html",
+    "source": "pages/projects/warranty-claim-analytics-metro-santo-domingo.html — Project Overview, Main Features, Key Components, and Operational Impact"
+  },
+  {
+    "title": "Fare Transaction Fraud Detection",
+    "context": "Transit cards showed balance increases without legitimate recharge transactions, indicating abnormal behavior in the fare-payment workflow.",
+    "action": "Built a Power BI transaction model and analyzed card lifecycle events, balances, stations, timestamps, recharge activity, and repeated anomaly patterns.",
+    "impact": "Identified three fraudulent users exploiting a payment-system vulnerability and documented findings for corrective action and security improvements.",
+    "tags": ["Power BI", "Fraud Detection", "Transit Systems"],
+    "url": "pages/projects/fare-system-transaction-fraud-detection-metro-santo-domingo.html",
+    "source": "pages/projects/fare-system-transaction-fraud-detection-metro-santo-domingo.html — Project Overview, Context, Analytical Approach, Outcome, and Tools Used"
+  }
+]

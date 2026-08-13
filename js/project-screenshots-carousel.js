@@ -156,7 +156,10 @@
 
     const getSlides = () => Array.from(track.querySelectorAll('.screenshot-carousel__slide'));
     const getRealSlides = () => getSlides().filter((slide) => slide.getAttribute('data-carousel-clone') !== '1');
-    const isAdminMode = () => document.body.classList.contains('cms-admin-mode');
+    const isAdminMode = () => (
+      window.__resumeCmsAdminAuthorized === true &&
+      document.body.classList.contains('cms-admin-mode')
+    );
 
     const rebuildTrackClones = () => {
       const realSlides = getRealSlides();
@@ -329,6 +332,10 @@
 
     const ensureAddButton = () => {
       let addButton = carousel.parentElement && carousel.parentElement.querySelector('.screenshot-carousel__add');
+      if (!isAdminMode()) {
+        if (addButton) addButton.remove();
+        return;
+      }
       if (!addButton) {
         addButton = document.createElement('button');
         addButton.type = 'button';
@@ -338,17 +345,17 @@
         carousel.insertAdjacentElement('afterend', addButton);
       }
 
-      addButton.style.display = isAdminMode() ? 'inline-flex' : 'none';
       addButton.onclick = () => {
         if (!isAdminMode()) return;
         const createSlide = (sourceUrl, labelText) => {
           const slide = document.createElement('div');
           slide.className = 'screenshot-carousel__slide';
-          const safeLabel = String(labelText || 'Sample Picture').replace(/"/g, '&quot;');
-          const safeUrl = String(sourceUrl || '').replace(/'/g, '%27');
-          slide.innerHTML = `
-            <div class="img-placeholder" data-label="${safeLabel}" style="height:320px;background-image:url('${safeUrl}');"></div>
-          `;
+          const placeholder = document.createElement('div');
+          placeholder.className = 'img-placeholder';
+          placeholder.dataset.label = String(labelText || 'Sample Picture');
+          placeholder.style.height = '320px';
+          placeholder.style.backgroundImage = `url("${String(sourceUrl || '').replace(/["\\\r\n]/g, '')}")`;
+          slide.appendChild(placeholder);
           track.appendChild(slide);
           index = getRealSlides().length - 1;
           applyAdaptiveMedia();

@@ -1,0 +1,110 @@
+{
+  "schema_version": 1,
+  "projects": {
+    "fleet-maintenance-analytics": {
+      "context": "Daily fleet oversight combined NetSuite exports, GPS activity logs, maintenance invoices, parts inventory, and internal tracking sheets.",
+      "problem": "Disconnected sources made it difficult to see cost drivers, repeat repairs, GPS inconsistencies, asset history, and operational risk in one reliable view.",
+      "approach": "Integrated 7+ daily NetSuite extracts with GPS, maintenance, inventory, and tracking data; then applied Power Query transformations, VIN-level history, KPI dashboards, and exception detection.",
+      "tools": ["Power BI", "Power Query", "NetSuite", "GPS data"],
+      "solution": "A centralized analytical model and dashboard suite for maintenance cost, parts usage, downtime, GPS activity, reliability KPIs, and operational tracking.",
+      "impact": "Reduced manual report preparation by over 90%, standardized daily fleet oversight, and enabled rapid detection of operational anomalies and financial risk.",
+      "evidence": ["Dashboard suite", "Data pipeline", "Operational tracking views"],
+      "source": [
+        "pages/projects/fleet-maintenance-analytics.html — Project Overview",
+        "pages/projects/fleet-maintenance-analytics.html — Main Features",
+        "pages/projects/fleet-maintenance-analytics.html — Key Components",
+        "pages/projects/fleet-maintenance-analytics.html — Operational Impact"
+      ]
+    },
+    "inventory-control-dashboard": {
+      "context": "Inventory availability, documentation, yard distribution, inspections, and deal status were tracked across NetSuite and separate operational records.",
+      "problem": "Conflicting spreadsheets and manual reconciliation created incorrect availability statuses, hidden documentation blocks, and inconsistent inventory visibility.",
+      "approach": "Unified NetSuite, yard sheets, title records, inspections, and deal pipelines; then applied status rules, automated blocks, VIN-level drill-through, aging analysis, and yard filters.",
+      "tools": ["NetSuite", "Inventory analytics", "Status rules", "VIN-level analysis"],
+      "solution": "A centralized dashboard providing validated real-time visibility into availability, blocks, aging, documentation, and unit location.",
+      "impact": "Removed conflicting inventory checks, corrected dozens of availability statuses, exposed documentation and location blocks, and established clean real-time visibility for operational decisions.",
+      "evidence": ["Status matrix", "Title and documentation tracker", "Yard and location view"],
+      "source": [
+        "pages/projects/inventory-control-dashboard.html — Project Overview",
+        "pages/projects/inventory-control-dashboard.html — Main Features",
+        "pages/projects/inventory-control-dashboard.html — Key Components",
+        "pages/projects/inventory-control-dashboard.html — Operational Impact"
+      ]
+    },
+    "warranty-claim-analytics-metro-santo-domingo": {
+      "context": "Metro maintenance records contained spare-part failures that needed to be evaluated against technical responsibility and contract warranty criteria.",
+      "problem": "Dispersed maintenance history did not provide a consistent, auditable basis for reimbursement or replacement claim decisions.",
+      "approach": "Designed an Excel model that structured each failure by system, dates, description, responsibility, asset, spare part, station, and contractual criteria.",
+      "tools": ["Excel", "Maintenance records", "Contract criteria"],
+      "solution": "A standardized failure registry, responsibility filter, eligibility matrix, and executive-ready technical claim report.",
+      "impact": "Created a defensible warranty claim package with stronger traceability and a faster executive submission process for reimbursement or replacement decisions.",
+      "evidence": ["Structured failure dataset", "Eligibility logic", "Executive claim package"],
+      "source": [
+        "pages/projects/warranty-claim-analytics-metro-santo-domingo.html — Project Overview",
+        "pages/projects/warranty-claim-analytics-metro-santo-domingo.html — Main Features",
+        "pages/projects/warranty-claim-analytics-metro-santo-domingo.html — Key Components",
+        "pages/projects/warranty-claim-analytics-metro-santo-domingo.html — Operational Impact"
+      ]
+    },
+    "fare-system-transaction-fraud-detection-metro-santo-domingo": {
+      "context": "The Metro fare system depends on authorized recharge events before transit-card balances can be used for travel.",
+      "problem": "Certain cards showed unexpected balance increases without legitimate recharge transactions, indicating abnormal behavior and a potential payment-workflow vulnerability.",
+      "approach": "Built a Power BI transaction model and analyzed card lifecycle events, balances, stations, timestamps, recharge activity, validation events, and repeated anomaly patterns.",
+      "tools": ["Power BI", "Data modeling", "Transaction analysis", "Pattern detection"],
+      "solution": "Identified inconsistent event sequences and cards receiving balance increases without passing through authorized recharge points.",
+      "impact": "Identified three fraudulent users exploiting a payment-system vulnerability and documented findings for corrective action and security improvements.",
+      "evidence": ["Transaction model", "Behavior analysis", "Anomaly detection"],
+      "source": [
+        "pages/projects/fare-system-transaction-fraud-detection-metro-santo-domingo.html — Project Overview",
+        "pages/projects/fare-system-transaction-fraud-detection-metro-santo-domingo.html — Context",
+        "pages/projects/fare-system-transaction-fraud-detection-metro-santo-domingo.html — Analytical Approach",
+        "pages/projects/fare-system-transaction-fraud-detection-metro-santo-domingo.html — Outcome"
+      ]
+    },
+    "turnstile-deployment-management-line-2b-expansion": {
+      "context": "Metro Santo Domingo Line 2B required new station access barriers across civil, electrical, software, supplier, and station-operations workstreams.",
+      "problem": "The rollout had compressed night windows, strict station handover times, mixed barrier configurations, and cross-team dependencies while stations still needed to reopen each morning.",
+      "approach": "Coordinated station-by-station execution boards, nightly cutover plans, equipment staging, mixed-turnstile installation logic, integrated testing, and rapid issue escalation.",
+      "tools": ["Station planning", "Night cutovers", "Acceptance checks", "Systems integration"],
+      "solution": "A synchronized deployment sequence connecting physical installation, electrification, control logic, software validation, and morning-readiness checkpoints.",
+      "impact": "Updated barriers across 10 stations in one and a half weeks through overnight replacement, minimizing service downtime and preserving consistent morning reopening readiness.",
+      "evidence": ["Night deployment window", "Multi-team coordination", "Integration validation"],
+      "source": [
+        "pages/projects/turnstile-deployment-management-line-2b-expansion.html — Project Overview",
+        "pages/projects/turnstile-deployment-management-line-2b-expansion.html — Main Features",
+        "pages/projects/turnstile-deployment-management-line-2b-expansion.html — Key Components",
+        "pages/projects/turnstile-deployment-management-line-2b-expansion.html — Operational Impact"
+      ]
+    },
+    "techloc-fleet-service-control": {
+      "context": "Fleet service coordination, field dispatch, provider management, and asset follow-up operate across distributed locations.",
+      "problem": "Geolocation, service requests, partner assignment, provider validation, and performance monitoring were fragmented across separate operational tools.",
+      "approach": "Centralized geolocation, dispatch orchestration, provider validation, SLA metrics, response-time monitoring, and inventory status into one operational command center.",
+      "tools": ["Geolocation", "Dispatch workflows", "SLA analytics", "Provider data"],
+      "solution": "A platform for locating service partners, coordinating roadside and equipment services, assigning certified providers, and monitoring outcomes in real time.",
+      "impact": "Turned service coordination into a measurable, data-driven workflow with stronger control, provider visibility, and a clearer nationwide operational picture.",
+      "evidence": ["Operational command center", "Service coordination", "Inventory control"],
+      "source": [
+        "pages/projects/techloc-fleet-service-control.html — Platform Overview",
+        "pages/projects/techloc-fleet-service-control.html — Key Functionalities",
+        "pages/projects/techloc-fleet-service-control.html — Emergency Dispatch Workflows",
+        "pages/projects/techloc-fleet-service-control.html — Operational Impact"
+      ]
+    },
+    "pulse-operational-workspace": {
+      "context": "Teams coordinating many workstreams need portfolio visibility, flexible execution views, service discovery, and guidance within the same operating environment.",
+      "problem": "Separate tools and rigid workflows made it harder to maintain a shared view of priorities, deadlines, workload, completion, and delivery risk.",
+      "approach": "Designed a responsive command layer with workspace summaries, configurable boards, table, Kanban, Gantt and calendar views, connected data, a geospatial service HUB, and role-aware guidance.",
+      "tools": ["Configurable boards", "Geospatial search", "Import / export", "Operational analytics"],
+      "solution": "A focused workspace combining portfolio monitoring, board execution, service discovery, relationships, sharing controls, and in-product learning.",
+      "impact": "Reduced tool switching, standardized follow-up, and created a shared view of priorities and delivery risk while preserving flexibility at the board level.",
+      "evidence": ["Operational dashboard", "Board controls", "Service Discovery HUB"],
+      "source": [
+        "pages/projects/pulse-operational-workspace.html — Platform Overview",
+        "pages/projects/pulse-operational-workspace.html — Core Capabilities",
+        "pages/projects/pulse-operational-workspace.html — Key Product Surfaces",
+        "pages/projects/pulse-operational-workspace.html — Operational Impact"
+      ]
+    }
+  }
+}

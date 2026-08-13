@@ -82,6 +82,10 @@
   // Expose a stable controller early so the footer gear can always toggle the editor,
   // even if later async init work fails.
   window.__resumeCmsToggleEditor = async function () {
+    if (window.__resumeCmsEditorReady) {
+      try { await window.__resumeCmsEditorReady; } catch (_e) { return; }
+    }
+    if (!isAdmin()) return;
     if (document.body && document.body.classList.contains('cms-admin-mode')) {
       setEditorEnabledFlag(false);
       disableAdminMode();
@@ -531,7 +535,7 @@
     }
   `;
 
-  void init();
+  window.__resumeCmsEditorReady = init();
 
   async function init() {
     // If a CMS snapshot exists for this page, render it and stop.
@@ -542,6 +546,9 @@
       // Ignore hydration failures; the page can still load normally.
     }
 
+    await initSupabase();
+    if (!state.authIsAdmin) return;
+
     loadSettings();
     injectCSS();
     createUI();
@@ -549,8 +556,6 @@
     lockEditingForNonAdmin();
     bindGlobalEvents();
     watchForAdminLink();
-
-    await initSupabase();
     updateStatusLine();
 
     // Always start with the editor disabled. Even if the admin session still exists,
@@ -831,26 +836,21 @@
       state.authIsAdmin = false;
       return;
     }
-    const cfg = await getSupabaseConfig();
-    const allowAnyAuthenticatedUserAsAdmin =
-      Boolean(cfg && cfg.allowAnyAuthenticatedUserAsAdmin === true);
     const currentUserId = state.authSession && state.authSession.user && state.authSession.user.id
       ? String(state.authSession.user.id).trim()
       : '';
-    if (allowAnyAuthenticatedUserAsAdmin && currentUserId) {
-      state.authIsAdmin = true;
+    if (!currentUserId) {
+      state.authIsAdmin = false;
       return;
     }
-    const sessionUser = state.authSession && state.authSession.user ? state.authSession.user : null;
-    const sessionRole = getSessionRole(sessionUser);
-    if (isElevatedRole(sessionRole)) {
-      state.authRoleValue = sessionRole;
-      state.authRoleResolvedUserId = currentUserId;
-      state.authIsAdmin = true;
+
+    const sb = await getSupabaseClient();
+    if (!sb) {
+      state.authIsAdmin = false;
       return;
     }
-    const profileRole = await getCurrentProfileRole();
-    state.authIsAdmin = isElevatedRole(profileRole);
+    const { data, error } = await sb.rpc('is_admin_user');
+    state.authIsAdmin = !error && data === true;
   }
 
   function getSessionExpiryMs(session) {
@@ -1180,19 +1180,19 @@
       const footerHost = `<footer id="site-footer" data-root-path="${rootPrefix}"></footer>`;
 	      const STYLES_V = 40;
 	      const HEADER_V = 13;
-	      const FOOTER_V = 22;
-	      const EDITOR_V = 58;
+		      const FOOTER_V = 26;
+		      const ADMIN_BOOTSTRAP_V = 1;
 	      const SHELL_V = 7;
 	      const PROJECT_LIGHTBOX_V = 4;
-	      const PROJECT_CAROUSEL_V = 10;
-	      const COURSES_CERTS_V = 16;
+		      const PROJECT_CAROUSEL_V = 11;
+		      const COURSES_CERTS_V = 21;
 	      const PROJECTS_V = 9;
 	      const BLOG_PAGE_V = 7;
 	      const BLOG_POST_V = 10;
 	      const PROJECT_DETAIL_LAYOUT_V = 10;
       const footerScript = `<script src="${rootPrefix}js/footer.js?v=${FOOTER_V}"></script>`;
 	      const headerScript = `<script src="${rootPrefix}js/header.js?v=${HEADER_V}"></script>`;
-	      const editorScript = `<script src="${rootPrefix}js/editor-auth.js?v=${EDITOR_V}"></script>`;
+		      const adminBootstrapScript = `<script src="${rootPrefix}js/admin-bootstrap.js?v=${ADMIN_BOOTSTRAP_V}"></script>`;
 	      const shellScript = `<script src="${rootPrefix}js/site-shell.js?v=${SHELL_V}"></script>`;
 	      const lightboxScript = `<script src="${rootPrefix}js/project-image-lightbox.js?v=${PROJECT_LIGHTBOX_V}"></script>`;
 	      const carouselScript = `<script src="${rootPrefix}js/project-screenshots-carousel.js?v=${PROJECT_CAROUSEL_V}"></script>`;
@@ -1220,6 +1220,7 @@
 		      out = out.replace(/<script\b[^>]*\bsrc=(['"])(?:\.\.\/)*js\/\1[^>]*>\s*<\/script>/gi, '');
 		      out = out.replace(/<script\b[^>]*\bsrc=(['"])https:\/\/cdn\.jsdelivr\.net\/npm\/@supabase\/supabase-js@2\1[^>]*>\s*<\/script>/gi, '');
 		      out = out.replace(/<script\b[^>]*\bsrc=(['"])[^'"]*assets\/vendor\/supabase\/supabase-js\.v2\.js(?:\?[^'"]*)?\1[^>]*>\s*<\/script>/gi, '');
+		      out = out.replace(/<script\b[^>]*\bsrc=(['"])[^'"]*js\/editor-auth\.js(?:\?[^'"]*)?\1[^>]*>\s*<\/script>/gi, '');
 		      // Strip legacy auth module snapshots that conflict with editor-auth session handling.
 		      out = out.replace(/<script\b[^>]*\bsrc=(['"])[^'"]*assets\/js\/auth\.js(?:\?[^'"]*)?\1[^>]*>\s*<\/script>/gi, '');
 
@@ -1236,7 +1237,7 @@
 	      out = out.replace(/(assets\/css\/styles\.css\?v=)\d+/gi, `$1${STYLES_V}`);
 	      out = out.replace(/(js\/header\.js\?v=)\d+/gi, `$1${HEADER_V}`);
 	      out = out.replace(/(js\/footer\.js\?v=)\d+/gi, `$1${FOOTER_V}`);
-	      out = out.replace(/(js\/editor-auth\.js\?v=)\d+/gi, `$1${EDITOR_V}`);
+		      out = out.replace(/(js\/admin-bootstrap\.js\?v=)\d+/gi, `$1${ADMIN_BOOTSTRAP_V}`);
 	      out = out.replace(/(js\/site-shell\.js\?v=)\d+/gi, `$1${SHELL_V}`);
 	      out = out.replace(/(js\/project-image-lightbox\.js\?v=)\d+/gi, `$1${PROJECT_LIGHTBOX_V}`);
 	      out = out.replace(/(js\/project-screenshots-carousel\.js\?v=)\d+/gi, `$1${PROJECT_CAROUSEL_V}`);
@@ -1270,10 +1271,10 @@
         if (!/js\/header\.js/i.test(out)) out = `${out}\n${headerScript}\n`;
       }
 
-      // Ensure editor script exists so the gear button can always load.
-	      if (!/js\/editor-auth\.js/i.test(out)) {
-	        out = out.replace(/<\/body>/i, `${editorScript}\n</body>`);
-	        if (!/js\/editor-auth\.js/i.test(out)) out = `${out}\n${editorScript}\n`;
+	      // The lightweight bootstrap loads the editor only after server-authorized admin access.
+		      if (!/js\/admin-bootstrap\.js/i.test(out)) {
+		        out = out.replace(/<\/body>/i, `${adminBootstrapScript}\n</body>`);
+		        if (!/js\/admin-bootstrap\.js/i.test(out)) out = `${out}\n${adminBootstrapScript}\n`;
 	      }
 	      if (!/assets\/vendor\/supabase\/supabase-js\.v2\.js/i.test(out) && /js\/supabase-config\.js/i.test(out)) {
 	        out = out.replace(/<\/body>/i, `${supabaseVendorScript}\n</body>`);
@@ -4617,7 +4618,7 @@
 	      head.appendChild(meta);
 		    }
 
-	    root.querySelectorAll('#cms-admin-style, .cms-ui, [data-cms-ui="1"]').forEach((el) => el.remove());
+		    root.querySelectorAll('#cms-admin-style, .cms-ui, [data-cms-ui="1"], .admin-link, .cc-modal-edit, .cc-modal-linkrow .cc-action-btn, [data-cc-add="1"], .screenshot-carousel__add').forEach((el) => el.remove());
 	    root.querySelectorAll('#bg-canvas, #particle-canvas, #theme-toggle, #theme-toggle-label').forEach((el) => el.remove());
 	    root.querySelectorAll('.project-lightbox, .nav-mobile, input[type="file"][aria-hidden="true"]').forEach((el) => el.remove());
 	    root.querySelectorAll('script[src]').forEach((el) => {
@@ -4629,6 +4630,7 @@
 		      if (cleaned.endsWith('js/particles.js')) return el.remove();
 		      if (cleaned.endsWith('js/background-animation.js')) return el.remove();
 		      if (cleaned.endsWith('assets/js/auth.js')) return el.remove();
+		      if (cleaned.endsWith('js/editor-auth.js')) return el.remove();
 		    });
 
 	    // Avoid freezing dynamic/global UI into the CMS snapshot.

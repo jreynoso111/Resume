@@ -3,6 +3,36 @@
 
   const TABLE = "credentials";
 
+  const CREDENTIAL_TEXT_CORRECTIONS = Object.freeze({
+    1: { title: ["Data Analysis & Data Visualization Foundations", "Data Analysis and Visualization Foundations"] },
+    3: { title: ["VICOS Operation Management L1 Depot", "Vicos Operation L1 Depot"] },
+    10: { title: ["Big Data & Asset Management", "Big Data @ Asset Management"] },
+    11: { issuer: ["GOOGLE - Coursera", "Google - Coursera"] },
+    12: {
+      title: ["Excel Skills for Businesses", "Excel Skills for Business"],
+      issuer: ["McGuire University - Coursera", "Macquarie University - Coursera"],
+    },
+    13: {
+      title: ["Python for Data Analysis", "Python for Data Analysis: Pandas & NumPy"],
+      issuer: ["Coursera", "Coursera Project Network"],
+    },
+    14: { issuer: ["McGuire - Coursera", "Macquarie University - Coursera"] },
+    17: { issuer: ["Learn Quest - Coursera", "LearnQuest - Coursera"] },
+    18: { title: ["Project Management Principles", "Project Management Principles and Practices"] },
+    19: { title: ["Switch motor", "Switch Motor"] },
+    21: {
+      title: ["Motorola Tetra Programation", "Motorola TETRA Radio Programming and Configuration"],
+    },
+    24: { title: ["Budgeting and Schedulling Projects", "Budgeting and Scheduling Projects"] },
+    26: {
+      title: [
+        "Retrieving, Processing & Visualizing",
+        "Capstone: Retrieving, Processing, and Visualizing Data with Python",
+      ],
+      issuer: ["UOM - Coursera", "University of Michigan - Coursera"],
+    },
+  });
+
   const DEFAULT_ITEMS = [
     // Certifications
     {
@@ -207,12 +237,12 @@
     },
     {
       kind: "course",
-      title: "Higher Technical Degree in Food Technology",
-      issuer: "Autonomous University of Santo Domingo (UASD)",
+      title: "Food Technology — Higher Technical Studies",
+      issuer: "Universidad Autónoma de Santo Domingo (UASD)",
       year: null,
       category: "Education",
       note:
-        "Completed higher education studies in Food Technology at the Autonomous University of Santo Domingo (UASD), building a technical foundation in food science, quality standards, and process control.",
+        "Completed academic coursework in Food Technology, with emphasis on food science, quality standards, and process control.",
       proof_image_url: "",
       proof_url: "",
     },
@@ -317,6 +347,18 @@
 
   function normalizeItem(raw) {
     const item = raw && typeof raw === "object" ? raw : {};
+    const id = typeof item.id === "number" ? item.id : null;
+    const correction = id == null ? null : CREDENTIAL_TEXT_CORRECTIONS[id];
+    const originalTitle = String(item.title || item.name || "").trim();
+    const originalIssuer = String(item.issuer || "").trim();
+    const title =
+      correction && correction.title && originalTitle === correction.title[0]
+        ? correction.title[1]
+        : originalTitle;
+    const issuer =
+      correction && correction.issuer && originalIssuer === correction.issuer[0]
+        ? correction.issuer[1]
+        : originalIssuer;
     const year =
       typeof item.year === "number"
         ? item.year
@@ -324,10 +366,10 @@
           ? Number(item.year)
           : null;
     return {
-      id: typeof item.id === "number" ? item.id : null,
+      id,
       kind: normalizeKind(item.kind),
-      title: String(item.title || item.name || "").trim(),
-      issuer: String(item.issuer || "").trim(),
+      title,
+      issuer,
       year: Number.isFinite(year) ? year : null,
       sort_order:
         typeof item.sort_order === "number"
@@ -353,31 +395,11 @@
 
   async function isAuthenticatedAdmin(sb, cfg) {
     if (!sb || !cfg) return false;
-    const allowAnyAuthenticatedUserAsAdmin = Boolean(
-      cfg && cfg.allowAnyAuthenticatedUserAsAdmin === true
-    );
-    const adminUserId = String((cfg && cfg.adminUserId) || "").trim();
-    const adminEmail = String((cfg && cfg.adminEmail) || "")
-      .trim()
-      .toLowerCase();
     try {
-      const { data } = await sb.auth.getSession();
-      const userId = String(
-        data && data.session && data.session.user && data.session.user.id
-          ? data.session.user.id
-          : ""
-      ).trim();
-      const userEmail = String(
-        data && data.session && data.session.user && data.session.user.email
-          ? data.session.user.email
-          : ""
-      )
-        .trim()
-        .toLowerCase();
-      if (allowAnyAuthenticatedUserAsAdmin && userId) return true;
-      if (adminUserId && userId && userId === adminUserId) return true;
-      if (adminEmail && userEmail && userEmail === adminEmail) return true;
-      return false;
+      const { data: sessionData, error: sessionError } = await sb.auth.getSession();
+      if (sessionError || !sessionData || !sessionData.session) return false;
+      const { data, error } = await sb.rpc("is_admin_user");
+      return !error && data === true;
     } catch (_e) {
       return false;
     }
@@ -632,121 +654,10 @@
     const viewLink = createEl("a", "cc-modal-link", "Open link");
     viewLink.target = "_blank";
     viewLink.rel = "noopener noreferrer";
-    const editLinkBtn = createEl("button", "cc-action-btn", "Edit link");
-    editLinkBtn.type = "button";
-    editLinkBtn.hidden = true;
-    viewLinkRow.append(viewLinkEmpty, viewLink, editLinkBtn);
+    viewLinkRow.append(viewLinkEmpty, viewLink);
     viewPanel.append(viewMeta, viewNote, imageFrame, viewLinkRow);
 
-    // Edit panel (admin only)
-    const editPanel = createEl("form", "cc-modal-edit");
-    editPanel.hidden = true;
-
-    const editError = createEl("div", "cc-modal-error");
-    editError.hidden = true;
-
-    const row1 = createEl("div", "cc-form-row");
-    const kindWrap = createEl("label", "cc-field");
-    const kindLabel = createEl("div", "cc-field-label", "Type");
-    const kindSelect = document.createElement("select");
-    kindSelect.className = "cc-input";
-    kindSelect.name = "kind";
-    [
-      { value: "certification", label: "Certification" },
-      { value: "course", label: "Course" },
-    ].forEach((opt) => {
-      const o = document.createElement("option");
-      o.value = opt.value;
-      o.textContent = opt.label;
-      kindSelect.appendChild(o);
-    });
-    kindWrap.append(kindLabel, kindSelect);
-
-    const yearWrap = createEl("label", "cc-field");
-    const yearLabel = createEl("div", "cc-field-label", "Year");
-    const yearInput = document.createElement("input");
-    yearInput.className = "cc-input";
-    yearInput.name = "year";
-    yearInput.type = "number";
-    yearInput.inputMode = "numeric";
-    yearInput.placeholder = "e.g. 2024";
-    yearWrap.append(yearLabel, yearInput);
-    row1.append(kindWrap, yearWrap);
-
-    const row2 = createEl("div", "cc-form-row");
-    const titleWrap = createEl("label", "cc-field cc-field-span");
-    const titleLabel = createEl("div", "cc-field-label", "Title");
-    const titleInput = document.createElement("input");
-    titleInput.className = "cc-input";
-    titleInput.name = "title";
-    titleInput.type = "text";
-    titleInput.autocomplete = "off";
-    titleInput.required = true;
-    titleWrap.append(titleLabel, titleInput);
-    row2.append(titleWrap);
-
-    const row3 = createEl("div", "cc-form-row");
-    const issuerWrap = createEl("label", "cc-field");
-    const issuerLabel = createEl("div", "cc-field-label", "Issuer");
-    const issuerInput = document.createElement("input");
-    issuerInput.className = "cc-input";
-    issuerInput.name = "issuer";
-    issuerInput.type = "text";
-    issuerInput.autocomplete = "off";
-    issuerWrap.append(issuerLabel, issuerInput);
-
-    const catWrap = createEl("label", "cc-field");
-    const catLabel = createEl("div", "cc-field-label", "Category");
-    const catInput = document.createElement("input");
-    catInput.className = "cc-input";
-    catInput.name = "category";
-    catInput.type = "text";
-    catInput.autocomplete = "off";
-    catWrap.append(catLabel, catInput);
-
-    row3.append(issuerWrap, catWrap);
-
-    const noteWrap = createEl("label", "cc-field cc-field-span");
-    const noteLabel = createEl("div", "cc-field-label", "Credential note");
-    const noteInput = document.createElement("textarea");
-    noteInput.className = "cc-input cc-textarea";
-    noteInput.name = "note";
-    noteInput.rows = 4;
-    noteInput.placeholder = "Short description shown in the proof view modal.";
-    noteWrap.append(noteLabel, noteInput);
-
-    const row4 = createEl("div", "cc-form-row");
-    const linkWrap = createEl("label", "cc-field cc-field-span");
-    const linkLabel = createEl("div", "cc-field-label", "Proof link (optional)");
-    const linkInput = document.createElement("input");
-    linkInput.className = "cc-input";
-    linkInput.name = "proof_url";
-    linkInput.type = "url";
-    linkInput.placeholder = "https://...";
-    linkWrap.append(linkLabel, linkInput);
-    row4.append(linkWrap);
-
-    const row5 = createEl("div", "cc-form-row");
-    const fileWrap = createEl("label", "cc-field cc-field-span");
-    const fileLabel = createEl("div", "cc-field-label", "Certificate image (optional)");
-    const fileInput = document.createElement("input");
-    fileInput.className = "cc-input";
-    fileInput.name = "proof_image";
-    fileInput.type = "file";
-    fileInput.accept = "image/*";
-    fileWrap.append(fileLabel, fileInput);
-    row5.append(fileWrap);
-
-    const btnRow = createEl("div", "cc-modal-actions");
-    const saveBtn = createEl("button", "cc-action-btn cc-action-btn-primary", "Save");
-    saveBtn.type = "submit";
-    const cancelBtn = createEl("button", "cc-action-btn", "Cancel");
-    cancelBtn.type = "button";
-    btnRow.append(saveBtn, cancelBtn);
-
-    editPanel.append(editError, row1, row2, row3, noteWrap, row4, row5, btnRow);
-
-    modal.append(header, viewPanel, editPanel);
+    modal.append(header, viewPanel);
     overlay.appendChild(modal);
     section.appendChild(overlay);
 
@@ -756,11 +667,151 @@
     let adminActive = false;
     let activeImageRequestId = 0;
     let imageLoadWatchRaf = 0;
+    let editLinkBtn = null;
+    let editPanel = null;
+    let editError = null;
+    let kindSelect = null;
+    let yearInput = null;
+    let titleInput = null;
+    let issuerInput = null;
+    let catInput = null;
+    let noteInput = null;
+    let linkInput = null;
+    let fileInput = null;
+    let saveBtn = null;
+    let cancelBtn = null;
+
+    function createInputField(label, input, span) {
+      const wrap = createEl("label", span ? "cc-field cc-field-span" : "cc-field");
+      wrap.append(createEl("div", "cc-field-label", label), input);
+      return wrap;
+    }
+
+    function ensureAdminControls() {
+      if (editPanel) return;
+
+      editLinkBtn = createEl("button", "cc-action-btn", "Edit link");
+      editLinkBtn.type = "button";
+      viewLinkRow.appendChild(editLinkBtn);
+
+      editPanel = createEl("form", "cc-modal-edit");
+      editPanel.hidden = true;
+      editError = createEl("div", "cc-modal-error");
+      editError.hidden = true;
+
+      kindSelect = document.createElement("select");
+      kindSelect.className = "cc-input";
+      kindSelect.name = "kind";
+      ["Certification", "Course"].forEach((label) => {
+        const option = document.createElement("option");
+        option.value = label.toLowerCase();
+        option.textContent = label;
+        kindSelect.appendChild(option);
+      });
+
+      yearInput = document.createElement("input");
+      yearInput.className = "cc-input";
+      yearInput.name = "year";
+      yearInput.type = "number";
+      yearInput.inputMode = "numeric";
+      yearInput.placeholder = "e.g. 2024";
+
+      titleInput = document.createElement("input");
+      titleInput.className = "cc-input";
+      titleInput.name = "title";
+      titleInput.type = "text";
+      titleInput.autocomplete = "off";
+      titleInput.required = true;
+
+      issuerInput = document.createElement("input");
+      issuerInput.className = "cc-input";
+      issuerInput.name = "issuer";
+      issuerInput.type = "text";
+      issuerInput.autocomplete = "off";
+
+      catInput = document.createElement("input");
+      catInput.className = "cc-input";
+      catInput.name = "category";
+      catInput.type = "text";
+      catInput.autocomplete = "off";
+
+      noteInput = document.createElement("textarea");
+      noteInput.className = "cc-input cc-textarea";
+      noteInput.name = "note";
+      noteInput.rows = 4;
+      noteInput.placeholder = "Short description shown in the proof view modal.";
+
+      linkInput = document.createElement("input");
+      linkInput.className = "cc-input";
+      linkInput.name = "proof_url";
+      linkInput.type = "url";
+      linkInput.placeholder = "https://...";
+
+      fileInput = document.createElement("input");
+      fileInput.className = "cc-input";
+      fileInput.name = "proof_image";
+      fileInput.type = "file";
+      fileInput.accept = "image/*";
+
+      const row1 = createEl("div", "cc-form-row");
+      row1.append(createInputField("Type", kindSelect), createInputField("Year", yearInput));
+      const row2 = createEl("div", "cc-form-row");
+      row2.appendChild(createInputField("Title", titleInput, true));
+      const row3 = createEl("div", "cc-form-row");
+      row3.append(createInputField("Issuer", issuerInput), createInputField("Category", catInput));
+      const row4 = createEl("div", "cc-form-row");
+      row4.appendChild(createInputField("Proof link (optional)", linkInput, true));
+      const row5 = createEl("div", "cc-form-row");
+      row5.appendChild(createInputField("Certificate image (optional)", fileInput, true));
+
+      const btnRow = createEl("div", "cc-modal-actions");
+      saveBtn = createEl("button", "cc-action-btn cc-action-btn-primary", "Save");
+      saveBtn.type = "submit";
+      cancelBtn = createEl("button", "cc-action-btn", "Cancel");
+      cancelBtn.type = "button";
+      btnRow.append(saveBtn, cancelBtn);
+
+      editPanel.append(
+        editError,
+        row1,
+        row2,
+        row3,
+        createInputField("Credential note", noteInput, true),
+        row4,
+        row5,
+        btnRow
+      );
+      modal.appendChild(editPanel);
+      cancelBtn.addEventListener("click", close);
+      editLinkBtn.addEventListener("click", () => {
+        if (adminActive && currentItem) openEdit(currentItem, { focusField: "proof_url" });
+      });
+      overlay.dispatchEvent(new CustomEvent("cc:admin-controls-ready"));
+    }
+
+    function removeAdminControls() {
+      if (mode === "edit") setMode("view");
+      if (editLinkBtn) editLinkBtn.remove();
+      if (editPanel) editPanel.remove();
+      editLinkBtn = null;
+      editPanel = null;
+      editError = null;
+      kindSelect = null;
+      yearInput = null;
+      titleInput = null;
+      issuerInput = null;
+      catInput = null;
+      noteInput = null;
+      linkInput = null;
+      fileInput = null;
+      saveBtn = null;
+      cancelBtn = null;
+    }
 
     function setMode(next) {
       mode = next;
       viewPanel.hidden = mode !== "view";
-      editPanel.hidden = mode !== "edit";
+      if (editPanel) editPanel.hidden = mode !== "edit";
     }
 
     function close() {
@@ -772,8 +823,10 @@
       document.body.classList.remove("cc-modal-open");
       setMode("view");
       currentItem = null;
-      editError.hidden = true;
-      editError.textContent = "";
+      if (editError) {
+        editError.hidden = true;
+        editError.textContent = "";
+      }
       if (lastFocused && typeof lastFocused.focus === "function") {
         try {
           lastFocused.focus();
@@ -958,6 +1011,8 @@
     }
 
     function openEdit(item, options) {
+      if (!adminActive) return;
+      ensureAdminControls();
       currentItem = item;
       setMode("edit");
       heading.textContent = item && item.id ? "Edit item" : "Add new item";
@@ -988,7 +1043,8 @@
 
     function setAdminActive(next) {
       adminActive = Boolean(next);
-      editLinkBtn.hidden = !adminActive;
+      if (adminActive) ensureAdminControls();
+      else removeAdminControls();
 
       if (mode === "view" && currentItem) {
         const proofLink = String(currentItem.proof_url || "").trim();
@@ -1005,12 +1061,6 @@
       if (event.target === overlay) close();
     });
     closeBtn.addEventListener("click", () => close());
-    cancelBtn.addEventListener("click", () => close());
-    editLinkBtn.addEventListener("click", () => {
-      if (!adminActive) return;
-      if (!currentItem) return;
-      openEdit(currentItem, { focusField: "proof_url" });
-    });
 
     document.addEventListener("keydown", (event) => {
       if (overlay.hidden) return;
@@ -1043,6 +1093,7 @@
       getEditForm: () => editPanel,
       getFileInput: () => fileInput,
       setEditError: (message) => {
+        if (!editError) return;
         const msg = String(message || "").trim();
         if (!msg) {
           editError.hidden = true;
@@ -1052,7 +1103,7 @@
         editError.hidden = false;
         editError.textContent = msg;
       },
-      getEditValues: () => ({
+      getEditValues: () => editPanel ? ({
         kind: normalizeKind(kindSelect.value),
         year: yearInput.value ? Number(yearInput.value) : null,
         title: String(titleInput.value || "").trim(),
@@ -1061,8 +1112,9 @@
         note: String(noteInput.value || "").trim(),
         proof_url: String(linkInput.value || "").trim(),
         file: fileInput.files && fileInput.files[0] ? fileInput.files[0] : null,
-      }),
+      }) : null,
       setEditBusy: (busy) => {
+        if (!editPanel) return;
         const b = Boolean(busy);
         [kindSelect, yearInput, titleInput, issuerInput, catInput, noteInput, linkInput, fileInput].forEach(
           (el) => {
@@ -1208,7 +1260,7 @@
     const grid = section.querySelector('[data-cc-grid="1"]');
     const emptyEl = section.querySelector('[data-cc-empty="1"]');
     const searchInput = section.querySelector('[data-cc-search="1"]');
-    const adminControls = section.querySelector('[data-cc-admin-controls="1"]');
+    let adminControls = section.querySelector('[data-cc-admin-controls="1"]');
     let addBtn = section.querySelector('[data-cc-add="1"]');
     const tabsHost = section.querySelector(".cc-tabs");
     if (tabsHost && !tabsHost.querySelector('[data-cc-tab="education"]')) {
@@ -1222,7 +1274,7 @@
     const tabs = Array.from(section.querySelectorAll("[data-cc-tab]"));
     const sortButtons = Array.from(section.querySelectorAll("[data-cc-sort]"));
 
-    if (!grid || !emptyEl || !searchInput || !adminControls || tabs.length === 0) return;
+    if (!grid || !emptyEl || !searchInput || tabs.length === 0) return;
 
     const state = {
       rootPrefix,
@@ -1250,6 +1302,14 @@
 
     // Only create the "Add new" button for admin sessions, so it never exists for public viewers.
     function ensureAdminAddButton() {
+      if (!adminControls || !adminControls.isConnected) {
+        adminControls = createEl("div", "cc-admin-controls cc-header-actions");
+        adminControls.dataset.ccAdminControls = "1";
+        adminControls.dataset.resumeDynamic = "1";
+        const headerRow = section.querySelector(".cc-header-row");
+        if (!headerRow) return null;
+        headerRow.appendChild(adminControls);
+      }
       if (addBtn && addBtn.isConnected) return addBtn;
       adminControls.replaceChildren();
       const btn = createEl("button", "cc-btn cc-btn-primary", "Add new");
@@ -1270,8 +1330,14 @@
     function updateAdminUi() {
       const active = isAdminModeActive();
       const shouldShow = active && state.supabaseReady && state.adminAuthed;
-      adminControls.hidden = !shouldShow;
-      if (shouldShow) ensureAdminAddButton();
+      if (shouldShow) {
+        const host = ensureAdminAddButton();
+        if (host && adminControls) adminControls.hidden = false;
+      } else if (adminControls) {
+        adminControls.remove();
+        adminControls = null;
+        addBtn = null;
+      }
     }
 
     function render() {
@@ -1540,8 +1606,12 @@
       });
     }
 
-    const modalFileInput = modal.getFileInput();
-    if (modalFileInput) {
+    function bindModalAdminControls() {
+      const editForm = modal.getEditForm();
+      const modalFileInput = modal.getFileInput();
+      if (!editForm || !modalFileInput || editForm.dataset.bound === "1") return;
+      editForm.dataset.bound = "1";
+
       modalFileInput.addEventListener("change", async () => {
         const file = modalFileInput.files && modalFileInput.files[0] ? modalFileInput.files[0] : null;
         if (!file) return;
@@ -1568,83 +1638,86 @@
           modal.setEditBusy(false);
         }
       });
-    }
 
-    modal.getEditForm().addEventListener("submit", async (event) => {
-      event.preventDefault();
-      if (!isAdminModeActive() || !state.supabaseReady || !state.adminAuthed) return;
+      editForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        if (!isAdminModeActive() || !state.supabaseReady || !state.adminAuthed) return;
 
-      const current = modal.getCurrentItem();
-      const isEdit = Boolean(current && current.id);
-      const vals = modal.getEditValues();
+        const current = modal.getCurrentItem();
+        const isEdit = Boolean(current && current.id);
+        const vals = modal.getEditValues();
+        if (!vals) return;
 
-      if (!vals.title) {
-        modal.setEditError("Title is required.");
-        return;
-      }
-
-      const proofUrl = normalizeProofUrl(vals.proof_url);
-      if (vals.proof_url && !proofUrl) {
-        modal.setEditError("Invalid proof link.");
-        return;
-      }
-
-      modal.setEditError("");
-      modal.setEditBusy(true);
-      try {
-        // Ensure defaults exist in DB before editing existing placeholders.
-        await maybeSeedOnAdminActive();
-
-        const basePayload = {
-          kind: vals.kind,
-          title: vals.title,
-          issuer: vals.issuer,
-          year: typeof vals.year === "number" && Number.isFinite(vals.year) ? vals.year : null,
-          category: vals.category,
-          note: vals.note,
-          proof_url: proofUrl,
-        };
-
-        let row = null;
-        if (isEdit) {
-          const { data, error } = await state.sb
-            .from(TABLE)
-            .update(basePayload)
-            .eq("id", current.id)
-            .select("id, title, issuer, year, kind, category, note, proof_image_url, proof_url")
-            .single();
-          if (error) throw error;
-          row = normalizeItem(data);
-        } else {
-          const nextSortOrder = state.items.reduce((max, it) => {
-            const v =
-              it && typeof it.sort_order === "number" && Number.isFinite(it.sort_order)
-                ? it.sort_order
-                : -1;
-            return v > max ? v : max;
-          }, -1) + 1;
-
-          const { data, error } = await state.sb
-            .from(TABLE)
-            .insert({ ...basePayload, sort_order: nextSortOrder })
-            .select("id, title, issuer, year, kind, category, note, proof_image_url, proof_url")
-            .single();
-          if (error) throw error;
-          row = normalizeItem(data);
+        if (!vals.title) {
+          modal.setEditError("Title is required.");
+          return;
         }
 
-        if (vals.file) await uploadCredentialProofImage(row.id, vals.file);
+        const proofUrl = normalizeProofUrl(vals.proof_url);
+        if (vals.proof_url && !proofUrl) {
+          modal.setEditError("Invalid proof link.");
+          return;
+        }
 
-        state.items = await fetchCredentials(state.sb);
-        state.itemsSource = "supabase";
-        modal.close();
-        render();
-      } catch (e) {
-        modal.setEditError(e && e.message ? e.message : String(e));
-      } finally {
-        modal.setEditBusy(false);
-      }
-    });
+        modal.setEditError("");
+        modal.setEditBusy(true);
+        try {
+          // Ensure defaults exist in DB before editing existing placeholders.
+          await maybeSeedOnAdminActive();
+
+          const basePayload = {
+            kind: vals.kind,
+            title: vals.title,
+            issuer: vals.issuer,
+            year: typeof vals.year === "number" && Number.isFinite(vals.year) ? vals.year : null,
+            category: vals.category,
+            note: vals.note,
+            proof_url: proofUrl,
+          };
+
+          let row = null;
+          if (isEdit) {
+            const { data, error } = await state.sb
+              .from(TABLE)
+              .update(basePayload)
+              .eq("id", current.id)
+              .select("id, title, issuer, year, kind, category, note, proof_image_url, proof_url")
+              .single();
+            if (error) throw error;
+            row = normalizeItem(data);
+          } else {
+            const nextSortOrder = state.items.reduce((max, it) => {
+              const v =
+                it && typeof it.sort_order === "number" && Number.isFinite(it.sort_order)
+                  ? it.sort_order
+                  : -1;
+              return v > max ? v : max;
+            }, -1) + 1;
+
+            const { data, error } = await state.sb
+              .from(TABLE)
+              .insert({ ...basePayload, sort_order: nextSortOrder })
+              .select("id, title, issuer, year, kind, category, note, proof_image_url, proof_url")
+              .single();
+            if (error) throw error;
+            row = normalizeItem(data);
+          }
+
+          if (vals.file) await uploadCredentialProofImage(row.id, vals.file);
+
+          state.items = await fetchCredentials(state.sb);
+          state.itemsSource = "supabase";
+          modal.close();
+          render();
+        } catch (e) {
+          modal.setEditError(e && e.message ? e.message : String(e));
+        } finally {
+          modal.setEditBusy(false);
+        }
+      });
+    }
+
+    modal.overlay.addEventListener("cc:admin-controls-ready", bindModalAdminControls);
 
     // Update admin UI when editor mode toggles.
     if (document.body) {
