@@ -337,6 +337,131 @@
     return true;
   }
 
+  async function initPasswordResetPage() {
+    const requestForm = document.getElementById('reset-request-form');
+    const updateForm = document.getElementById('reset-update-form');
+    if (!(requestForm instanceof HTMLFormElement) || !(updateForm instanceof HTMLFormElement)) {
+      return false;
+    }
+
+    const requestPanel = document.getElementById('reset-request-panel');
+    const updatePanel = document.getElementById('reset-update-panel');
+    const emailInput = document.getElementById('reset-email');
+    const requestBtn = document.getElementById('reset-request-submit');
+    const passwordInput = document.getElementById('reset-password');
+    const confirmInput = document.getElementById('reset-password-confirm');
+    const updateBtn = document.getElementById('reset-update-submit');
+    const errorBox = document.getElementById('reset-error');
+    const okBox = document.getElementById('reset-ok');
+
+    function setError(message) {
+      setText(errorBox, message);
+    }
+
+    function setOk(message) {
+      setText(okBox, message);
+    }
+
+    function showUpdatePanel() {
+      if (requestPanel instanceof HTMLElement) requestPanel.hidden = true;
+      if (updatePanel instanceof HTMLElement) updatePanel.hidden = false;
+      setError('');
+      setOk('Enter a new password for your account.');
+      if (passwordInput instanceof HTMLInputElement) passwordInput.focus();
+    }
+
+    function setRequestBusy(next) {
+      if (!(requestBtn instanceof HTMLButtonElement)) return;
+      requestBtn.disabled = Boolean(next);
+      requestBtn.textContent = next ? 'Sending recovery email...' : 'Send recovery email';
+    }
+
+    function setUpdateBusy(next) {
+      if (!(updateBtn instanceof HTMLButtonElement)) return;
+      updateBtn.disabled = Boolean(next);
+      updateBtn.textContent = next ? 'Updating password...' : 'Update password';
+    }
+
+    const auth = window.ResumeAuth;
+    if (!auth) {
+      setError('Authentication module failed to load.');
+      return true;
+    }
+
+    const searchParams = new URLSearchParams(window.location.search || '');
+    const hashParams = new URLSearchParams(String(window.location.hash || '').replace(/^#/, ''));
+    const callbackError = searchParams.get('error_description') || hashParams.get('error_description');
+    if (callbackError) setError(callbackError);
+
+    await auth.onAuthStateChange((session, event) => {
+      if (event === 'PASSWORD_RECOVERY' && session && session.user) showUpdatePanel();
+    });
+
+    try {
+      const session = await auth.getSession();
+      if (session && session.user) showUpdatePanel();
+    } catch (_e) {
+      // The request form remains available when a recovery link is invalid or expired.
+    }
+
+    requestForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      setError('');
+      setOk('');
+
+      const email = emailInput instanceof HTMLInputElement ? String(emailInput.value || '').trim() : '';
+      if (!email) {
+        setError('Enter the email address associated with your account.');
+        return;
+      }
+
+      setRequestBusy(true);
+      try {
+        await auth.requestPasswordReset(email);
+        setOk('If an account exists for that email, a password recovery link has been sent.');
+        requestForm.reset();
+      } catch (error) {
+        setError(error && error.message ? error.message : String(error));
+      } finally {
+        setRequestBusy(false);
+      }
+    });
+
+    updateForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      setError('');
+      setOk('');
+
+      const password = passwordInput instanceof HTMLInputElement ? String(passwordInput.value || '') : '';
+      const confirmation = confirmInput instanceof HTMLInputElement ? String(confirmInput.value || '') : '';
+      if (password.length < 12) {
+        setError('Use a password with at least 12 characters.');
+        return;
+      }
+      if (password !== confirmation) {
+        setError('The passwords do not match.');
+        return;
+      }
+
+      setUpdateBusy(true);
+      try {
+        await auth.updatePassword(password);
+        const sb = await auth.getClient();
+        await sb.auth.signOut();
+        updateForm.reset();
+        setOk('Password updated. You can now sign in with your new password.');
+        window.setTimeout(() => {
+          window.location.replace(auth.getAppHref('login.html'));
+        }, 1400);
+      } catch (error) {
+        setError(error && error.message ? error.message : String(error));
+        setUpdateBusy(false);
+      }
+    });
+
+    return true;
+  }
+
   async function initAuthCallbackPage() {
     const statusEl = document.getElementById('callback-status');
     if (!(statusEl instanceof HTMLElement)) return false;
@@ -399,6 +524,10 @@
     }
     if (document.getElementById('profile-form')) {
       void initProfilePage();
+      return;
+    }
+    if (document.getElementById('reset-request-form')) {
+      void initPasswordResetPage();
       return;
     }
     if (document.getElementById('callback-status')) {

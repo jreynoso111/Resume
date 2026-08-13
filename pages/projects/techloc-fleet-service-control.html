@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>TechLoc Fleet &amp; Service Control Platform | Juan R. Reynoso</title>
-  <meta name="description" content="TechLoc is an operational intelligence platform built to centralize fleet service coordination, field dispatch, and provider management across distributed locations. Its objective is simple: connect fleet operators with the right service partner at the right time and place, while maintaining full operational visibility and control.">
+  <meta name="description" content="TechLoc is an operational intelligence system connecting vehicle telemetry, geolocation, customer/account, and inventory-control data to identify and prioritize problematic assets and accounts.">
   <link rel="canonical" href="https://jreynoso.net/pages/projects/techloc-fleet-service-control.html">
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; img-src 'self' data: blob: https://xxrllcpoklgavakmzhnb.supabase.co; media-src 'self' data: blob: https://xxrllcpoklgavakmzhnb.supabase.co; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; connect-src 'self' https://xxrllcpoklgavakmzhnb.supabase.co; form-action 'self'">
@@ -24,10 +24,8 @@
       <section class="hero">
         <h1>TechLoc Fleet &amp; Service Control Platform</h1>
         <p>
-          TechLoc is an operational intelligence platform built to centralize fleet service coordination, field
-          dispatch, and provider management across distributed locations. Its objective is simple: connect fleet
-          operators with the right service partner at the right time and place, while maintaining full operational
-          visibility and control.
+          TechLoc is an operational intelligence system connecting vehicle telemetry, geolocation, customer/account,
+          and inventory-control data to identify and prioritize problematic assets and accounts.
         </p>
       </section>
 
@@ -42,12 +40,13 @@
       </section>
 
       <section class="project-section project-overview">
-        <h2 class="standard-h2">Platform Overview</h2>
+        <h2 class="standard-h2">Context</h2>
         <div class="grid-2">
           <p class="standard-text">
-            TechLoc centralizes geolocation, dispatch orchestration, provider validation, and performance analytics into
-            one operational command center. Fleet teams can request services, assign certified partners, and monitor
-            outcomes in real time without switching between fragmented tools.
+            Fleet and asset operations produced vehicle telemetry, geolocation, customer/account, and
+            inventory-control data that needed to be interpreted together. TechLoc was developed to connect these
+            sources so asset status, movement behavior, inventory condition, and financial exposure could be reviewed
+            in one operational context.
           </p>
           <div class="img-placeholder is-expandable"
             style="background-image:url('https://xxrllcpoklgavakmzhnb.supabase.co/storage/v1/object/public/resume-cms/images/projects/techloc-fleet-service-control/overview.jpg?v=1771736940549');"
@@ -58,21 +57,18 @@
       </section>
 
       <section class="project-section project-features">
-        <h2 class="standard-h2">Key Functionalities</h2>
+        <h2 class="standard-h2">Analytics &amp; Capabilities</h2>
         <ul class="standard-list">
-          <li><strong>Smart Localization:</strong> Geo-intelligent search and map-based control view to locate
-            technicians, tow trucks, and workshops in real time.</li>
-          <li><strong>Dispatch Management:</strong> Rapid coordination of roadside assistance, heavy-equipment
-            transport, and commercial locksmith services.</li>
-          <li><strong>Analytics Panel:</strong> Live metrics for active partner status, SLA compliance, response times,
-            and operational efficiency.</li>
-          <li><strong>Curated Network:</strong> Verified provider database that ensures speed, quality, and trusted
-            execution in every intervention.</li>
+          <li>Determines whether a vehicle is parked or moving and how long it has remained in that state.</li>
+          <li>Analyzes movement history, routes, and frequently visited locations.</li>
+          <li>Provides current asset location and supporting GPS / telemetry information.</li>
+          <li>Connects vehicle behavior with inventory, vehicle-control, and operational-status information.</li>
+          <li>Links asset information with customer/account context to surface exceptions and required action.</li>
         </ul>
       </section>
 
       <section class="project-section project-components">
-        <h2 class="standard-h2">Emergency Dispatch Workflows</h2>
+        <h2 class="standard-h2">Operational Use</h2>
         <div class="grid-3">
           <div class="card">
             <div class="img-placeholder is-expandable"
@@ -80,9 +76,9 @@
               data-asset-slot="bg-eb66ff9c"
               data-asset-path="assets/images/projects/techloc-fleet-service-control/component_1.jpg" tabindex="0"
               role="button" aria-label="Expand image"></div>
-            <h3 class="standard-h3">Roadside Assistance</h3>
-            <p class="standard-text">Trigger service tickets by location, assign nearest certified partner, and track
-              ETA-to-resolution in a single timeline.</p>
+            <h3 class="standard-h3">Asset Movement Intelligence</h3>
+            <p class="standard-text">Reviews movement state, elapsed time, and historical activity to distinguish
+              normal asset behavior from conditions requiring investigation.</p>
           </div>
 
           <div class="card">
@@ -91,8 +87,9 @@
               data-asset-slot="bg-eb66ff9c"
               data-asset-path="assets/images/projects/techloc-fleet-service-control/component_1.jpg" tabindex="0"
               role="button" aria-label="Expand image"></div>
-            <h3 class="standard-h3">SERVICE COORDINATION</h3>
-            <p class="standard-text">Excellent tool to quickly find closest service to any vehicle's location.</p>
+            <h3 class="standard-h3">Geospatial Patterns</h3>
+            <p class="standard-text">Uses routes, recurring locations, and current position to understand asset
+              behavior, support location-based follow-up, and improve operational visibility.</p>
           </div>
 
           <div class="card">
@@ -101,20 +98,20 @@
               data-asset-slot="bg-a5f5e3c2"
               data-asset-path="assets/images/projects/techloc-fleet-service-control/component_3.jpg" tabindex="0"
               role="button" aria-label="Expand image"></div>
-            <h3 class="standard-h3">INVENTORY CONTROL PAGE</h3>
-            <p class="standard-text">This page allows the team to follow up on any asset's inventory status,
-              accessible from anywhere after authentication.</p>
+            <h3 class="standard-h3">Account &amp; Asset Prioritization</h3>
+            <p class="standard-text">Connects operational status with customer/account and inventory records so
+              problematic accounts and assets can be identified and prioritized for follow-up.</p>
           </div>
         </div>
       </section>
 
       <section class="project-section project-impact">
-        <h2 class="standard-h2">Operational Impact</h2>
+        <h2 class="standard-h2">Measured Impact</h2>
         <p class="standard-text">
-          By combining smart geolocation, dispatch intelligence, and curated provider quality controls, TechLoc reduces
-          response times, improves SLA performance, and gives fleet leaders a clear nationwide operational picture. The
-          platform turns service coordination into a measurable, data-driven workflow with stronger control and better
-          customer outcomes.
+          TechLoc contributed to reducing monthly outstanding customer balance from approximately $1.5M to
+          approximately $130K. It also contributed to an approximately 60% reduction in the number of vehicles placed
+          Out for Repossession each month by improving how problematic accounts and assets were identified and
+          prioritized through connected operational and financial information.
         </p>
       </section>
 
@@ -163,9 +160,9 @@
   <footer id="site-footer" data-root-path="../../"></footer>
 
   <script src="../../js/admin-bootstrap.js?v=1"></script>
-  <script src="../../js/header.js?v=13"></script>
+  <script src="../../js/header.js?v=17"></script>
   <script src="../../js/footer.js?v=26"></script>
-  <script src="../../js/project-case-study.js?v=1"></script>
+  <script src="../../js/project-case-study.js?v=2"></script>
   <script src="../../js/project-image-lightbox.js?v=4"></script>
   <script src="../../js/project-screenshots-carousel.js?v=11"></script>
   <script src="../../js/site-shell.js?v=7"></script>

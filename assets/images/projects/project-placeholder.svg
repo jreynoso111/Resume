@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" role="img" aria-labelledby="title description">
+  <title id="title">Juan R. Reynoso project placeholder</title>
+  <desc id="description">Branded project image with the JR monogram centered on an operational grid.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#edf4f7"/>
+      <stop offset="1" stop-color="#dce9ee"/>
+    </linearGradient>
+    <linearGradient id="mark" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#172033"/>
+      <stop offset="1" stop-color="#263956"/>
+    </linearGradient>
+    <pattern id="grid" width="80" height="80" patternUnits="userSpaceOnUse">
+      <path d="M80 0H0V80" fill="none" stroke="#527087" stroke-opacity=".09" stroke-width="2"/>
+    </pattern>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="24" stdDeviation="28" flood-color="#152238" flood-opacity=".18"/>
+    </filter>
+  </defs>
+
+  <rect width="1600" height="900" fill="url(#background)"/>
+  <rect width="1600" height="900" fill="url(#grid)"/>
+
+  <g fill="none" stroke="#5a7f95" stroke-linecap="round" stroke-width="5" opacity=".24">
+    <path d="M0 660h255l100-95h230l115 70h210l155-190h535"/>
+    <path d="M0 250h330l105 100h205l135-125h300l90 85h435"/>
+  </g>
+  <g fill="#2a7f9e" opacity=".38">
+    <circle cx="355" cy="565" r="10"/>
+    <circle cx="700" cy="635" r="10"/>
+    <circle cx="1065" cy="445" r="10"/>
+    <circle cx="435" cy="350" r="10"/>
+    <circle cx="775" cy="225" r="10"/>
+    <circle cx="1165" cy="310" r="10"/>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="645" y="295" width="310" height="310" rx="76" fill="url(#mark)"/>
+    <rect x="665" y="315" width="270" height="270" rx="61" fill="none" stroke="#8bc3d5" stroke-opacity=".55" stroke-width="3"/>
+    <text x="800" y="497" fill="#ffffff" font-family="Arial, Helvetica, sans-serif" font-size="132" font-weight="700" letter-spacing="-8" text-anchor="middle">JR</text>
+    <path d="M732 532h136" stroke="#70bdd2" stroke-linecap="round" stroke-width="8"/>
+  </g>
+</svg>

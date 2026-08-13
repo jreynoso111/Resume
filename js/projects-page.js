@@ -124,10 +124,14 @@
       }
       if (!value || typeof value !== "object" || Array.isArray(value)) return null;
       const normalized = {
+        summary: String(value.summary || "").trim(),
         context: String(value.context || "").trim(),
         problem: String(value.problem || "").trim(),
         approach: String(value.approach || "").trim(),
         solution: String(value.solution || "").trim(),
+        analytics: String(value.analytics || "").trim(),
+        operational_use: String(value.operational_use || value.operationalUse || "").trim(),
+        impact_label: String(value.impact_label || value.impactLabel || "").trim(),
         impact: String(value.impact || "").trim(),
         tools: Array.isArray(value.tools)
           ? value.tools.map((tool) => String(tool || "").trim()).filter(Boolean)
@@ -227,22 +231,23 @@
       const cards = (list || []).map((p) => {
         const href = normalizeProjectHref(p.href) || "#";
         const title = String(p.title || "").trim() || "Untitled project";
-        const desc = String(p.description || "").trim();
         const projectId = p && p.id != null ? String(p.id) : "";
         const slug = hrefToSlug(href);
+        const caseStudy = resolveCaseStudy(p, slug, caseStudies);
+        const desc = String((caseStudy && caseStudy.summary) || p.description || "").trim();
         const fallbackPreview = slug && LOCAL_PREVIEW_SLUGS.has(slug)
           ? `${rootPrefix || ""}assets/images/projects/previews/${slug}.jpg`
           : "";
-        const baseImgSrc = normalizeAssetUrl(p.image_url, rootPrefix) || fallbackPreview;
+        const genericPreview = `${rootPrefix || ""}assets/images/projects/project-placeholder.svg`;
+        const baseImgSrc = normalizeAssetUrl(p.image_url, rootPrefix) || fallbackPreview || genericPreview;
         const imgSrc = withCacheVersion(baseImgSrc, projectImageVersion(p));
-        const localFallbackBase = localAssetUrl(p.image_url, rootPrefix) || fallbackPreview;
+        const localFallbackBase = localAssetUrl(p.image_url, rootPrefix) || fallbackPreview || genericPreview;
         const fallbackImgSrc = withCacheVersion(localFallbackBase, projectImageVersion(p));
         const fallbackAttr = fallbackImgSrc && fallbackImgSrc !== imgSrc
           ? ` data-fallback-src="${escapeHtml(fallbackImgSrc)}"`
           : "";
         const imgAlt = escapeHtml(title);
         const descHtml = desc ? `<p class="project-desc">${escapeHtml(desc)}</p>` : "";
-        const caseStudy = resolveCaseStudy(p, slug, caseStudies);
         const caseStudyPreview = caseStudy
           ? `
               <div class="project-case-study-marker">Professional case study</div>

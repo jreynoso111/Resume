@@ -294,16 +294,6 @@
     return null;
   }
 
-  async function getAuthModule(rootPrefix) {
-    if (window.ResumeAuth) return window.ResumeAuth;
-    try {
-      await loadScript(`${rootPrefix}assets/js/auth.js?v=2`);
-    } catch (_e) {
-      return null;
-    }
-    return window.ResumeAuth || null;
-  }
-
   async function ensureSupabaseLibrary() {
     if (window.supabase && typeof window.supabase.createClient === "function") return;
     await loadScript(`${getRootPrefix()}assets/vendor/supabase/supabase-js.v2.js`);
@@ -463,19 +453,6 @@
       .trim()
       .toLowerCase();
     return category === "education" || category.includes("education");
-  }
-
-  function normalizeRole(raw) {
-    const role = String(raw || "").trim().toLowerCase();
-    return role || "viewer";
-  }
-
-  function canOpenCertificateProof(role, item, options) {
-    if (!item || item.kind !== "certification") return true;
-    const opts = options && typeof options === "object" ? options : {};
-    if (Boolean(opts.allowRestricted)) return true;
-    const normalized = normalizeRole(role);
-    return normalized === "admin" || normalized === "recruiter";
   }
 
   function filterItems(items, activeKind, query) {
@@ -680,11 +657,169 @@
     let fileInput = null;
     let saveBtn = null;
     let cancelBtn = null;
+    let cropButton = null;
+    let cropPanel = null;
+    let cropCanvas = null;
+    let cropInputs = null;
+    let cropSaveBtn = null;
+    let cropCancelBtn = null;
+    let cropError = null;
+    let cropSourceImage = null;
+    let cropSourceObjectUrl = "";
 
     function createInputField(label, input, span) {
       const wrap = createEl("label", span ? "cc-field cc-field-span" : "cc-field");
       wrap.append(createEl("div", "cc-field-label", label), input);
       return wrap;
+    }
+
+    function clearCropSource() {
+      cropSourceImage = null;
+      if (cropSourceObjectUrl) URL.revokeObjectURL(cropSourceObjectUrl);
+      cropSourceObjectUrl = "";
+      if (cropCanvas) {
+        cropCanvas.width = 1;
+        cropCanvas.height = 1;
+      }
+    }
+
+    function setCropError(message) {
+      if (!cropError) return;
+      const text = String(message || "").trim();
+      cropError.textContent = text;
+      cropError.hidden = !text;
+    }
+
+    function setCropBusy(busy) {
+      const active = Boolean(busy);
+      if (cropInputs) Object.values(cropInputs).forEach((input) => { input.disabled = active; });
+      if (cropSaveBtn) {
+        cropSaveBtn.disabled = active || !cropSourceImage || !getCropRect();
+        cropSaveBtn.textContent = active ? "Saving crop..." : "Save crop";
+      }
+      if (cropCancelBtn) cropCancelBtn.disabled = active;
+      closeBtn.disabled = active;
+    }
+
+    function getCropRect() {
+      if (!cropSourceImage || !cropInputs) return null;
+      const top = Number(cropInputs.top.value || 0) / 100;
+      const right = Number(cropInputs.right.value || 0) / 100;
+      const bottom = Number(cropInputs.bottom.value || 0) / 100;
+      const left = Number(cropInputs.left.value || 0) / 100;
+      const widthRatio = 1 - left - right;
+      const heightRatio = 1 - top - bottom;
+      if (widthRatio < 0.1 || heightRatio < 0.1) return null;
+      return {
+        sx: Math.round(cropSourceImage.naturalWidth * left),
+        sy: Math.round(cropSourceImage.naturalHeight * top),
+        sw: Math.max(1, Math.round(cropSourceImage.naturalWidth * widthRatio)),
+        sh: Math.max(1, Math.round(cropSourceImage.naturalHeight * heightRatio)),
+      };
+    }
+
+    function updateCropPreview() {
+      if (!cropCanvas || !cropSourceImage) return;
+      const rect = getCropRect();
+      if (!rect) {
+        setCropError("The crop is too small. Reduce one or more crop values.");
+        if (cropSaveBtn) cropSaveBtn.disabled = true;
+        return;
+      }
+      setCropError("");
+      if (cropSaveBtn) cropSaveBtn.disabled = false;
+      const scale = Math.min(1, 680 / rect.sw, 420 / rect.sh);
+      cropCanvas.width = Math.max(1, Math.round(rect.sw * scale));
+      cropCanvas.height = Math.max(1, Math.round(rect.sh * scale));
+      const context = cropCanvas.getContext("2d", { alpha: false });
+      if (!context) return;
+      context.fillStyle = "#ffffff";
+      context.fillRect(0, 0, cropCanvas.width, cropCanvas.height);
+      context.drawImage(
+        cropSourceImage,
+        rect.sx,
+        rect.sy,
+        rect.sw,
+        rect.sh,
+        0,
+        0,
+        cropCanvas.width,
+        cropCanvas.height
+      );
+    }
+
+    async function createCroppedFile() {
+      const rect = getCropRect();
+      if (!rect || !cropSourceImage || !currentItem) {
+        throw new Error("A valid crop is required.");
+      }
+      const scale = Math.min(1, 2400 / Math.max(rect.sw, rect.sh));
+      const output = document.createElement("canvas");
+      output.width = Math.max(1, Math.round(rect.sw * scale));
+      output.height = Math.max(1, Math.round(rect.sh * scale));
+      const context = output.getContext("2d", { alpha: false });
+      if (!context) throw new Error("The browser could not prepare the crop.");
+      context.fillStyle = "#ffffff";
+      context.fillRect(0, 0, output.width, output.height);
+      context.drawImage(
+        cropSourceImage,
+        rect.sx,
+        rect.sy,
+        rect.sw,
+        rect.sh,
+        0,
+        0,
+        output.width,
+        output.height
+      );
+      const blob = await new Promise((resolve, reject) => {
+        output.toBlob(
+          (result) => result ? resolve(result) : reject(new Error("The crop could not be exported.")),
+          "image/jpeg",
+          0.9
+        );
+      });
+      return new File([blob], `credential-${currentItem.id}-cropped.jpg`, {
+        type: "image/jpeg",
+        lastModified: Date.now(),
+      });
+    }
+
+    async function openCrop() {
+      if (!adminActive || !currentItem || !currentItem.id || !currentItem.proof_image_url) return;
+      ensureAdminControls();
+      setMode("crop");
+      heading.textContent = `Crop image: ${textOrDash(currentItem.title)}`;
+      setCropError("");
+      setCropBusy(true);
+      Object.values(cropInputs).forEach((input) => {
+        input.value = "0";
+        const output = input.closest(".cc-crop-field")?.querySelector(".cc-crop-field-value");
+        if (output) output.textContent = "0%";
+      });
+      clearCropSource();
+      openBase();
+
+      try {
+        const imageUrl = normalizeAssetUrl(currentItem.proof_image_url, getRootPrefix());
+        const response = await fetch(imageUrl, { credentials: "omit" });
+        if (!response.ok) throw new Error("The certificate image could not be loaded for cropping.");
+        const blob = await response.blob();
+        cropSourceObjectUrl = URL.createObjectURL(blob);
+        const source = new Image();
+        source.decoding = "async";
+        await new Promise((resolve, reject) => {
+          source.addEventListener("load", resolve, { once: true });
+          source.addEventListener("error", () => reject(new Error("The certificate image could not be decoded.")), { once: true });
+          source.src = cropSourceObjectUrl;
+        });
+        cropSourceImage = source;
+        updateCropPreview();
+      } catch (error) {
+        setCropError(error && error.message ? error.message : String(error));
+      } finally {
+        setCropBusy(false);
+      }
     }
 
     function ensureAdminControls() {
@@ -693,6 +828,58 @@
       editLinkBtn = createEl("button", "cc-action-btn", "Edit link");
       editLinkBtn.type = "button";
       viewLinkRow.appendChild(editLinkBtn);
+
+      cropButton = createEl("button", "cc-image-edit-btn", "Crop image");
+      cropButton.type = "button";
+      cropButton.hidden = !currentItem || !currentItem.proof_image_url;
+      imageFrame.appendChild(cropButton);
+
+      cropPanel = createEl("div", "cc-crop-panel");
+      cropPanel.hidden = true;
+      cropPanel.appendChild(createEl(
+        "p",
+        "cc-crop-help",
+        "Adjust the four edges until only the area that should remain is visible. Saving replaces the current certificate image."
+      ));
+      const preview = createEl("div", "cc-crop-preview");
+      cropCanvas = document.createElement("canvas");
+      cropCanvas.className = "cc-crop-canvas";
+      preview.appendChild(cropCanvas);
+      cropPanel.appendChild(preview);
+
+      cropInputs = {};
+      const cropControls = createEl("div", "cc-crop-controls");
+      [["top", "Top"], ["right", "Right"], ["bottom", "Bottom"], ["left", "Left"]].forEach(([key, label]) => {
+        const field = createEl("label", "cc-crop-field");
+        const labelRow = createEl("span", "cc-crop-field-label");
+        const value = createEl("output", "cc-crop-field-value", "0%");
+        labelRow.append(createEl("span", "", label), value);
+        const input = document.createElement("input");
+        input.type = "range";
+        input.min = "0";
+        input.max = "45";
+        input.step = "1";
+        input.value = "0";
+        input.addEventListener("input", () => {
+          value.textContent = `${input.value}%`;
+          updateCropPreview();
+        });
+        cropInputs[key] = input;
+        field.append(labelRow, input);
+        cropControls.appendChild(field);
+      });
+      cropPanel.appendChild(cropControls);
+      cropError = createEl("div", "cc-modal-error");
+      cropError.hidden = true;
+      cropPanel.appendChild(cropError);
+      const cropActions = createEl("div", "cc-modal-actions");
+      cropSaveBtn = createEl("button", "cc-action-btn cc-action-btn-primary", "Save crop");
+      cropSaveBtn.type = "button";
+      cropCancelBtn = createEl("button", "cc-action-btn", "Cancel");
+      cropCancelBtn.type = "button";
+      cropActions.append(cropSaveBtn, cropCancelBtn);
+      cropPanel.appendChild(cropActions);
+      modal.appendChild(cropPanel);
 
       editPanel = createEl("form", "cc-modal-edit");
       editPanel.hidden = true;
@@ -783,6 +970,28 @@
       );
       modal.appendChild(editPanel);
       cancelBtn.addEventListener("click", close);
+      cropButton.addEventListener("click", () => {
+        openCrop().catch((error) => setCropError(error && error.message ? error.message : String(error)));
+      });
+      cropCancelBtn.addEventListener("click", () => {
+        const item = currentItem;
+        clearCropSource();
+        if (item) openView(item, { rootPrefix: getRootPrefix() });
+        else close();
+      });
+      cropSaveBtn.addEventListener("click", async () => {
+        try {
+          setCropError("");
+          setCropBusy(true);
+          const file = await createCroppedFile();
+          overlay.dispatchEvent(new CustomEvent("cc:crop-save", {
+            detail: { item: currentItem, file },
+          }));
+        } catch (error) {
+          setCropBusy(false);
+          setCropError(error && error.message ? error.message : String(error));
+        }
+      });
       editLinkBtn.addEventListener("click", () => {
         if (adminActive && currentItem) openEdit(currentItem, { focusField: "proof_url" });
       });
@@ -791,8 +1000,12 @@
 
     function removeAdminControls() {
       if (mode === "edit") setMode("view");
+      if (mode === "crop") setMode("view");
       if (editLinkBtn) editLinkBtn.remove();
       if (editPanel) editPanel.remove();
+      if (cropButton) cropButton.remove();
+      if (cropPanel) cropPanel.remove();
+      clearCropSource();
       editLinkBtn = null;
       editPanel = null;
       editError = null;
@@ -806,18 +1019,27 @@
       fileInput = null;
       saveBtn = null;
       cancelBtn = null;
+      cropButton = null;
+      cropPanel = null;
+      cropCanvas = null;
+      cropInputs = null;
+      cropSaveBtn = null;
+      cropCancelBtn = null;
+      cropError = null;
     }
 
     function setMode(next) {
       mode = next;
       viewPanel.hidden = mode !== "view";
       if (editPanel) editPanel.hidden = mode !== "edit";
+      if (cropPanel) cropPanel.hidden = mode !== "crop";
     }
 
     function close() {
       activeImageRequestId += 1;
       stopImageLoadWatch();
       setImageLoadingVisible(false);
+      clearCropSource();
       overlay.hidden = true;
       overlay.classList.remove("is-open");
       document.body.classList.remove("cc-modal-open");
@@ -890,11 +1112,13 @@
       stopImageLoadWatch();
       setImageLoadingVisible(false);
       img.hidden = true;
+      if (cropButton) cropButton.hidden = true;
       placeholder.hidden = false;
       placeholder.textContent = String(message || "Certificate image could not be loaded.");
     }
 
     function openView(item, { rootPrefix }) {
+      if (mode === "crop") clearCropSource();
       currentItem = item;
       setMode("view");
       heading.textContent = textOrDash(item.title);
@@ -911,6 +1135,7 @@
       imageLoadingText.textContent = "Loading certificate image...";
 
       const imgUrl = normalizeAssetUrl(item.proof_image_url, rootPrefix);
+      if (cropButton) cropButton.hidden = !adminActive || !imgUrl;
       if (imgUrl) {
         activeImageRequestId += 1;
         const requestId = activeImageRequestId;
@@ -964,47 +1189,6 @@
         viewLink.hidden = true;
         viewLinkEmpty.hidden = !adminActive;
         viewLinkRow.hidden = !adminActive;
-      }
-
-      openBase();
-    }
-
-    function openLoginRequired(item, { rootPrefix, loginHref }) {
-      const safeItem = item || {};
-      currentItem = safeItem;
-      setMode("view");
-      heading.textContent = textOrDash(safeItem.title || "Certificate");
-
-      const metaParts = [];
-      metaParts.push(textOrDash(safeItem.issuer));
-      if (typeof safeItem.year === "number" && Number.isFinite(safeItem.year)) {
-        metaParts.push(String(safeItem.year));
-      }
-      viewMeta.textContent = metaParts.join(" • ");
-
-      viewNote.textContent = "Login is required to view this certificate. Please sign in to continue.";
-      activeImageRequestId += 1;
-      img.dataset.ccImageReq = String(activeImageRequestId);
-      setImageLoadingVisible(false, "Login required.");
-      img.removeAttribute("src");
-      img.alt = "";
-      img.hidden = true;
-      placeholder.hidden = false;
-      placeholder.textContent = "Login required to view certificate image.";
-
-      const href = String(loginHref || "").trim();
-      if (href) {
-        viewLink.href = href;
-        viewLink.textContent = "Log in";
-        viewLink.hidden = false;
-        viewLinkEmpty.hidden = true;
-        viewLinkRow.hidden = false;
-      } else {
-        viewLink.removeAttribute("href");
-        viewLink.hidden = true;
-        viewLinkEmpty.textContent = "Login required.";
-        viewLinkEmpty.hidden = false;
-        viewLinkRow.hidden = false;
       }
 
       openBase();
@@ -1086,7 +1270,6 @@
       overlay,
       close,
       openView,
-      openLoginRequired,
       openEdit,
       setAdminActive,
       getCurrentItem: () => currentItem,
@@ -1126,6 +1309,8 @@
         closeBtn.disabled = b;
         saveBtn.textContent = b ? "Saving..." : "Save";
       },
+      setCropBusy,
+      setCropError,
     };
   }
 
@@ -1291,9 +1476,6 @@
       adminAuthed: false,
       seeded: false,
       modal: null,
-      auth: null,
-      viewerRole: "viewer",
-      viewerLoggedIn: false,
     };
 
     const modal = createModal(section);
@@ -1368,47 +1550,7 @@
         const card = buildCard(item, {
           rootPrefix: state.rootPrefix,
           adminActive,
-          onViewProof: (it) => {
-            Promise.resolve()
-              .then(async () => {
-                await refreshViewerRole();
-
-                if (!state.viewerLoggedIn) {
-                  const nextPath = `${window.location.pathname || "/"}${window.location.search || ""}${window.location.hash || ""}`;
-                  const loginHref =
-                    state.auth && typeof state.auth.getAppHref === "function"
-                      ? state.auth.getAppHref("login.html")
-                      : `${state.rootPrefix}login.html`;
-                  const sep = loginHref.includes("?") ? "&" : "?";
-                  modal.openLoginRequired(it, {
-                    rootPrefix: state.rootPrefix,
-                    loginHref: `${loginHref}${sep}next=${encodeURIComponent(nextPath)}`,
-                  });
-                  return;
-                }
-
-                if (
-                  !canOpenCertificateProof(state.viewerRole, it, {
-                    allowRestricted: state.adminAuthed,
-                  })
-                ) {
-                  modal.openView(
-                    {
-                      ...it,
-                      proof_image_url: "",
-                      proof_url: "",
-                      note: "Certificates available upon request.",
-                    },
-                    { rootPrefix: state.rootPrefix }
-                  );
-                  return;
-                }
-                modal.openView(it, { rootPrefix: state.rootPrefix });
-              })
-              .catch(() => {
-                // Keep UI responsive if auth checks fail unexpectedly.
-              });
-          },
+          onViewProof: (it) => modal.openView(it, { rootPrefix: state.rootPrefix }),
           onEdit: (it) => {
             if (!adminActive) return;
             modal.openEdit(it);
@@ -1484,39 +1626,6 @@
         state.sb = null;
         state.supabaseReady = false;
         state.adminAuthed = false;
-      }
-    }
-
-    async function refreshViewerRole() {
-      if (!state.auth) {
-        state.auth = await getAuthModule(state.rootPrefix);
-      }
-      if (!state.auth || typeof state.auth.getSession !== "function") {
-        state.viewerRole = "viewer";
-        state.viewerLoggedIn = false;
-        return;
-      }
-
-      try {
-        const session = await state.auth.getSession();
-        if (!session || !session.user) {
-          state.viewerRole = "viewer";
-          state.viewerLoggedIn = false;
-          return;
-        }
-        state.viewerLoggedIn = true;
-
-        let profile = null;
-        if (typeof state.auth.getProfile === "function") {
-          profile = await state.auth.getProfile(session.user.id);
-        }
-        if (!profile && typeof state.auth.ensureProfile === "function") {
-          profile = await state.auth.ensureProfile({ user: session.user });
-        }
-        state.viewerRole = normalizeRole(profile && profile.role);
-      } catch (_e) {
-        state.viewerRole = "viewer";
-        state.viewerLoggedIn = false;
       }
     }
 
@@ -1718,6 +1827,32 @@
     }
 
     modal.overlay.addEventListener("cc:admin-controls-ready", bindModalAdminControls);
+    modal.overlay.addEventListener("cc:crop-save", async (event) => {
+      const detail = event && event.detail && typeof event.detail === "object" ? event.detail : {};
+      const item = detail.item;
+      const file = detail.file;
+      const adminActive =
+        isAdminModeActive() && state.supabaseReady && state.adminAuthed && state.itemsSource === "supabase";
+      if (!adminActive || !item || !item.id || !(file instanceof File)) {
+        modal.setCropBusy(false);
+        modal.setCropError("An authorized admin session is required to save this crop.");
+        return;
+      }
+
+      try {
+        await uploadCredentialProofImage(item.id, file);
+        state.items = await fetchCredentials(state.sb);
+        state.itemsSource = "supabase";
+        render();
+        const updated = state.items.find((candidate) => String(candidate.id) === String(item.id));
+        if (!updated) throw new Error("The cropped image was saved, but the credential could not be refreshed.");
+        modal.setCropBusy(false);
+        modal.openView(updated, { rootPrefix: state.rootPrefix });
+      } catch (error) {
+        modal.setCropBusy(false);
+        modal.setCropError(error && error.message ? error.message : String(error));
+      }
+    });
 
     // Update admin UI when editor mode toggles.
     if (document.body) {
@@ -1733,13 +1868,6 @@
     }
 
     await loadData();
-    await refreshViewerRole();
-    if (state.auth && typeof state.auth.onAuthStateChange === "function") {
-      state.auth.onAuthStateChange(async () => {
-        await refreshViewerRole();
-        render();
-      });
-    }
     setActiveTab(tabs, state.activeKind);
     updateAdminUi();
     render();

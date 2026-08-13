@@ -77,18 +77,22 @@
       ]
     },
     "techloc-fleet-service-control": {
-      "context": "Fleet service coordination, field dispatch, provider management, and asset follow-up operate across distributed locations.",
-      "problem": "Geolocation, service requests, partner assignment, provider validation, and performance monitoring were fragmented across separate operational tools.",
-      "approach": "Centralized geolocation, dispatch orchestration, provider validation, SLA metrics, response-time monitoring, and inventory status into one operational command center.",
-      "tools": ["Geolocation", "Dispatch workflows", "SLA analytics", "Provider data"],
-      "solution": "A platform for locating service partners, coordinating roadside and equipment services, assigning certified providers, and monitoring outcomes in real time.",
-      "impact": "Turned service coordination into a measurable, data-driven workflow with stronger control, provider visibility, and a clearer nationwide operational picture.",
-      "evidence": ["Operational command center", "Service coordination", "Inventory control"],
+      "summary": "Operational intelligence system connecting vehicle telemetry, geolocation, customer/account, and inventory-control data to identify and prioritize problematic assets and accounts.",
+      "context": "Fleet and asset operations produced vehicle telemetry, geolocation, customer/account, and inventory-control data that needed to be interpreted together to understand asset status and financial exposure.",
+      "problem": "GPS location alone did not show which accounts or assets required action. Operational review needed to connect movement state, duration, history, routes, recurring locations, current location, and asset status with customer balance and inventory information.",
+      "approach": "Developed TechLoc to combine telemetry, geospatial, account, and inventory/control information in one analytical workflow structured around movement behavior, location patterns, operational status, and financial exposure.",
+      "solution": "An operational intelligence system that connects asset behavior and location with customer/account and inventory conditions, allowing problematic accounts and assets to be identified, investigated, and prioritized instead of merely displayed on a map.",
+      "analytics": "Analyzes parked or moving status and duration, movement history, routes, frequently visited locations, current asset location, GPS/telemetry signals, inventory and vehicle-control information, and operational asset status.",
+      "operational_use": "Supports investigation and prioritization of problematic accounts and assets for collections, recovery, repossession, service, and inventory-control follow-up using combined operational and financial context.",
+      "impact_label": "Measured impact",
+      "impact": "Contributed to reducing monthly outstanding customer balance from approximately $1.5M to approximately $130K and to an approximately 60% reduction in the number of vehicles placed Out for Repossession each month.",
+      "tools": ["Vehicle telemetry", "Geospatial analysis", "Account and inventory data", "Operational analytics"],
+      "evidence": ["Asset movement intelligence", "Geospatial patterns", "Account and asset prioritization"],
       "source": [
-        "pages/projects/techloc-fleet-service-control.html — Platform Overview",
-        "pages/projects/techloc-fleet-service-control.html — Key Functionalities",
-        "pages/projects/techloc-fleet-service-control.html — Emergency Dispatch Workflows",
-        "pages/projects/techloc-fleet-service-control.html — Operational Impact"
+        "pages/projects/techloc-fleet-service-control.html — Context",
+        "pages/projects/techloc-fleet-service-control.html — Analytics & Capabilities",
+        "pages/projects/techloc-fleet-service-control.html — Operational Use",
+        "pages/projects/techloc-fleet-service-control.html — Measured Impact"
       ]
     },
     "pulse-operational-workspace": {

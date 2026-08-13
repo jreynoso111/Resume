@@ -84,7 +84,7 @@
 
     async function ensureAuthModule(rootPrefix) {
         if (window.ResumeAuth) return window.ResumeAuth;
-        const src = `${normalizeRootPrefix(rootPrefix)}assets/js/auth.js?v=2`;
+        const src = `${normalizeRootPrefix(rootPrefix)}assets/js/auth.js?v=3`;
         await loadScript(src);
         if (window.ResumeAuth) return window.ResumeAuth;
 
@@ -241,6 +241,40 @@
         if (root.dataset.authNavInitialized === '1' && hasAuthSlots) return;
         root.dataset.authNavInitialized = '1';
         clearAuthNavSlots(root);
+
+        const rootPrefix = inferRootPrefixFromHeaderScript();
+        const loginHref = `${normalizeRootPrefix(rootPrefix)}login.html`;
+        const profileHref = `${normalizeRootPrefix(rootPrefix)}profile.html`;
+
+        function renderSlots(label, href) {
+            desktopSlots.forEach((slot) => {
+                slot.innerHTML = `<a href="${escapeHtml(href)}">${escapeHtml(label)}</a>`;
+            });
+            mobileSlots.forEach((slot) => {
+                if (slot instanceof HTMLAnchorElement) {
+                    slot.href = href;
+                    slot.textContent = label;
+                } else {
+                    slot.innerHTML = `<a href="${escapeHtml(href)}">${escapeHtml(label)}</a>`;
+                }
+            });
+        }
+
+        // The login route remains discoverable even if Supabase is unavailable.
+        renderSlots('Admin sign in', loginHref);
+
+        try {
+            const auth = await ensureAuthModule(rootPrefix);
+            if (!auth) return;
+            const session = await auth.getSession();
+            if (!session || !session.user) return;
+
+            const profile = await auth.getProfile(session.user.id);
+            const role = String((profile && profile.role) || 'viewer').trim().toLowerCase();
+            renderSlots(role === 'admin' ? 'Admin account' : 'Account', profileHref);
+        } catch (_e) {
+            // Keep the login link available when session detection fails.
+        }
     }
 
     function renderMobileMenu(activePage, config) {
@@ -267,6 +301,7 @@
             <a href="${config.blogHref}"${withActiveClass(activePage, 'blog', activeClass)}>Blog</a>
             <a href="${config.aboutHref}"${withActiveClass(activePage, 'about', activeClass)}>About Me</a>
             <a href="${contactHref}">Contact</a>
+            <a href="#" data-auth-mobile="1">Admin sign in</a>
 
             <div class="nav-mobile-section">
               <div class="nav-mobile-section-label">Inside Projects</div>
@@ -346,6 +381,7 @@
             })}
 
           <div class="nav-auth-cta">
+            <span data-auth-desktop="1"></span>
             <a href="mailto:JReynoso111@gmail.com" class="nav-cta">Contact <span aria-hidden="true">→</span></a>
           </div>
 
@@ -384,6 +420,7 @@
             })}
           </div>
           <div class="nav-auth-cta">
+            <span data-auth-desktop="1"></span>
             <a href="mailto:JReynoso111@gmail.com" class="nav-cta">Contact <span aria-hidden="true">→</span></a>
           </div>
 
@@ -424,6 +461,7 @@
 	            })}
 	          </div>
 		          <div class="nav-auth-cta">
+		            <span data-auth-desktop="1"></span>
 		            <a href="mailto:JReynoso111@gmail.com" class="nav-cta">Contact <span aria-hidden="true">→</span></a>
 		          </div>
 
@@ -460,6 +498,7 @@
             })}
         </nav>
 	        <div class="header-cta nav-auth-cta">
+            <span data-auth-desktop="1"></span>
             <a href="mailto:JReynoso111@gmail.com" class="nav-cta">Contact →</a>
           </div>
 
@@ -495,6 +534,7 @@
 	        </nav>
 
 	        <div class="nav-auth-cta">
+            <span data-auth-desktop="1"></span>
             <a href="mailto:JReynoso111@gmail.com" class="header-cta">Contact →</a>
           </div>
 

@@ -185,7 +185,9 @@
         auth: {
           autoRefreshToken: true,
           persistSession: true,
-          detectSessionInUrl: false,
+          // Recovery links carry a temporary session in the URL. Only the
+          // password-reset page should consume it automatically.
+          detectSessionInUrl: /(?:^|\/)reset-password\.html$/i.test(window.location.pathname),
         },
       });
     })();
@@ -317,11 +319,34 @@
     }
   }
 
+  async function requestPasswordReset(email) {
+    const normalizedEmail = String(email || "").trim();
+    if (!normalizedEmail) throw new Error("Enter your email address.");
+
+    const sb = await getClient();
+    const { error } = await sb.auth.resetPasswordForEmail(normalizedEmail, {
+      redirectTo: getAppUrl("reset-password.html"),
+    });
+    if (error) throw error;
+  }
+
+  async function updatePassword(password) {
+    const nextPassword = String(password || "");
+    if (nextPassword.length < 12) {
+      throw new Error("Use a password with at least 12 characters.");
+    }
+
+    const sb = await getClient();
+    const { data, error } = await sb.auth.updateUser({ password: nextPassword });
+    if (error) throw error;
+    return (data && data.user) || null;
+  }
+
   async function onAuthStateChange(callback) {
     try {
       const sb = await getClient();
-      const { data } = sb.auth.onAuthStateChange((_event, session) => {
-        if (typeof callback === "function") callback(session || null);
+      const { data } = sb.auth.onAuthStateChange((event, session) => {
+        if (typeof callback === "function") callback(session || null, event);
       });
       return (data && data.subscription) || null;
     } catch (_e) {
@@ -344,6 +369,8 @@
     requireAuth,
     requireRole,
     logout,
+    requestPasswordReset,
+    updatePassword,
     getClient,
     onAuthStateChange,
     getAppHref,

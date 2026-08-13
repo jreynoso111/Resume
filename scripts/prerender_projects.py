@@ -21,6 +21,7 @@ SUPABASE_CONFIG_PATH = ROOT / "js" / "supabase-config.js"
 SITE_ORIGIN = "https://jreynoso.net"
 STATIC_START = "<!-- PROJECTS_STATIC_START -->"
 STATIC_END = "<!-- PROJECTS_STATIC_END -->"
+GENERIC_PROJECT_IMAGE = "../assets/images/projects/project-placeholder.svg"
 
 LOCAL_PROJECTS = [
     {
@@ -150,7 +151,10 @@ def merge_projects(remote_projects: list[dict], case_studies: dict[str, dict]) -
         project["href"] = href
         slug = href_to_slug(href)
         if slug in case_studies:
-            project["case_study"] = case_studies[slug]
+            case_study = case_studies[slug]
+            project["case_study"] = case_study
+            if str(case_study.get("summary") or "").strip():
+                project["description"] = str(case_study["summary"]).strip()
         normalized.append(project)
     return normalized
 
@@ -171,23 +175,30 @@ def normalize_asset_url(raw_url: object, supabase_url: str, bucket: str) -> str:
 
 def render_card(project: dict, supabase_url: str, bucket: str) -> str:
     title = str(project.get("title") or "Untitled project").strip()
-    description = str(project.get("description") or "").strip()
     href = normalize_project_href(project.get("href")) or "#"
     slug = href_to_slug(href)
     case_study = project.get("case_study")
     case_study = case_study if isinstance(case_study, dict) else None
+    description = str(
+        (case_study or {}).get("summary") or project.get("description") or ""
+    ).strip()
     project_id = str(project.get("id") or "").strip()
 
     image_url = normalize_asset_url(project.get("image_url"), supabase_url, bucket)
     if not image_url and slug in LOCAL_PREVIEW_SLUGS:
         image_url = f"../assets/images/projects/previews/{slug}.jpg"
+    if not image_url:
+        image_url = GENERIC_PROJECT_IMAGE
 
-    image_html = ""
-    if image_url:
-        image_html = (
-            f'<img src="{html.escape(image_url, quote=True)}" '
-            f'alt="{html.escape(title, quote=True)}" loading="lazy">'
+    fallback_attr = ""
+    if image_url != GENERIC_PROJECT_IMAGE:
+        fallback_attr = (
+            f' data-fallback-src="{html.escape(GENERIC_PROJECT_IMAGE, quote=True)}"'
         )
+    image_html = (
+        f'<img src="{html.escape(image_url, quote=True)}"{fallback_attr} '
+        f'alt="{html.escape(title, quote=True)}" loading="lazy">'
+    )
 
     description_html = (
         f'<p class="project-desc">{html.escape(description)}</p>' if description else ""

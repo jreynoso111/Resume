@@ -1,38 +1,43 @@
 [
   {
-    "title": "Fleet Reporting Automation",
-    "context": "Daily fleet oversight depended on NetSuite exports, GPS logs, maintenance invoices, parts inventory, and separate tracking sheets.",
-    "action": "Built a unified analytical model with automated ingestion, Power Query transformations, KPI dashboards, and VIN-level history.",
-    "impact": "Reduced manual report preparation by over 90%, standardized daily oversight, and enabled faster detection of operational anomalies and financial risk.",
-    "tags": ["Power BI", "Power Query", "Fleet Analytics"],
-    "url": "pages/projects/fleet-maintenance-analytics.html",
-    "source": "pages/projects/fleet-maintenance-analytics.html — Project Overview, Main Features, Key Components, and Operational Impact"
+    "metric": "91%",
+    "supporting_metric": "Approximately $1.5M → $130K",
+    "title": "Monthly Outstanding Balance Reduction",
+    "context": "Monthly outstanding customer balances were approximately $1.5 million.",
+    "action": "Implemented structured customer notification and follow-up controls, using TechLoc telemetry, location, movement, and inventory intelligence to prioritize accounts and assets.",
+    "impact": "Reduced the monthly outstanding balance to approximately $130,000, representing about a 91% reduction.",
+    "tags": ["Operational Analytics", "Financial Exposure", "Fleet Intelligence"],
+    "url": "pages/projects/techloc-fleet-service-control.html",
+    "source": "User-provided Operations & Inventory Control achievement; TechLoc case study."
   },
   {
-    "title": "Inventory Control Consolidation",
-    "context": "Inventory status was split across NetSuite, yard sheets, title records, inspections, and deal pipelines, creating conflicting spreadsheets and manual reconciliation.",
-    "action": "Developed a centralized dashboard with status rules, automated operational blocks, VIN-level drill-through, aging analysis, and yard visibility.",
-    "impact": "Removed conflicting inventory checks, corrected dozens of availability statuses, exposed documentation and location blocks, and established validated real-time visibility.",
-    "tags": ["Inventory", "Data Quality", "Operations"],
+    "metric": "60%",
+    "title": "Reduction in Monthly Out-for-Repossession Volume",
+    "context": "A high number of vehicles were regularly being placed Out for Repossession.",
+    "action": "Used earlier customer intervention, improved inventory visibility, asset location and movement information, and TechLoc operational intelligence to identify risk sooner.",
+    "impact": "Reduced monthly vehicles placed Out for Repossession by approximately 60%.",
+    "tags": ["Recovery Analytics", "Fleet Operations", "Risk Control"],
+    "url": "pages/projects/techloc-fleet-service-control.html",
+    "source": "User-provided Operations & Inventory Control achievement; TechLoc case study."
+  },
+  {
+    "metric": "$250K+",
+    "supporting_metric": "Tracked over one year",
+    "title": "Service Invoice Control",
+    "context": "External services generated a significant volume of invoices requiring operational and payment tracking.",
+    "action": "Established and maintained structured invoice and vendor-service tracking.",
+    "impact": "Maintained complete tracking and control across more than $250,000 in paid service invoices over one year.",
+    "tags": ["Financial Control", "Vendor Operations", "Service Management"],
+    "source": "User-provided Operations & Inventory Control achievement; $250K+ in paid service invoices tracked over one year."
+  },
+  {
+    "metric": "300+",
+    "title": "Active Fleet Inventory Visibility",
+    "context": "The active commercial-truck inventory requires continuous location and operational-status visibility.",
+    "action": "Integrated inventory controls, vehicle status, GPS/telemetry information, and operational follow-up.",
+    "impact": "Maintained current operational and inventory visibility across more than 300 trucks.",
+    "tags": ["Asset Management", "Inventory Control", "Fleet Operations"],
     "url": "pages/projects/inventory-control-dashboard.html",
-    "source": "pages/projects/inventory-control-dashboard.html — Project Overview, Main Features, Key Components, and Operational Impact"
-  },
-  {
-    "title": "Warranty Claim Analytics",
-    "context": "Metro maintenance history was dispersed across records that did not provide a consistent, auditable basis for spare-parts warranty decisions.",
-    "action": "Designed an Excel model that structured failures by system, dates, responsibility, asset, spare part, station, and contractual criteria.",
-    "impact": "Created a defensible claim package with stronger traceability and a faster executive submission process for reimbursement or replacement decisions.",
-    "tags": ["Excel", "Maintenance", "Warranty"],
-    "url": "pages/projects/warranty-claim-analytics-metro-santo-domingo.html",
-    "source": "pages/projects/warranty-claim-analytics-metro-santo-domingo.html — Project Overview, Main Features, Key Components, and Operational Impact"
-  },
-  {
-    "title": "Fare Transaction Fraud Detection",
-    "context": "Transit cards showed balance increases without legitimate recharge transactions, indicating abnormal behavior in the fare-payment workflow.",
-    "action": "Built a Power BI transaction model and analyzed card lifecycle events, balances, stations, timestamps, recharge activity, and repeated anomaly patterns.",
-    "impact": "Identified three fraudulent users exploiting a payment-system vulnerability and documented findings for corrective action and security improvements.",
-    "tags": ["Power BI", "Fraud Detection", "Transit Systems"],
-    "url": "pages/projects/fare-system-transaction-fraud-detection-metro-santo-domingo.html",
-    "source": "pages/projects/fare-system-transaction-fraud-detection-metro-santo-domingo.html — Project Overview, Context, Analytical Approach, Outcome, and Tools Used"
+    "source": "User-provided Operations & Inventory Control achievement."
   }
 ]

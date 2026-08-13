@@ -2552,7 +2552,8 @@
 
 	  function isPlaceholderAssetPath(assetPath) {
 	    const value = String(assetPath || '').replace(/\\/g, '/').replace(/^\/+/, '');
-	    return value.startsWith('assets/images/placeholders/');
+	    return value.startsWith('assets/images/placeholders/') ||
+	      value === 'assets/images/projects/project-placeholder.svg';
 	  }
 
   function ensureAssetSlot(target, kind) {

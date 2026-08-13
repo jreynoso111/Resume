@@ -91,7 +91,9 @@
       createStep('Problem', caseStudy.problem, 'case-study-step-problem'),
       createStep('Approach', caseStudy.approach, 'case-study-step-approach'),
       createStep('Finding / solution', caseStudy.solution, 'case-study-step-solution'),
-      createStep('Operational / business impact', caseStudy.impact, 'case-study-step-impact')
+      createStep('Analytics / capabilities', caseStudy.analytics, 'case-study-step-analytics'),
+      createStep('Operational use', caseStudy.operational_use || caseStudy.operationalUse, 'case-study-step-operational-use'),
+      createStep(text(caseStudy.impact_label) || 'Operational / business impact', caseStudy.impact, 'case-study-step-impact')
     ].forEach(function (step) {
       if (step) flow.appendChild(step);
     });

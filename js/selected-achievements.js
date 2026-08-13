@@ -23,6 +23,16 @@
     var card = document.createElement('article');
     card.className = 'achievement-card';
 
+    if (achievement.metric) {
+      var metricRow = document.createElement('div');
+      metricRow.className = 'achievement-metric-row';
+      metricRow.appendChild(createTextElement('div', 'achievement-metric', achievement.metric));
+      if (achievement.supporting_metric) {
+        metricRow.appendChild(createTextElement('div', 'achievement-supporting-metric', achievement.supporting_metric));
+      }
+      card.appendChild(metricRow);
+    }
+
     var header = document.createElement('div');
     header.className = 'achievement-card-header';
     header.appendChild(createTextElement('h3', 'achievement-title', achievement.title));
@@ -44,7 +54,7 @@
     if (Array.isArray(achievement.tags) && achievement.tags.length) {
       var tags = document.createElement('div');
       tags.className = 'achievement-tags';
-      tags.setAttribute('aria-label', 'Technologies and domains');
+      tags.setAttribute('aria-label', 'Achievement categories');
       achievement.tags.forEach(function (tag) {
         tags.appendChild(createTextElement('span', '', tag));
       });
