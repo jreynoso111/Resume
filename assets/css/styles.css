@@ -1282,7 +1282,31 @@ body.about-page .external-links-actions {
 
 /* About page: keep the info card closer to the text column (less empty space). */
 body.about-page .hero-grid {
-  gap: 20px;
+  column-gap: 20px;
+  row-gap: 0;
+}
+
+body.about-page .about-intro {
+  grid-column: 1;
+  grid-row: 1;
+  margin-top: 32px;
+}
+
+body.about-page .about-details {
+  grid-column: 1;
+  grid-row: 2;
+  min-width: 0;
+}
+
+body.about-page .about-secondary {
+  grid-column: 1;
+  grid-row: 3;
+  min-width: 0;
+}
+
+body.about-page .about-profile-card {
+  grid-column: 2;
+  grid-row: 1 / span 3;
 }
 
 body.about-page .about-info-card {
@@ -4598,6 +4622,38 @@ footer {
   .hero-proof-item:nth-child(2) .hero-proof-value {
     font-size: clamp(16px, 2.5vw, 21px);
   }
+
+  body.about-page .about-profile-grid {
+    grid-template-columns: minmax(0, 1.35fr) minmax(220px, 0.8fr);
+    column-gap: 18px;
+    row-gap: 0;
+    align-items: start;
+  }
+
+  body.about-page .about-intro {
+    margin-top: 18px;
+  }
+
+  body.about-page .about-profile-card {
+    width: 100%;
+    max-width: 300px;
+    margin-top: 18px;
+  }
+
+  body.about-page .about-profile-card .hero-card-header {
+    padding: 12px 12px 9px;
+  }
+
+  body.about-page .about-profile-card .hero-card-footer {
+    padding: 10px;
+    gap: 7px !important;
+  }
+
+  body.about-page .about-profile-card .hero-card-footer .hero-stat {
+    display: grid !important;
+    gap: 3px;
+    text-align: left;
+  }
 }
 
 @media (max-width: 640px) {
@@ -4705,6 +4761,58 @@ footer {
   .mini-card,
   .cc-card {
     border-radius: 10px;
+  }
+
+  body.about-page .about-profile-grid {
+    grid-template-columns: minmax(0, 1fr);
+    column-gap: 0;
+    row-gap: 20px;
+  }
+
+  body.about-page .about-intro {
+    grid-column: 1;
+    grid-row: 1;
+    margin-top: 12px;
+  }
+
+  body.about-page .about-profile-card {
+    grid-column: 1;
+    grid-row: 2;
+    width: min(100%, 460px);
+    margin: 0 auto;
+  }
+
+  body.about-page .hero-img-frame.about-info-image {
+    aspect-ratio: 16 / 9;
+    max-height: none;
+  }
+
+  body.about-page .about-details {
+    grid-column: 1;
+    grid-row: 3;
+  }
+
+  body.about-page .about-secondary {
+    grid-column: 1;
+    grid-row: 4;
+  }
+
+  body.about-page .about-profile-card .hero-card-footer {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 7px !important;
+    padding: 10px;
+  }
+
+  body.about-page .about-profile-card .hero-card-footer .hero-stat {
+    display: grid !important;
+    gap: 3px;
+    padding: 8px;
+    text-align: left;
+  }
+
+  body.about-page .about-profile-card .hero-card-footer .hero-stat-value {
+    font-size: 11px;
+    line-height: 1.35;
   }
 }
 
