@@ -1851,6 +1851,49 @@ body.about-page #philosophy + div + .standard-text + .standard-text {
   color: var(--text-muted);
 }
 
+@media (min-width: 981px) {
+  .hero-intro .hero-quick-grid {
+    gap: 8px;
+    padding-top: 0;
+  }
+
+  .hero-intro .hero-quick-card {
+    padding: 14px 18px;
+  }
+
+  .hero-intro .hero-quick-label {
+    margin-bottom: 4px;
+  }
+
+  .hero-intro .hero-quick-value {
+    font-size: 18px;
+  }
+
+  .hero-intro .hero-quick-text {
+    line-height: 1.45;
+  }
+}
+
+@media (min-width: 981px) and (max-width: 1199px) {
+  .hero-intro .hero-quick-grid {
+    align-self: stretch;
+    grid-template-rows: repeat(3, minmax(0, 1fr));
+  }
+
+  .hero-intro .hero-quick-card {
+    padding: 10px 14px;
+  }
+
+  .hero-intro .hero-quick-value {
+    font-size: 16px;
+  }
+
+  .hero-intro .hero-quick-text {
+    font-size: 11px;
+    line-height: 1.35;
+  }
+}
+
 
 
 /* HIGHLIGHTS (Index) */
