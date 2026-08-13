@@ -111,6 +111,7 @@
         let angularVelocity = { x: 0, y: 0 };
         let pointerTouchActive = false;
         let activeTouchId = null;
+        const isTouchLayout = window.matchMedia('(hover: none), (pointer: coarse)').matches;
 
         const BASE_ROTATION_SPEED_Y = 0.0012; // Doubled
         const BASE_ROTATION_SPEED_X = 0.0004; // Doubled
@@ -335,6 +336,7 @@
         }
 
         document.addEventListener('click', (event) => {
+            if (isTouchLayout) return;
             if (event.defaultPrevented) return;
             if (event.button !== 0) return;
             if (isInteractiveTarget(event.target)) return;
@@ -359,6 +361,7 @@
         }
 
         document.addEventListener('pointermove', (event) => {
+            if (isTouchLayout) return;
             const pointerType = event.pointerType || 'mouse';
             const isInsideZone = isInInteractionZone(event.clientX, event.clientY, pointerType);
 
@@ -388,6 +391,7 @@
         });
 
         document.addEventListener('pointerdown', (event) => {
+            if (isTouchLayout) return;
             const pointerType = event.pointerType || 'mouse';
             if (pointerType === 'touch') pointerTouchActive = true;
             lastPointerPosition = { x: event.clientX, y: event.clientY };
@@ -416,6 +420,7 @@
         }
 
         document.addEventListener('touchstart', (event) => {
+            if (isTouchLayout) return;
             if (pointerTouchActive) return; // Avoid double-counting when pointer events are active.
             const t = getPrimaryTouch(event.touches);
             if (!t) return;
@@ -425,6 +430,7 @@
         }, { passive: true });
 
         document.addEventListener('touchmove', (event) => {
+            if (isTouchLayout) return;
             if (pointerTouchActive) return;
             const t = getPrimaryTouch(event.touches);
             if (!t) return;

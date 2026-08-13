@@ -63,13 +63,29 @@
     });
   }
 
-  function hrefToSlug(href) {
+	  function hrefToSlug(href) {
       const raw = String(href || "").trim();
       if (!raw) return "";
       const noHash = raw.split("#")[0];
       const noQuery = noHash.split("?")[0];
       const last = noQuery.split("/").filter(Boolean).pop() || "";
       return last.replace(/\.html$/i, "");
+	    }
+
+    function normalizeProjectHref(raw) {
+      const value = String(raw || "").trim();
+      if (!value || /[\u0000-\u001f\u007f]/.test(value)) return "";
+      try {
+        const url = new URL(value, window.location.href);
+        const projectBase = new URL("projects/", window.location.href);
+        if (url.origin !== projectBase.origin) return "";
+        if (!url.pathname.startsWith(projectBase.pathname)) return "";
+        const filename = url.pathname.slice(projectBase.pathname.length);
+        if (!/^[a-z0-9][a-z0-9-]*\.html$/i.test(filename)) return "";
+        return `${url.pathname}${url.search}${url.hash}`;
+      } catch (_e) {
+        return "";
+      }
     }
 
     function withCacheVersion(url, seed) {
@@ -101,6 +117,18 @@
     const grid = document.getElementById("projects-grid");
     if (!grid) return;
 
+    const LOCAL_PROJECTS = [
+      {
+        id: "local-pulse-operational-workspace",
+        title: "Pulse Operational Workspace",
+        description: "Operational work management with portfolio intelligence, flexible boards, service discovery, and guided execution.",
+        href: "projects/pulse-operational-workspace.html",
+        image_url: "/assets/images/projects/pulse-operational-workspace/dashboard.jpg",
+        is_published: true,
+        sort_order: 999,
+      },
+    ];
+
     const cfg = window.__SUPABASE_CONFIG__ || {};
     const rootPrefix =
       (document.getElementById("site-footer") &&
@@ -116,12 +144,23 @@
       "turnstile-deployment-management-line-2b-expansion",
       "warranty-claim-analytics-metro-santo-domingo",
       "fare-system-transaction-fraud-detection-metro-santo-domingo",
+      "pulse-operational-workspace",
     ]);
+
+    function mergeLocalProjects(list) {
+      const merged = Array.isArray(list) ? list.slice() : [];
+      const slugs = new Set(merged.map((project) => hrefToSlug(project && project.href)));
+      LOCAL_PROJECTS.forEach((project) => {
+        const slug = hrefToSlug(project.href);
+        if (!slugs.has(slug)) merged.push(project);
+      });
+      return merged;
+    }
 
     function renderCards(list, noteHtml) {
       const note = noteHtml ? `<div style="color: var(--text-muted); font-size: 12px; margin-bottom: 10px;">${noteHtml}</div>` : "";
       const cards = (list || []).map((p) => {
-        const href = String(p.href || "").trim() || "#";
+        const href = normalizeProjectHref(p.href) || "#";
         const title = String(p.title || "").trim() || "Untitled project";
         const desc = String(p.description || "").trim();
         const projectId = p && p.id != null ? String(p.id) : "";
@@ -162,7 +201,7 @@
     }
 
     if (!cfg.url || !cfg.anonKey || !window.supabase) {
-      setGridHtml(`<div style="color: var(--text-muted);">Projects data source is not available.</div>`);
+      setGridHtml(renderCards(LOCAL_PROJECTS, ""));
       return;
     }
 
@@ -175,16 +214,16 @@
       .order("id", { ascending: true });
 
     if (error) {
-      setGridHtml(`<div style="color:#b91c1c; font-size: 13px;">Error loading projects from Supabase: ${escapeHtml(error.message || String(error))}</div>`);
+      setGridHtml(renderCards(LOCAL_PROJECTS, ""));
       return;
     }
 
     if (!data || data.length === 0) {
-      setGridHtml(`<div style="color: var(--text-muted);">No published projects found in Supabase.</div>`);
+      setGridHtml(renderCards(LOCAL_PROJECTS, ""));
       return;
     }
 
-    setGridHtml(renderCards(data, ""));
+    setGridHtml(renderCards(mergeLocalProjects(data), ""));
   }
 
   document.addEventListener("DOMContentLoaded", () => {

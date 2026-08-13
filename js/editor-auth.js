@@ -675,11 +675,7 @@
 
   function getSessionRole(user) {
     if (!user || typeof user !== 'object') return '';
-    return normalizeRoleValue(
-      (user.app_metadata && user.app_metadata.role) ||
-      (user.user_metadata && user.user_metadata.role) ||
-      ''
-    );
+    return normalizeRoleValue((user.app_metadata && user.app_metadata.role) || '');
   }
 
   async function getCurrentProfileRole() {

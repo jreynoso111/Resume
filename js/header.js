@@ -1,8 +1,24 @@
 (function () {
     const SUPABASE_VENDOR_PATH = 'assets/vendor/supabase/supabase-js.v2.js';
-    const fallbackProjectLinks = [];
+    const fallbackProjectLinks = [
+        {
+            href: 'pulse-operational-workspace.html',
+            label: 'Pulse Operational Workspace',
+            key: 'pulse-operational-workspace'
+        }
+    ];
     let projectLinks = [];
     let projectLinksPromise = null;
+
+    function escapeHtml(value) {
+        return String(value == null ? '' : value).replace(/[&<>"']/g, (char) => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;'
+        })[char]);
+    }
 
     function withActiveClass(activeKey, key, className = 'active') {
         return activeKey === key ? ` class="${className}"` : '';
@@ -128,7 +144,7 @@
 
         const parts = clean.split('/').filter(Boolean);
         clean = parts.length > 0 ? parts[parts.length - 1] : '';
-        if (!clean || !/\.html$/i.test(clean)) return '';
+        if (!/^[a-z0-9][a-z0-9-]*\.html$/i.test(clean)) return '';
         return clean;
     }
 
@@ -144,6 +160,14 @@
         return items;
     }
 
+    function mergeLocalProjectLinks(items) {
+        const merged = Array.isArray(items) ? items.slice() : [];
+        for (const localItem of fallbackProjectLinks) {
+            if (!merged.some((item) => item.key === localItem.key)) merged.push(localItem);
+        }
+        return merged;
+    }
+
     async function ensureProjectLinks(rootPrefix) {
         if (projectLinksPromise) return projectLinksPromise;
         projectLinksPromise = (async () => {
@@ -154,7 +178,7 @@
             }
             const hasLib = await ensureSupabaseLibrary();
             if (!hasLib) {
-                projectLinks = [];
+                projectLinks = fallbackProjectLinks.slice();
                 return projectLinks;
             }
 
@@ -174,12 +198,12 @@
                     .order('id', { ascending: true });
 
                 if (!error) {
-                    projectLinks = mapProjectRowsToLinks(data);
+                    projectLinks = mergeLocalProjectLinks(mapProjectRowsToLinks(data));
                 } else {
-                    projectLinks = [];
+                    projectLinks = fallbackProjectLinks.slice();
                 }
             } catch (_e) {
-                projectLinks = [];
+                projectLinks = fallbackProjectLinks.slice();
             }
             return projectLinks;
         })().finally(() => {
@@ -249,9 +273,9 @@
               <div class="nav-mobile-sub">
                 ${projectLinks
                     .map(
-                        (item) => `<a href="${projectsPrefix}${item.href}">
+                        (item) => `<a href="${escapeHtml(`${projectsPrefix}${item.href}`)}">
                   <span class="nav-mobile-sub-arrow" aria-hidden="true">&rarr;</span>
-                  <span>${item.label}</span>
+                  <span>${escapeHtml(item.label)}</span>
                 </a>`
                     )
                     .join('')}
@@ -264,13 +288,13 @@
 
     function renderProjectDropdown(prefix, className = '') {
         return `<div${className ? ` class="${className}"` : ''}>${projectLinks
-            .map((item) => `<a href="${prefix}${item.href}">${item.label}</a>`)
+            .map((item) => `<a href="${escapeHtml(`${prefix}${item.href}`)}">${escapeHtml(item.label)}</a>`)
             .join('')}</div>`;
     }
 
     function renderProjectsSidebar(activeProject) {
         return `<h3>Projects</h3>${projectLinks
-            .map((item) => `<a href="${item.href}"${withActiveClass(activeProject, item.key)}>${item.label}</a>`)
+            .map((item) => `<a href="${escapeHtml(item.href)}"${withActiveClass(activeProject, item.key)}>${escapeHtml(item.label)}</a>`)
             .join('')}`;
     }
 

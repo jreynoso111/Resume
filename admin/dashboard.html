@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; img-src 'self' data: blob: https://xxrllcpoklgavakmzhnb.supabase.co; media-src 'self' data: blob: https://xxrllcpoklgavakmzhnb.supabase.co; script-src 'self' 'sha256-j6jze/KNzX7uxTlJ985Eb7uarz/gAZrqLrei3C3EUSI=' 'sha256-1KrpXrHUclsBsAgqGU7rSompZ9E4Q+K8LbN+djB129E='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; connect-src 'self' https://xxrllcpoklgavakmzhnb.supabase.co; form-action 'self'">
   <meta name="referrer" content="strict-origin-when-cross-origin">
     <title>Admin Dashboard - Juan R. Reynoso</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -268,7 +269,7 @@
     <header>
         <h1>Admin Dashboard</h1>
         <div class="header-actions">
-            <a href="../index.html" class="btn-secondary" target="_blank">
+            <a href="../index.html" class="btn-secondary" target="_blank" rel="noopener noreferrer">
                 <span>View public site</span>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
             </a>
@@ -684,11 +685,7 @@
 
         function getSessionRole(user) {
             if (!user || typeof user !== 'object') return '';
-            return normalizeRoleValue(
-                (user.app_metadata && user.app_metadata.role) ||
-                (user.user_metadata && user.user_metadata.role) ||
-                ''
-            );
+            return normalizeRoleValue((user.app_metadata && user.app_metadata.role) || '');
         }
 
         async function getCurrentProfileRole(user) {

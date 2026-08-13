@@ -127,7 +127,26 @@
         cover_image_url: "assets/images/blog/cover-generic.png",
         published_at: "2026-02-15T00:00:00.000Z",
       },
+      ...(Array.isArray(window.__LOCAL_BLOG_POSTS__) ? window.__LOCAL_BLOG_POSTS__ : []),
     ];
+
+    function mergePosts(remotePosts, localPosts) {
+      const bySlug = new Map();
+      (localPosts || []).forEach((post) => {
+        const slug = String((post && post.slug) || "").trim();
+        if (slug) bySlug.set(slug, post);
+      });
+      (remotePosts || []).forEach((post) => {
+        const slug = String((post && post.slug) || "").trim();
+        if (slug) bySlug.set(slug, post);
+      });
+
+      return Array.from(bySlug.values()).sort((a, b) => {
+        const aDate = new Date(a.published_at || a.updated_at || a.created_at || 0).getTime();
+        const bDate = new Date(b.published_at || b.updated_at || b.created_at || 0).getTime();
+        return bDate - aDate;
+      });
+    }
 
     function renderCards(list, noteHtml) {
       const note = noteHtml
@@ -139,9 +158,9 @@
           const slug = String(p.slug || "").trim();
           const title = String(p.title || "").trim() || "Untitled post";
           const excerpt = String(p.excerpt || "").trim();
-          const baseCover = normalizeAssetUrl(p.cover_image_url, rootPrefix) || `${rootPrefix}assets/images/blog/cover-generic.png`;
+          const baseCover = normalizeAssetUrl(p.cover_image_url, rootPrefix);
           const cover = withCacheVersion(baseCover, postImageVersion(p));
-          const localFallbackBase = localAssetUrl(p.cover_image_url, rootPrefix) || `${rootPrefix}assets/images/blog/cover-generic.png`;
+          const localFallbackBase = localAssetUrl(p.cover_image_url, rootPrefix);
           const fallbackCover = withCacheVersion(localFallbackBase, postImageVersion(p));
           const fallbackAttr =
             fallbackCover && fallbackCover !== cover
@@ -151,12 +170,17 @@
           const meta = date ? `<div class="blog-card-meta">${escapeHtml(date)}</div>` : "";
           const excerptHtml = excerpt ? `<p class="blog-card-excerpt">${escapeHtml(excerpt)}</p>` : "";
           const href = hrefForSlug(slug);
-
-          return `
-            <article class="blog-card">
+          const coverHtml = cover
+            ? `
               <a class="blog-cover" href="${escapeHtml(href)}">
                 <img src="${escapeHtml(cover)}"${fallbackAttr} alt="${escapeHtml(title)}" loading="lazy">
               </a>
+            `
+            : "";
+
+          return `
+            <article class="blog-card">
+              ${coverHtml}
               <div class="blog-card-body">
                 ${meta}
                 <h2 class="blog-card-title"><a href="${escapeHtml(href)}">${escapeHtml(title)}</a></h2>
@@ -198,12 +222,7 @@
       return;
     }
 
-    if (!data || data.length === 0) {
-      setGridHtml('<div class="blog-empty">No blog posts yet. Use the Admin Dashboard → Blog tab to add your first post.</div>');
-      return;
-    }
-
-    setGridHtml(renderCards(data, ""));
+    setGridHtml(renderCards(mergePosts(data, LOCAL_FALLBACK_POSTS), ""));
   }
 
   document.addEventListener("DOMContentLoaded", () => {

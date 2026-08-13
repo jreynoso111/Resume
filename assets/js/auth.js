@@ -248,7 +248,6 @@
     const payload = {
       id: user.id,
       full_name: fullName,
-      role: "viewer",
       created_at: new Date().toISOString(),
     };
 

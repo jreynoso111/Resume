@@ -9,6 +9,13 @@
 
 create schema if not exists public;
 
+alter default privileges for role postgres in schema public
+  revoke select, insert, update, delete on tables from anon, authenticated, service_role;
+alter default privileges for role postgres in schema public
+  revoke execute on functions from anon, authenticated, service_role, public;
+alter default privileges for role postgres in schema public
+  revoke usage, select, update on sequences from anon, authenticated, service_role;
+
 create or replace function public.set_updated_at()
 returns trigger
 language plpgsql
@@ -24,6 +31,7 @@ create or replace function public.is_admin_user()
 returns boolean
 language plpgsql
 stable
+security definer
 set search_path = public, pg_temp
 as $$
 declare
@@ -33,6 +41,10 @@ declare
 begin
   if role_from_jwt in ('admin', 'editor') then
     return true;
+  end if;
+
+  if auth.uid() is null then
+    return false;
   end if;
 
   select to_regclass('public.profiles') is not null into has_profiles;
@@ -247,7 +259,13 @@ end;
 $$;
 
 grant usage on schema public to anon, authenticated;
-grant usage, select, update on all sequences in schema public to authenticated;
+revoke update on all sequences in schema public from authenticated;
+grant usage, select on all sequences in schema public to authenticated;
+revoke execute on function public.is_admin_user() from public;
+grant execute on function public.is_admin_user() to anon, authenticated;
+revoke execute on function public.record_site_page_view(
+  text, text, text, text, text, text, text, text, text, text, integer, integer, text, text, jsonb
+) from public;
 grant execute on function public.record_site_page_view(
   text, text, text, text, text, text, text, text, text, text, integer, integer, text, text, jsonb
 ) to anon, authenticated;
@@ -274,12 +292,15 @@ do $$
 begin
   if to_regclass('public.profiles') is not null then
     execute 'alter table public.profiles enable row level security';
+    execute 'alter table public.profiles alter column role set default ''viewer''';
     execute 'grant select on public.profiles to authenticated';
-    execute 'grant insert, update on public.profiles to authenticated';
+    execute 'revoke insert, update on public.profiles from authenticated';
+    execute 'grant insert (id, full_name, created_at) on public.profiles to authenticated';
+    execute 'grant update (full_name) on public.profiles to authenticated';
     execute 'drop policy if exists profiles_self_read on public.profiles';
     execute 'create policy profiles_self_read on public.profiles for select to authenticated using (auth.uid() = id or public.is_admin_user())';
     execute 'drop policy if exists profiles_self_insert on public.profiles';
-    execute 'create policy profiles_self_insert on public.profiles for insert to authenticated with check (auth.uid() = id or public.is_admin_user())';
+    execute 'create policy profiles_self_insert on public.profiles for insert to authenticated with check (public.is_admin_user() or (auth.uid() = id and lower(coalesce(role, ''viewer'')) = ''viewer''))';
     execute 'drop policy if exists profiles_self_update on public.profiles';
     execute 'create policy profiles_self_update on public.profiles for update to authenticated using (auth.uid() = id or public.is_admin_user()) with check (auth.uid() = id or public.is_admin_user())';
     execute 'drop policy if exists profiles_admin_delete on public.profiles';

@@ -1,8 +1,29 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  createClient,
+  type SupabaseClient,
+} from "https://esm.sh/@supabase/supabase-js@2.112.3";
+
+type CmsDatabase = {
+  public: {
+    Tables: {
+      profiles: {
+        Row: { id: string; role: string | null };
+        Insert: { id: string; role?: string | null };
+        Update: { id?: string; role?: string | null };
+        Relationships: [];
+      };
+    };
+    Views: Record<string, never>;
+    Functions: Record<string, never>;
+    Enums: Record<string, never>;
+    CompositeTypes: Record<string, never>;
+  };
+};
 
 const DEFAULT_BUCKET = "resume-cms";
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
+const MAX_MULTIPART_OVERHEAD_BYTES = 512 * 1024;
 const ALLOWED_MIME_TYPES = new Set([
   "image/avif",
   "image/gif",
@@ -53,7 +74,12 @@ function corsHeaders(req: Request) {
 function json(req: Request, body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { "Content-Type": "application/json", ...corsHeaders(req) },
+    headers: {
+      "Cache-Control": "no-store",
+      "Content-Type": "application/json",
+      "X-Content-Type-Options": "nosniff",
+      ...corsHeaders(req),
+    },
   });
 }
 
@@ -66,11 +92,44 @@ function normalizeObjectPath(raw: unknown) {
   return segments.length > 0 ? segments.join("/") : "";
 }
 
-function hasAllowedMimeType(file: File) {
-  const mime = String(file.type || "").trim().toLowerCase();
-  if (mime && ALLOWED_MIME_TYPES.has(mime)) return true;
-  const name = String(file.name || "").trim().toLowerCase();
-  return /\.(?:avif|gif|jpe?g|png|webp)$/i.test(name);
+function getPathExtension(path: string) {
+  const match = String(path || "").toLowerCase().match(/\.([a-z0-9]+)$/);
+  return match ? match[1] : "";
+}
+
+function getExpectedMimeType(path: string) {
+  const extension = getPathExtension(path);
+  if (extension === "avif") return "image/avif";
+  if (extension === "gif") return "image/gif";
+  if (extension === "jpg" || extension === "jpeg") return "image/jpeg";
+  if (extension === "png") return "image/png";
+  if (extension === "webp") return "image/webp";
+  return "";
+}
+
+function hasPrefix(bytes: Uint8Array, expected: number[], offset = 0) {
+  return expected.every((value, index) => bytes[offset + index] === value);
+}
+
+function hasImageSignature(bytes: Uint8Array, mime: string) {
+  if (mime === "image/png") {
+    return hasPrefix(bytes, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+  }
+  if (mime === "image/jpeg") return hasPrefix(bytes, [0xff, 0xd8, 0xff]);
+  if (mime === "image/gif") {
+    return hasPrefix(bytes, [0x47, 0x49, 0x46, 0x38, 0x37, 0x61]) ||
+      hasPrefix(bytes, [0x47, 0x49, 0x46, 0x38, 0x39, 0x61]);
+  }
+  if (mime === "image/webp") {
+    return hasPrefix(bytes, [0x52, 0x49, 0x46, 0x46]) &&
+      hasPrefix(bytes, [0x57, 0x45, 0x42, 0x50], 8);
+  }
+  if (mime === "image/avif") {
+    const brand = new TextDecoder().decode(bytes.slice(8, 12));
+    return hasPrefix(bytes, [0x66, 0x74, 0x79, 0x70], 4) &&
+      (brand === "avif" || brand === "avis");
+  }
+  return false;
 }
 
 function normalizeRoleValue(value: unknown) {
@@ -84,7 +143,7 @@ function isElevatedRole(value: unknown) {
 }
 
 async function getProfileRole(
-  supabaseAuth: ReturnType<typeof createClient>,
+  supabaseAuth: SupabaseClient<CmsDatabase>,
   userId: string,
 ) {
   if (!userId) return "";
@@ -98,7 +157,7 @@ async function getProfileRole(
 }
 
 async function isAuthorizedAdmin(
-  supabaseAuth: ReturnType<typeof createClient>,
+  supabaseAuth: SupabaseClient<CmsDatabase>,
   user: { id?: string | null; email?: string | null; app_metadata?: Record<string, unknown> | null },
 ) {
   if (isElevatedRole(user.app_metadata?.role)) return true;
@@ -123,6 +182,14 @@ Deno.serve(async (req) => {
     return json(req, { ok: false, error: "Method not allowed" }, 405);
   }
 
+  const contentLength = Number(req.headers.get("Content-Length") ?? "0");
+  if (
+    Number.isFinite(contentLength) &&
+    contentLength > MAX_UPLOAD_BYTES + MAX_MULTIPART_OVERHEAD_BYTES
+  ) {
+    return json(req, { ok: false, error: "File too large" }, 413);
+  }
+
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
@@ -137,7 +204,7 @@ Deno.serve(async (req) => {
       return json(req, { ok: false, error: "Missing Authorization header" }, 401);
     }
 
-    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+    const supabaseAuth = createClient<CmsDatabase>(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
       auth: { persistSession: false },
     });
@@ -163,17 +230,27 @@ Deno.serve(async (req) => {
     if (!(file instanceof File)) {
       return json(req, { ok: false, error: "Missing file" }, 400);
     }
-    if (!hasAllowedMimeType(file)) {
+    if (file.size > MAX_UPLOAD_BYTES) {
+      return json(req, { ok: false, error: "File too large" }, 413);
+    }
+
+    const declaredMime = String(file.type || "").trim().toLowerCase();
+    const expectedMime = getExpectedMimeType(path);
+    if (
+      !expectedMime ||
+      !ALLOWED_MIME_TYPES.has(declaredMime) ||
+      declaredMime !== expectedMime
+    ) {
       return json(req, { ok: false, error: "Unsupported file type" }, 415);
     }
 
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
+    const supabaseAdmin = createClient<CmsDatabase>(supabaseUrl, supabaseServiceRoleKey, {
       auth: { persistSession: false },
     });
 
     const bytes = new Uint8Array(await file.arrayBuffer());
-    if (bytes.byteLength > MAX_UPLOAD_BYTES) {
-      return json(req, { ok: false, error: "File too large" }, 413);
+    if (!hasImageSignature(bytes, expectedMime)) {
+      return json(req, { ok: false, error: "Invalid image content" }, 415);
     }
 
     const { error: uploadErr } = await supabaseAdmin.storage.from(bucket).upload(
@@ -181,10 +258,13 @@ Deno.serve(async (req) => {
       bytes,
       {
         upsert: true,
-        contentType: file.type || undefined,
+        contentType: expectedMime,
       },
     );
-    if (uploadErr) return json(req, { ok: false, error: uploadErr.message }, 400);
+    if (uploadErr) {
+      console.error("CMS asset upload failed", uploadErr);
+      return json(req, { ok: false, error: "Upload failed" }, 400);
+    }
 
     const { data: pub } = supabaseAdmin.storage.from(bucket).getPublicUrl(path);
     const publicUrl = pub?.publicUrl ?? "";
@@ -194,9 +274,7 @@ Deno.serve(async (req) => {
 
     return json(req, { ok: true, publicUrl });
   } catch (err) {
-    const msg = err && typeof err === "object" && "message" in err
-      ? String((err as { message: unknown }).message)
-      : String(err);
-    return json(req, { ok: false, error: msg }, 500);
+    console.error("CMS upload handler failed", err);
+    return json(req, { ok: false, error: "Unexpected server error" }, 500);
   }
 });

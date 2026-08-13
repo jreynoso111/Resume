@@ -85,7 +85,6 @@
         setError('Enter your email and password.');
         return;
       }
-
       setBusy(true);
       try {
         const sb = await auth.getClient();
@@ -171,6 +170,10 @@
       const password = passwordInput instanceof HTMLInputElement ? String(passwordInput.value || '') : '';
       if (!email || !password) {
         setError('Enter your email and password.');
+        return;
+      }
+      if (password.length < 12) {
+        setError('Use a password with at least 12 characters.');
         return;
       }
 

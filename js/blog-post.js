@@ -150,7 +150,19 @@
       .map((block) => {
         const imgMatch = block.match(/^!\[(.*?)\]\((.*?)\)$/);
         if (imgMatch) {
-          return "";
+          const alt = String(imgMatch[1] || "Article illustration").trim();
+          const imageSrc = normalizeAssetUrl(imgMatch[2], rootPrefix);
+          if (!imageSrc) return "";
+          const fallbackSrc = localAssetUrl(imgMatch[2], rootPrefix);
+          const fallbackAttr =
+            fallbackSrc && fallbackSrc !== imageSrc
+              ? ` data-fallback-src="${escapeHtml(fallbackSrc)}"`
+              : "";
+          return `
+            <figure class="blog-inline-image">
+              <img src="${escapeHtml(imageSrc)}"${fallbackAttr} alt="${escapeHtml(alt)}" loading="lazy">
+            </figure>
+          `;
         }
 
         if (block.startsWith("## ")) {
@@ -227,6 +239,11 @@
       body:
         "Operations teams often fail not because of missing effort, but because information arrives fragmented and late. When a team reads the same signal at different times, execution quality drops even if everyone is technically capable.\n\nIn this publication format, the objective is simple: write one complete argument from start to finish. Avoid splitting the message into disconnected blocks. A reader should be able to understand the problem, the constraints, and the decision criteria in one continuous flow.\n\n## A Practical Publishing Standard\n\nEach post should open with context, continue with evidence, and close with an operational recommendation. That sequence makes the article usable for both decision makers and implementers. It also makes archives valuable over time because each publication can stand on its own.\n\n![Field note](assets/images/blog/chapter-1.png)\n\nA good publication is dense in meaning, not in visual effects. One or two supporting images are enough when they clarify a process, a system state, or a before/after condition. Anything beyond that usually competes with the text instead of supporting it.\n\n## Writing For Execution\n\nTreat the article as an operational memo with editorial quality. Keep paragraphs focused, define terms when needed, and state assumptions explicitly. If a recommendation depends on a metric, include the metric and the threshold.\n\n![Workflow diagram](assets/images/blog/chapter-2.png)\n\nA blog built this way remains simple: one blog index, and one publication page per post. The structure is stable, readable, and easy to maintain without introducing card fragments or chapter management overhead.",
     };
+    const localPosts = [
+      LOCAL_FALLBACK_POST,
+      ...(Array.isArray(window.__LOCAL_BLOG_POSTS__) ? window.__LOCAL_BLOG_POSTS__ : []),
+    ];
+    const localPost = localPosts.find((post) => String((post && post.slug) || "").trim() === slug);
 
     function render(post) {
       const title = String(post.title || "").trim() || "Untitled post";
@@ -249,13 +266,7 @@
             <img src="${escapeHtml(coverSrc)}"${coverFallbackAttr} alt="${escapeHtml(coverAlt)}" loading="eager">
           </figure>
         `
-        : `
-          <figure class="blog-post-media-slot blog-post-media-slot--placeholder" aria-label="Post image placeholder">
-            <div class="blog-post-media-slot-empty">
-              Add a cover image in Admin Dashboard → Blog
-            </div>
-          </figure>
-        `;
+        : "";
 
       root.innerHTML = `
         <article class="blog-post-single">
@@ -287,8 +298,8 @@
     }
 
     if (!cfg.url || !cfg.anonKey || !window.supabase) {
-      if (slug === LOCAL_FALLBACK_POST.slug) {
-        render(LOCAL_FALLBACK_POST);
+      if (localPost) {
+        render(localPost);
       } else {
         root.innerHTML = `<div class="blog-empty">Post not found (local preview). Go back to <a href="blog.html">Blog</a>.</div>`;
       }
@@ -304,6 +315,10 @@
       .single();
 
     if (postErr) {
+      if (localPost) {
+        render(localPost);
+        return;
+      }
       if (postStatus === 406) {
         root.innerHTML = `<div class="blog-empty">Post not found. Go back to <a href="blog.html">Blog</a>.</div>`;
         return;

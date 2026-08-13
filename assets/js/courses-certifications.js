@@ -529,6 +529,17 @@
     return `${rootPrefix || ""}${cleaned}`;
   }
 
+  function normalizeProofUrl(raw) {
+    const value = String(raw || "").trim();
+    if (!value) return "";
+    try {
+      const parsed = new URL(value, window.location.href);
+      return parsed.protocol === "http:" || parsed.protocol === "https:" ? parsed.href : "";
+    } catch (_) {
+      return "";
+    }
+  }
+
   function buildCard(item, { rootPrefix, adminActive, onViewProof, onEdit, onDelete }) {
     const card = createEl("article", "cc-card");
 
@@ -889,8 +900,8 @@
         placeholder.hidden = false;
       }
 
-      const proofLink = String(item.proof_url || "").trim();
-      if (proofLink && !/^javascript:/i.test(proofLink)) {
+      const proofLink = normalizeProofUrl(item.proof_url);
+      if (proofLink) {
         viewLink.href = proofLink;
         viewLink.hidden = false;
         viewLinkEmpty.hidden = true;
@@ -1572,7 +1583,8 @@
         return;
       }
 
-      if (vals.proof_url && /^javascript:/i.test(vals.proof_url)) {
+      const proofUrl = normalizeProofUrl(vals.proof_url);
+      if (vals.proof_url && !proofUrl) {
         modal.setEditError("Invalid proof link.");
         return;
       }
@@ -1590,7 +1602,7 @@
           year: typeof vals.year === "number" && Number.isFinite(vals.year) ? vals.year : null,
           category: vals.category,
           note: vals.note,
-          proof_url: vals.proof_url,
+          proof_url: proofUrl,
         };
 
         let row = null;

@@ -11,6 +11,16 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // --- MAIN FUNCTIONS ---
 
+function escapeHtml(value) {
+    return String(value == null ? '' : value).replace(/[&<>"']/g, (character) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;',
+    })[character]);
+}
+
 /**
  * 1) Load and render profile fields.
  */
@@ -75,14 +85,14 @@ async function loadExperience() {
 
             card.innerHTML = `
                 <div style="margin-bottom: 25px;">
-                    <h3 style="margin-bottom: 5px;">${job.role}</h3>
+                    <h3 style="margin-bottom: 5px;">${escapeHtml(job.role)}</h3>
                     <h4 style="color: #666; margin-top: 0;">
-                        ${job.company} 
+                        ${escapeHtml(job.company)}
                         <span style="font-weight:normal; font-size: 0.9em; color: #888;">
-                            | ${startStr} - ${endStr}
+                            | ${escapeHtml(startStr)} - ${escapeHtml(endStr)}
                         </span>
                     </h4>
-                    <p style="white-space: pre-wrap;">${job.description || ''}</p>
+                    <p style="white-space: pre-wrap;">${escapeHtml(job.description || '')}</p>
                 </div>
                 <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
             `;
