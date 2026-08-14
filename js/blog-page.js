@@ -122,9 +122,10 @@
     const LOCAL_FALLBACK_POSTS = [
       {
         slug: "first-post",
-        title: "First Post (Demo)",
-        excerpt: "Generic post to test the blog end-to-end: list view and post detail.",
-        cover_image_url: "assets/images/blog/cover-generic.png",
+        title: "Lessons from Maintenance & Analytics",
+        excerpt:
+          "Practical lessons from connecting maintenance records, asset history, cost, downtime, GPS activity, and operational exceptions into a reliable decision workflow.",
+        cover_image_url: "assets/images/projects/fleet-maintenance-analytics/hero.jpg",
         published_at: "2026-02-15T00:00:00.000Z",
       },
       ...(Array.isArray(window.__LOCAL_BLOG_POSTS__) ? window.__LOCAL_BLOG_POSTS__ : []),
