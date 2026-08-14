@@ -80,7 +80,7 @@
   function hrefForSlug(slug) {
     const s = String(slug || "").trim();
     if (!s) return "blog-post.html";
-    return `blog-post.html?slug=${encodeURIComponent(s)}`;
+    return `blog/${encodeURIComponent(s)}.html`;
   }
 
   function withCacheVersion(url, seed) {

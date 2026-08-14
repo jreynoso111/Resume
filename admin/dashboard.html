@@ -773,7 +773,7 @@
                 <h2>Blog posts</h2>
                 <p style="font-size:0.9rem; color:#4b5563;">
                     Create, edit, publish, and delete blog posts. Public listing lives in <code>/pages/blog.html</code> and each
-                    post detail uses the standardized template in <code>/pages/blog-post.html?slug=...</code>.
+                    post detail uses the standardized template in <code>/pages/blog/{slug}.html</code>.
                 </p>
                 <ul class="item-list" id="blog-posts-list"></ul>
 
@@ -2731,7 +2731,7 @@
                 const status = row.is_published ? 'published' : 'draft';
                 const when = formatAdminDateTime(row.published_at || row.updated_at || row.created_at);
                 const slug = String(row.slug || '').trim();
-                const href = slug ? `../pages/blog-post.html?slug=${encodeURIComponent(slug)}` : '../pages/blog.html';
+                const href = slug ? `../pages/blog/${encodeURIComponent(slug)}.html` : '../pages/blog.html';
                 const snippet = String(row.excerpt || '').trim().replace(/\s+/g, ' ').slice(0, 120);
 
                 list.innerHTML += `

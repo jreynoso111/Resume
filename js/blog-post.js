@@ -312,6 +312,7 @@
       .from("blog_posts")
       .select("id,slug,title,excerpt,body,cover_image_url,is_published,published_at,created_at,updated_at")
       .eq("slug", slug)
+      .eq("is_published", true)
       .limit(1)
       .single();
 

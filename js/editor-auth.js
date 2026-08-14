@@ -2924,6 +2924,8 @@
       const parsed = new URL(href, location.href);
       const slug = normalizeBlogSlug(parsed.searchParams.get('slug') || '');
       if (slug) return slug;
+      const pathMatch = String(parsed.pathname || '').match(/\/pages\/blog\/([^/]+)\.html$/i);
+      if (pathMatch) return normalizeBlogSlug(decodeURIComponent(pathMatch[1] || ''));
     } catch (_e) {
       // Best-effort fallback below.
     }
@@ -2943,9 +2945,9 @@
     if (target.closest('.blog-post-media-slot')) {
       try {
         const params = new URLSearchParams(location.search || '');
-        return normalizeBlogSlug(params.get('slug') || '');
+        return normalizeBlogSlug(params.get('slug') || '') || extractBlogSlugFromHref(location.href);
       } catch (_e) {
-        return '';
+        return extractBlogSlugFromHref(location.href);
       }
     }
 
@@ -2995,7 +2997,11 @@
 
   function isBlogPostPath(pathValue) {
     const clean = String(pathValue || '').replace(/^\/+/, '').toLowerCase();
-    return clean === 'pages/blog-post.html' || clean === 'blog-post.html' || clean.endsWith('/pages/blog-post.html') || clean.endsWith('/blog-post.html');
+    return clean === 'pages/blog-post.html'
+      || clean === 'blog-post.html'
+      || clean.endsWith('/pages/blog-post.html')
+      || clean.endsWith('/blog-post.html')
+      || /(?:^|\/)pages\/blog\/[a-z0-9][a-z0-9-]*\.html$/.test(clean);
   }
 
   function isProjectsIndexPath(pathValue) {
@@ -3115,6 +3121,7 @@
     } catch (_e) {
       slug = '';
     }
+    if (!slug) slug = extractBlogSlugFromHref(location.href);
     if (!slug) return null;
 
     const titleNode = document.querySelector('.blog-post-title');
@@ -3385,6 +3392,7 @@
       } catch (_e) {
         slug = '';
       }
+      if (!slug) slug = extractBlogSlugFromHref(location.href);
       if (!slug) return { rows: [], signature: '' };
 
       const imageNode = document.querySelector('.blog-post-media-slot img');

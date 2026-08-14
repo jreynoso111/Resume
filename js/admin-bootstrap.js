@@ -76,7 +76,8 @@
     const clean = String(path || '').replace(/^\/+/, '').toLowerCase();
     return clean === 'pages/projects.html'
       || clean === 'pages/blog.html'
-      || clean === 'pages/blog-post.html';
+      || clean === 'pages/blog-post.html'
+      || /^pages\/blog\/[a-z0-9][a-z0-9-]*\.html$/.test(clean);
   }
 
   function shouldSkipHydration() {
