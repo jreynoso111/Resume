@@ -1192,7 +1192,7 @@
 	      const SHELL_V = 9;
 	      const PROJECT_LIGHTBOX_V = 4;
 		      const PROJECT_CAROUSEL_V = 11;
-		      const COURSES_CERTS_V = 23;
+		      const COURSES_CERTS_V = 24;
 	      const PROJECTS_V = 9;
 	      const BLOG_PAGE_V = 7;
 	      const BLOG_POST_V = 10;

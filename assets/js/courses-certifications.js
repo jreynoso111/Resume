@@ -248,7 +248,6 @@
     },
   ];
 
-  const KINDS = /** @type {const} */ (["all", "certification", "course", "education"]);
   const SORTS = /** @type {const} */ (["year", "alphabet", "type"]);
 
   function getRootPrefix() {
@@ -411,16 +410,6 @@
     return el;
   }
 
-  function setActiveTab(tabs, kind) {
-    tabs.forEach((btn) => {
-      const btnKind = String(btn.dataset.ccTab || "all");
-      const active = btnKind === kind;
-      btn.classList.toggle("is-active", active);
-      btn.setAttribute("aria-selected", active ? "true" : "false");
-      btn.tabIndex = active ? 0 : -1;
-    });
-  }
-
   function setActiveSort(buttons, sortBy) {
     buttons.forEach((btn) => {
       const btnSort = String(btn.dataset.ccSort || "year");
@@ -464,15 +453,8 @@
     return category === "education" || category.includes("education");
   }
 
-  function filterItems(items, activeKind, query) {
-    return items.filter((item) => {
-      if (activeKind === "education") {
-        if (!isEducationItem(item)) return false;
-      } else if (activeKind !== "all" && item.kind !== activeKind) {
-        return false;
-      }
-      return matchesQuery(item, query);
-    });
+  function filterItems(items, query) {
+    return items.filter((item) => matchesQuery(item, query));
   }
 
   function sortItems(items, sortBy) {
@@ -1456,23 +1438,12 @@
     const searchInput = section.querySelector('[data-cc-search="1"]');
     let adminControls = section.querySelector('[data-cc-admin-controls="1"]');
     let addBtn = section.querySelector('[data-cc-add="1"]');
-    const tabsHost = section.querySelector(".cc-tabs");
-    if (tabsHost && !tabsHost.querySelector('[data-cc-tab="education"]')) {
-      const educationTab = createEl("button", "cc-tab", "Education");
-      educationTab.type = "button";
-      educationTab.setAttribute("role", "tab");
-      educationTab.setAttribute("aria-selected", "false");
-      educationTab.dataset.ccTab = "education";
-      tabsHost.appendChild(educationTab);
-    }
-    const tabs = Array.from(section.querySelectorAll("[data-cc-tab]"));
     const sortButtons = Array.from(section.querySelectorAll("[data-cc-sort]"));
 
-    if (!grid || !emptyEl || !searchInput || tabs.length === 0) return;
+    if (!grid || !emptyEl || !searchInput) return;
 
     const state = {
       rootPrefix,
-      activeKind: "all",
       query: "",
       sortBy: "year",
       items: [],
@@ -1540,15 +1511,13 @@
         state.itemsSource === "supabase";
       modal.setAdminActive(adminActive);
 
-      const filtered = filterItems(state.items, state.activeKind, state.query);
+      const filtered = filterItems(state.items, state.query);
       const sorted = sortItems(filtered, state.sortBy);
       grid.replaceChildren();
 
       if (sorted.length === 0) {
         emptyEl.hidden = false;
-        const message = state.query || state.activeKind !== "all"
-          ? "No matching items."
-          : state.emptyMessage;
+        const message = state.query ? "No matching items." : state.emptyMessage;
         buildEmptyState(emptyEl, message);
         return;
       }
@@ -1689,16 +1658,6 @@
         throw new Error("Image uploaded, but record update was blocked. Check admin permissions/RLS for credentials.");
       }
     }
-
-    tabs.forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const next = String(btn.dataset.ccTab || "all");
-        if (!KINDS.includes(next)) return;
-        state.activeKind = next;
-        setActiveTab(tabs, next);
-        render();
-      });
-    });
 
     sortButtons.forEach((btn) => {
       btn.addEventListener("click", () => {
@@ -1877,7 +1836,6 @@
     }
 
     await loadData();
-    setActiveTab(tabs, state.activeKind);
     updateAdminUi();
     render();
     maybeSeedOnAdminActive();

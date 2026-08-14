@@ -2325,7 +2325,6 @@ body.about-page #philosophy + div + .standard-text + .standard-text {
     justify-content: flex-start;
   }
 
-  .cc-tabs,
   .cc-sort {
     flex-wrap: nowrap;
     overflow-x: auto;
@@ -2333,12 +2332,10 @@ body.about-page #philosophy + div + .standard-text + .standard-text {
     scrollbar-width: none;
   }
 
-  .cc-tabs::-webkit-scrollbar,
   .cc-sort::-webkit-scrollbar {
     display: none;
   }
 
-  .cc-tab,
   .cc-sort-btn {
     flex: 0 0 auto;
     padding: 7px 10px;
@@ -3125,47 +3122,9 @@ footer {
 
 @media (min-width: 760px) {
   .cc-controls {
-    grid-template-columns: auto auto minmax(0, 1fr);
+    grid-template-columns: auto minmax(260px, 1fr);
     align-items: center;
   }
-}
-
-.cc-tabs {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  padding: 4px;
-  border: 1px solid var(--border-subtle);
-  background: var(--bg-soft);
-  border-radius: var(--radius-pill);
-  backdrop-filter: blur(6px);
-}
-
-.cc-tab {
-  border: none;
-  background: transparent;
-  color: var(--text-muted);
-  font-size: 12px;
-  font-weight: 700;
-  padding: 7px 12px;
-  border-radius: var(--radius-pill);
-  cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease, filter 0.15s ease;
-}
-
-.cc-tab.is-active {
-  background: var(--chip-bg);
-  color: var(--text-main);
-  box-shadow: 0 10px 18px rgba(15, 23, 42, 0.08);
-}
-
-.cc-tab:hover {
-  filter: brightness(0.98);
-}
-
-.cc-tab:focus-visible {
-  outline: 2px solid rgba(var(--accent-rgb), 0.42);
-  outline-offset: 2px;
 }
 
 .cc-sort {
@@ -4572,7 +4531,6 @@ footer {
 .project-link,
 .blog-card-link,
 .cc-btn,
-.cc-tab,
 .cc-sort-btn,
 .cc-search,
 .cc-input,
