@@ -106,7 +106,7 @@
     });
     parsed.querySelectorAll('script[src*="js/admin-bootstrap.js"]').forEach((element) => {
       const src = String(element.getAttribute('src') || '');
-      element.setAttribute('src', src.replace(/(?:\?v=\d+)?$/, '?v=5'));
+      element.setAttribute('src', src.replace(/(?:\?v=\d+)?$/, '?v=6'));
     });
 
     const header = parsed.getElementById('site-header');
@@ -222,7 +222,7 @@
     wasAuthorized = true;
     window.__resumeCmsAdminAuthorized = true;
     document.dispatchEvent(new CustomEvent('resume:admin-authorized'));
-    await loadScript(`${rootPath}js/editor-auth.js?v=72`, () => {
+    await loadScript(`${rootPath}js/editor-auth.js?v=73`, () => {
       return window.__resumeCmsEditorAuthLoaded === true
         && typeof window.__resumeCmsToggleEditor === 'function';
     });

@@ -84,7 +84,7 @@ class Handler(SimpleHTTPRequestHandler):
                     "default-src 'self'; base-uri 'self'; object-src 'none'; img-src 'self' data: blob: https:; "
                     "media-src 'self' data: blob: https:; script-src 'self' "
                     "'sha256-j6jze/KNzX7uxTlJ985Eb7uarz/gAZrqLrei3C3EUSI=' "
-                    "'sha256-1KrpXrHUclsBsAgqGU7rSompZ9E4Q+K8LbN+djB129E='; "
+                    "'sha256-gQn41OalzsjhX/svhbZ8DFr1sg2kau/EgpWBrxEepz8='; "
                     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; "
                     "connect-src 'self' https:; form-action 'self'; frame-ancestors 'none'"
                 ),

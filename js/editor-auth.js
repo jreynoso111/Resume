@@ -1708,7 +1708,7 @@
 
     document.addEventListener('keydown', (event) => {
       if (!isAdmin()) return;
-      const key = event.key.toLowerCase();
+      const key = String(event && event.key ? event.key : '').toLowerCase();
 
       const target = event.target;
       const editable = target instanceof Element ? target.closest('[data-cms-editable="1"]') : null;
