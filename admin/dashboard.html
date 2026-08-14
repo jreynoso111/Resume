@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, nofollow">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; img-src 'self' data: blob: https://xxrllcpoklgavakmzhnb.supabase.co; media-src 'self' data: blob: https://xxrllcpoklgavakmzhnb.supabase.co; script-src 'self' 'sha256-j6jze/KNzX7uxTlJ985Eb7uarz/gAZrqLrei3C3EUSI=' 'sha256-gQn41OalzsjhX/svhbZ8DFr1sg2kau/EgpWBrxEepz8='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; connect-src 'self' https://xxrllcpoklgavakmzhnb.supabase.co; form-action 'self'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; img-src 'self' data: blob: https://xxrllcpoklgavakmzhnb.supabase.co; media-src 'self' data: blob: https://xxrllcpoklgavakmzhnb.supabase.co; script-src 'self' 'sha256-j6jze/KNzX7uxTlJ985Eb7uarz/gAZrqLrei3C3EUSI=' 'sha256-E55ktwBxfSE0PATbK3U9nbBLFjleqJdN1pwDYz6i4Pk='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; connect-src 'self' https://xxrllcpoklgavakmzhnb.supabase.co; form-action 'self'">
   <meta name="referrer" content="strict-origin-when-cross-origin">
     <title>Admin Dashboard - Juan R. Reynoso</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -39,97 +39,331 @@
         .mini-list li { background: #f9f9f9; padding: 8px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
 
         /* Analytics */
+        body.analytics-active main { max-width: 1180px; }
+        .analytics-workspace {
+            --analytics-blue: #1d4ed8;
+            --analytics-blue-soft: #eff6ff;
+            --analytics-ink: #111827;
+            --analytics-muted: #64748b;
+            --analytics-line: #e2e8f0;
+            padding: 0;
+            overflow: hidden;
+        }
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
         .analytics-head {
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             justify-content: space-between;
-            gap: 12px;
-            flex-wrap: wrap;
-            margin-bottom: 14px;
+            gap: 24px;
+            padding: 24px 26px 20px;
+            border-bottom: 1px solid var(--analytics-line);
         }
+        .analytics-heading h2 {
+            margin: 0;
+            padding: 0;
+            border: 0;
+            font-size: 1.55rem;
+            letter-spacing: -0.025em;
+        }
+        .analytics-heading p {
+            max-width: 620px;
+            margin: 6px 0 0;
+            color: #475569;
+            font-size: 0.92rem;
+        }
+        .analytics-status-row {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            margin-top: 11px;
+            color: var(--analytics-muted);
+            font-size: 0.78rem;
+        }
+        .analytics-status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #94a3b8;
+            box-shadow: 0 0 0 3px #f1f5f9;
+        }
+        .analytics-status-dot[data-tone="success"] { background: #16a34a; box-shadow: 0 0 0 3px #dcfce7; }
+        .analytics-status-dot[data-tone="warn"] { background: #d97706; box-shadow: 0 0 0 3px #fef3c7; }
+        .analytics-status-dot[data-tone="error"] { background: #dc2626; box-shadow: 0 0 0 3px #fee2e2; }
         .analytics-controls {
             display: flex;
             align-items: center;
-            gap: 8px;
+            justify-content: flex-end;
+            gap: 9px;
             flex-wrap: wrap;
         }
+        .analytics-range-group {
+            display: inline-flex;
+            padding: 3px;
+            border: 1px solid #cbd5e1;
+            border-radius: 9px;
+            background: #f8fafc;
+        }
+        .analytics-range-btn {
+            min-height: 34px;
+            border: 0;
+            border-radius: 6px;
+            background: transparent;
+            color: #475569;
+            padding: 5px 11px;
+            font-size: 0.8rem;
+        }
+        .analytics-range-btn:hover { color: var(--analytics-blue); }
+        .analytics-range-btn.active {
+            background: #fff;
+            color: var(--analytics-blue);
+            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.14);
+            font-weight: 700;
+        }
+        .analytics-range-btn:focus-visible,
+        .analytics-filterbar input:focus-visible,
+        .analytics-filterbar select:focus-visible {
+            outline: 2px solid var(--analytics-blue);
+            outline-offset: 2px;
+        }
+        .analytics-refresh {
+            min-height: 42px;
+            white-space: nowrap;
+        }
+        .analytics-refresh svg { width: 15px; height: 15px; }
+        .analytics-refresh.is-loading svg { animation: analyticsSpin 0.8s linear infinite; }
+        @keyframes analyticsSpin { to { transform: rotate(360deg); } }
+        .analytics-filterbar {
+            display: grid;
+            grid-template-columns: minmax(220px, 1fr) 190px auto minmax(120px, auto);
+            gap: 10px;
+            align-items: center;
+            padding: 14px 26px;
+            background: #f8fafc;
+            border-bottom: 1px solid var(--analytics-line);
+        }
+        .analytics-search { position: relative; }
+        .analytics-search svg {
+            position: absolute;
+            left: 11px;
+            top: 50%;
+            width: 16px;
+            height: 16px;
+            color: #94a3b8;
+            transform: translateY(-50%);
+            pointer-events: none;
+        }
+        .analytics-filterbar input,
+        .analytics-filterbar select {
+            height: 38px;
+            border-radius: 7px;
+            border-color: #cbd5e1;
+            background: #fff;
+            padding: 7px 10px;
+            font-size: 0.84rem;
+        }
+        .analytics-filterbar input { padding-left: 35px; }
+        .analytics-clear-btn {
+            border: 0;
+            background: transparent;
+            color: #475569;
+            padding: 8px 6px;
+            font-size: 0.82rem;
+        }
+        .analytics-clear-btn:hover { color: var(--analytics-blue); }
+        .analytics-result-count {
+            color: var(--analytics-muted);
+            font-size: 0.78rem;
+            text-align: right;
+            white-space: nowrap;
+        }
+        .analytics-body { padding: 22px 26px 26px; }
         .analytics-kpis {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-            gap: 10px;
-            margin: 14px 0 16px;
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+            border: 1px solid var(--analytics-line);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 18px;
         }
         .analytics-kpi {
-            border: 1px solid var(--border-color);
-            border-radius: 10px;
-            background: #f9fafb;
-            padding: 10px 12px;
+            min-width: 0;
+            background: #fff;
+            padding: 15px 16px 13px;
+            border-right: 1px solid var(--analytics-line);
         }
+        .analytics-kpi:last-child { border-right: 0; }
         .analytics-kpi-label {
-            color: #6b7280;
-            font-size: 0.75rem;
+            color: var(--analytics-muted);
+            font-size: 0.68rem;
+            font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.04em;
-            margin-bottom: 5px;
+            letter-spacing: 0.055em;
+            margin-bottom: 7px;
         }
         .analytics-kpi-value {
-            font-size: 1.2rem;
+            color: var(--analytics-ink);
+            font-size: clamp(1.35rem, 2vw, 1.75rem);
             font-weight: 700;
-            color: #111827;
-            line-height: 1.2;
+            line-height: 1;
+            letter-spacing: -0.035em;
         }
-        .analytics-grid {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 12px;
+        .analytics-kpi-delta {
+            min-height: 18px;
+            margin-top: 7px;
+            color: var(--analytics-muted);
+            font-size: 0.69rem;
         }
+        .analytics-kpi-delta[data-tone="up"] { color: #15803d; }
+        .analytics-kpi-delta[data-tone="down"] { color: #b45309; }
         .analytics-panel {
-            border: 1px solid #e5e7eb;
+            min-width: 0;
+            border: 1px solid var(--analytics-line);
             border-radius: 10px;
             background: #fff;
-            padding: 12px;
+            padding: 17px 18px;
+        }
+        .analytics-panel-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 14px;
         }
         .analytics-panel h3 {
-            margin: 0 0 10px;
+            margin: 0;
+            color: var(--analytics-ink);
             font-size: 0.95rem;
-            color: #111827;
         }
+        .analytics-panel-kicker {
+            margin: 3px 0 0;
+            color: var(--analytics-muted);
+            font-size: 0.75rem;
+        }
+        .analytics-trend-summary {
+            color: var(--analytics-muted);
+            font-size: 0.75rem;
+            text-align: right;
+        }
+        .analytics-trend-chart {
+            min-height: 238px;
+            position: relative;
+            overflow: hidden;
+        }
+        .analytics-trend-chart svg {
+            display: block;
+            width: 100%;
+            min-width: 100%;
+            height: 238px;
+            overflow: hidden;
+        }
+        .analytics-chart-scroll { overflow-x: auto; padding-bottom: 4px; }
+        .analytics-chart-grid { stroke: #e2e8f0; stroke-width: 1; }
+        .analytics-chart-axis { fill: #64748b; font-size: 10px; }
+        .analytics-chart-area { fill: #dbeafe; opacity: 0.72; }
+        .analytics-chart-line { fill: none; stroke: var(--analytics-blue); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
+        .analytics-chart-point { fill: #fff; stroke: var(--analytics-blue); stroke-width: 2; }
+        .analytics-chart-point:hover,
+        .analytics-chart-point:focus { fill: var(--analytics-blue); outline: none; }
+        .analytics-content-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.75fr);
+            gap: 14px;
+            margin-top: 14px;
+        }
+        .analytics-stack { display: grid; gap: 14px; }
         .analytics-list-row {
             display: grid;
             grid-template-columns: minmax(0, 1fr) auto;
             gap: 10px;
-            padding: 6px 0;
-            border-bottom: 1px solid #f3f4f6;
+            padding: 9px 0;
+            border-bottom: 1px solid #f1f5f9;
         }
-        .analytics-list-row:last-child {
-            border-bottom: 0;
+        .analytics-list-row:last-child { border-bottom: 0; }
+        .analytics-list-label {
+            min-width: 0;
+            overflow: hidden;
+            color: #334155;
+            font-size: 0.82rem;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
-        .analytics-empty {
-            color: #6b7280;
-            font-size: 0.9rem;
-        }
-        .analytics-bars {
-            display: grid;
-            gap: 8px;
-        }
-        .analytics-bar-row {
-            display: grid;
-            grid-template-columns: 88px minmax(0, 1fr) 58px;
-            gap: 8px;
-            align-items: center;
-            font-size: 0.84rem;
-        }
-        .analytics-bar-track {
-            width: 100%;
-            background: #f3f4f6;
-            border-radius: 999px;
-            height: 9px;
+        .analytics-list-value { color: var(--analytics-ink); font-size: 0.8rem; }
+        .analytics-list-track {
+            grid-column: 1 / -1;
+            height: 3px;
+            margin-top: -5px;
+            background: #f1f5f9;
             overflow: hidden;
         }
-        .analytics-bar-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+        .analytics-list-fill { height: 100%; background: #60a5fa; }
+        .analytics-empty {
+            padding: 18px 0;
+            color: var(--analytics-muted);
+            font-size: 0.84rem;
         }
+        .analytics-device-bar {
+            display: flex;
+            height: 11px;
+            margin: 8px 0 15px;
+            border-radius: 3px;
+            overflow: hidden;
+            background: #f1f5f9;
+        }
+        .analytics-device-segment:nth-child(1) { background: #1d4ed8; }
+        .analytics-device-segment:nth-child(2) { background: #38bdf8; }
+        .analytics-device-segment:nth-child(3) { background: #0f766e; }
+        .analytics-device-segment:nth-child(4) { background: #94a3b8; }
+        .analytics-device-legend { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 14px; }
+        .analytics-device-item { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 7px; font-size: 0.78rem; }
+        .analytics-device-dot { width: 8px; height: 8px; border-radius: 2px; background: #1d4ed8; }
+        .analytics-device-item:nth-child(2) .analytics-device-dot { background: #38bdf8; }
+        .analytics-device-item:nth-child(3) .analytics-device-dot { background: #0f766e; }
+        .analytics-device-item:nth-child(4) .analytics-device-dot { background: #94a3b8; }
+        .analytics-device-label { color: #475569; text-transform: capitalize; }
+        .analytics-device-percent { color: var(--analytics-ink); font-weight: 700; }
+        .analytics-mini-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 14px; }
+        .analytics-table-wrap { overflow-x: auto; }
+        .analytics-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+        .analytics-table th {
+            padding: 8px 10px;
+            border-bottom: 1px solid var(--analytics-line);
+            color: var(--analytics-muted);
+            font-size: 0.67rem;
+            letter-spacing: 0.05em;
+            text-align: left;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+        .analytics-table td { padding: 10px; border-bottom: 1px solid #f1f5f9; color: #334155; vertical-align: top; }
+        .analytics-table tr:last-child td { border-bottom: 0; }
+        .analytics-table-path { max-width: 360px; color: var(--analytics-ink); font-weight: 600; overflow-wrap: anywhere; }
+        .analytics-device-pill { display: inline-block; border-radius: 999px; background: #f1f5f9; padding: 2px 7px; color: #475569; text-transform: capitalize; }
+        .analytics-audit-panel { margin-top: 14px; }
+        .analytics-audit-panel > summary {
+            list-style: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            color: var(--analytics-ink);
+            font-size: 0.9rem;
+            font-weight: 700;
+        }
+        .analytics-audit-panel > summary::-webkit-details-marker { display: none; }
+        .analytics-audit-panel > summary::after { content: '+'; color: var(--analytics-blue); font-size: 1.05rem; }
+        .analytics-audit-panel[open] > summary::after { content: '-'; }
+        .analytics-audit-content { margin-top: 15px; padding-top: 14px; border-top: 1px solid var(--analytics-line); }
         .cms-log-accordion {
             display: grid;
             gap: 8px;
@@ -190,6 +424,13 @@
         .cms-log-detail-label {
             color: #6b7280;
         }
+        @media (max-width: 980px) {
+            .analytics-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+            .analytics-kpi:nth-child(3) { border-right: 0; }
+            .analytics-kpi:nth-child(-n+3) { border-bottom: 1px solid var(--analytics-line); }
+            .analytics-content-grid { grid-template-columns: 1fr; }
+            .analytics-stack { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
         @media (max-width: 820px) {
             .cms-log-summary {
                 grid-template-columns: minmax(0, 1fr) auto;
@@ -198,9 +439,56 @@
                 grid-column: 1 / -1;
                 white-space: normal;
             }
+            .analytics-head { flex-direction: column; }
+            .analytics-controls { width: 100%; justify-content: space-between; }
+            .analytics-filterbar { grid-template-columns: minmax(0, 1fr) 170px auto; }
+            .analytics-result-count { grid-column: 1 / -1; text-align: left; }
         }
-        @media (max-width: 820px) {
-            .analytics-grid { grid-template-columns: 1fr; }
+        @media (max-width: 600px) {
+            header {
+                align-items: center;
+                flex-wrap: wrap;
+                gap: 12px;
+            }
+            header h1 { width: 100%; }
+            .header-actions {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) auto auto;
+                width: 100%;
+                gap: 8px;
+            }
+            .header-actions .btn-secondary { justify-content: center; min-width: 0; }
+            #auth-status {
+                grid-column: 1 / -1;
+                grid-row: 2;
+                min-width: 0;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+            #logout-btn { white-space: nowrap; }
+            body.analytics-active main { margin-top: 1rem; padding: 0 10px; }
+            .analytics-head { padding: 20px 18px 17px; }
+            .analytics-heading h2 { font-size: 1.35rem; }
+            .analytics-controls { align-items: stretch; }
+            .analytics-range-group { flex: 1; }
+            .analytics-range-btn { flex: 1; padding-inline: 8px; }
+            .analytics-refresh { justify-content: center; }
+            .analytics-filterbar { grid-template-columns: 1fr; padding: 12px 18px; }
+            .analytics-clear-btn { justify-self: start; }
+            .analytics-result-count { grid-column: auto; }
+            .analytics-body { padding: 16px 18px 20px; }
+            .analytics-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .analytics-kpi { border-right: 1px solid var(--analytics-line); border-bottom: 1px solid var(--analytics-line); }
+            .analytics-kpi:nth-child(2n) { border-right: 0; }
+            .analytics-kpi:nth-last-child(-n+2) { border-bottom: 0; }
+            .analytics-kpi:nth-child(3) { border-right: 1px solid var(--analytics-line); }
+            .analytics-stack,
+            .analytics-mini-grid { grid-template-columns: 1fr; }
+            .analytics-panel { padding: 15px; }
+            .analytics-panel-head { flex-direction: column; gap: 5px; }
+            .analytics-trend-summary { text-align: left; }
+            .analytics-device-legend { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -564,72 +852,145 @@
         </div>
 
         <div id="tab-analytics" class="tab-content">
-            <section class="card">
+            <section class="card analytics-workspace" aria-labelledby="analytics-title">
                 <div class="analytics-head">
-                    <div>
-                        <h2 style="margin:0;">Web Analytics</h2>
-                        <p style="margin:6px 0 0; color:#4b5563; font-size:0.9rem;">
-                            Visits, unique visitors, acquisition sources, device mix, and traffic trend.
-                        </p>
+                    <div class="analytics-heading">
+                        <h2 id="analytics-title">Traffic overview</h2>
+                        <p>Monitor audience activity, acquisition quality, content demand, and device behavior from one operational view.</p>
+                        <div class="analytics-status-row">
+                            <span id="analytics-status-dot" class="analytics-status-dot" aria-hidden="true"></span>
+                            <span id="analytics-status" role="status" aria-live="polite">Open this tab or refresh to load analytics.</span>
+                            <span aria-hidden="true">&middot;</span>
+                            <span>Local time</span>
+                        </div>
                     </div>
                     <div class="analytics-controls">
-                        <label for="analytics-range" style="margin:0; font-size:0.85rem;">Range</label>
-                        <select id="analytics-range" style="min-width:130px;">
-                            <option value="7">Last 7 days</option>
-                            <option value="30" selected>Last 30 days</option>
-                            <option value="90">Last 90 days</option>
-                        </select>
-                        <button type="button" class="btn-secondary" id="analytics-refresh-btn">Refresh</button>
+                        <div class="analytics-range-group" role="group" aria-label="Analytics date range">
+                            <button type="button" class="analytics-range-btn" data-analytics-days="7">7 days</button>
+                            <button type="button" class="analytics-range-btn active" data-analytics-days="30" aria-pressed="true">30 days</button>
+                            <button type="button" class="analytics-range-btn" data-analytics-days="90">90 days</button>
+                        </div>
+                        <button type="button" class="btn-secondary analytics-refresh" id="analytics-refresh-btn">
+                            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8.1 8.1 0 0 0-15.5-2M4 4v5h5M4 13a8.1 8.1 0 0 0 15.5 2M20 20v-5h-5"/></svg>
+                            Refresh
+                        </button>
                     </div>
                 </div>
 
-                <div id="analytics-status" style="font-size:0.88rem; color:#4b5563;">
-                    Open this tab and click Refresh to load analytics.
+                <div class="analytics-filterbar" aria-label="Analytics filters">
+                    <div class="analytics-search">
+                        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+                        <label class="sr-only" for="analytics-page-filter">Filter by page path</label>
+                        <input id="analytics-page-filter" type="search" placeholder="Filter by page path" autocomplete="off">
+                    </div>
+                    <label class="sr-only" for="analytics-device-filter">Filter by device</label>
+                    <select id="analytics-device-filter">
+                        <option value="all">All devices</option>
+                    </select>
+                    <button type="button" class="analytics-clear-btn" id="analytics-clear-filters">Clear filters</button>
+                    <div id="analytics-result-count" class="analytics-result-count">No events loaded</div>
                 </div>
 
-                <div id="analytics-kpis" class="analytics-kpis"></div>
+                <div class="analytics-body">
+                    <div id="analytics-kpis" class="analytics-kpis" aria-live="polite"></div>
 
-                <div class="analytics-grid">
-                    <div class="analytics-panel">
-                        <h3>Top pages</h3>
-                        <div id="analytics-top-pages"></div>
-                    </div>
-                    <div class="analytics-panel">
-                        <h3>Top referrers</h3>
-                        <div id="analytics-top-referrers"></div>
-                    </div>
-                    <div class="analytics-panel">
-                        <h3>Device mix</h3>
-                        <div id="analytics-device-mix"></div>
-                    </div>
-                    <div class="analytics-panel">
-                        <h3>UTM sources</h3>
-                        <div id="analytics-top-utm"></div>
-                    </div>
-                    <div class="analytics-panel">
-                        <h3>Top countries</h3>
-                        <div id="analytics-top-countries"></div>
-                    </div>
-                    <div class="analytics-panel">
-                        <h3>Top states / regions</h3>
-                        <div id="analytics-top-states"></div>
-                    </div>
-                </div>
+                    <section class="analytics-panel" aria-labelledby="analytics-trend-title">
+                        <div class="analytics-panel-head">
+                            <div>
+                                <h3 id="analytics-trend-title">Page-view trend</h3>
+                                <p class="analytics-panel-kicker">Daily traffic across the selected period</p>
+                            </div>
+                            <div id="analytics-trend-summary" class="analytics-trend-summary"></div>
+                        </div>
+                        <div class="analytics-chart-scroll">
+                            <div id="analytics-trend-chart" class="analytics-trend-chart"></div>
+                        </div>
+                    </section>
 
-                <div class="analytics-panel" style="margin-top:12px;">
-                    <h3>Daily page views</h3>
-                    <div id="analytics-daily-bars" class="analytics-bars"></div>
-                </div>
+                    <div class="analytics-content-grid">
+                        <div class="analytics-stack">
+                            <section class="analytics-panel">
+                                <div class="analytics-panel-head">
+                                    <div>
+                                        <h3>Top pages</h3>
+                                        <p class="analytics-panel-kicker">Content generating the most visits</p>
+                                    </div>
+                                </div>
+                                <div id="analytics-top-pages"></div>
+                            </section>
+                            <section class="analytics-panel">
+                                <div class="analytics-panel-head">
+                                    <div>
+                                        <h3>Traffic sources</h3>
+                                        <p class="analytics-panel-kicker">Referrers and campaign attribution</p>
+                                    </div>
+                                </div>
+                                <div id="analytics-top-referrers"></div>
+                            </section>
+                        </div>
+                        <div class="analytics-stack">
+                            <section class="analytics-panel">
+                                <div class="analytics-panel-head">
+                                    <div>
+                                        <h3>Device distribution</h3>
+                                        <p class="analytics-panel-kicker">How visitors access the site</p>
+                                    </div>
+                                </div>
+                                <div id="analytics-device-mix"></div>
+                            </section>
+                            <section class="analytics-panel">
+                                <div class="analytics-panel-head">
+                                    <div>
+                                        <h3>Campaign sources</h3>
+                                        <p class="analytics-panel-kicker">UTM source breakdown</p>
+                                    </div>
+                                </div>
+                                <div id="analytics-top-utm"></div>
+                            </section>
+                        </div>
+                    </div>
 
-                <div class="analytics-panel" style="margin-top:12px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
-                        <h3 style="margin:0;">CMS Publish Log</h3>
-                        <button type="button" class="btn-secondary" id="cms-log-refresh-btn">Refresh log</button>
+                    <div class="analytics-mini-grid">
+                        <section class="analytics-panel">
+                            <div class="analytics-panel-head">
+                                <div>
+                                    <h3>Top countries</h3>
+                                    <p class="analytics-panel-kicker">Geographic distribution</p>
+                                </div>
+                            </div>
+                            <div id="analytics-top-countries"></div>
+                        </section>
+                        <section class="analytics-panel">
+                            <div class="analytics-panel-head">
+                                <div>
+                                    <h3>Top states / regions</h3>
+                                    <p class="analytics-panel-kicker">Regional visitor activity</p>
+                                </div>
+                            </div>
+                            <div id="analytics-top-states"></div>
+                        </section>
                     </div>
-                    <div id="cms-log-status" style="margin-top:8px; color:#4b5563; font-size:0.88rem;">
-                        No log loaded yet.
-                    </div>
-                    <div id="cms-log-list" style="margin-top:10px;"></div>
+
+                    <section class="analytics-panel" style="margin-top:14px;" aria-labelledby="analytics-recent-title">
+                        <div class="analytics-panel-head">
+                            <div>
+                                <h3 id="analytics-recent-title">Recent activity</h3>
+                                <p class="analytics-panel-kicker">Latest page views matching the active filters</p>
+                            </div>
+                        </div>
+                        <div id="analytics-recent-activity" class="analytics-table-wrap"></div>
+                    </section>
+
+                    <details class="analytics-panel analytics-audit-panel">
+                        <summary>CMS publish log</summary>
+                        <div class="analytics-audit-content">
+                            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+                                <div id="cms-log-status" style="color:#4b5563; font-size:0.82rem;">No log loaded yet.</div>
+                                <button type="button" class="btn-secondary" id="cms-log-refresh-btn">Refresh log</button>
+                            </div>
+                            <div id="cms-log-list" style="margin-top:10px;"></div>
+                        </div>
+                    </details>
                 </div>
             </section>
         </div>
@@ -670,6 +1031,11 @@
         let authRoleResolvedUserId = '';
 	        let analyticsLoading = false;
 	        let analyticsLoaded = false;
+        let analyticsRows = [];
+        let analyticsPreviousRows = [];
+        let analyticsDays = 30;
+        let analyticsPageFilter = '';
+        let analyticsDeviceFilter = 'all';
 
         function isUnsafeMode() {
             return cfg && cfg.unsafeNoAuth === true;
@@ -820,6 +1186,8 @@
                 }
             });
 
+            document.body.classList.toggle('analytics-active', tabId === 'tab-analytics');
+
             if (tabId === 'tab-analytics') {
                 loadAnalytics();
                 loadCmsPublishLog();
@@ -909,19 +1277,14 @@
 
         function setAnalyticsStatus(text, tone) {
             const el = document.getElementById('analytics-status');
+            const dot = document.getElementById('analytics-status-dot');
             if (!el) return;
             el.textContent = String(text || '');
-            if (tone === 'error') el.style.color = '#b91c1c';
-            else if (tone === 'warn') el.style.color = '#92400e';
-            else if (tone === 'success') el.style.color = '#166534';
-            else el.style.color = '#4b5563';
+            if (dot) dot.dataset.tone = tone || '';
         }
 
         function getSelectedAnalyticsDays() {
-            const rangeEl = document.getElementById('analytics-range');
-            const days = parseInt(String(rangeEl && rangeEl.value ? rangeEl.value : '30'), 10);
-            if (!Number.isFinite(days) || days <= 0) return 30;
-            return days;
+            return Number.isFinite(analyticsDays) && analyticsDays > 0 ? analyticsDays : 30;
         }
 
         async function fetchAnalyticsRows(days) {
@@ -977,57 +1340,98 @@
                 el.innerHTML = `<div class="analytics-empty">${escapeHtml(emptyText || 'No data')}</div>`;
                 return;
             }
+            const max = Math.max(1, ...rows.map((row) => Number(row.value || 0)));
             el.innerHTML = rows
-                .map((row) => `
-                    <div class="analytics-list-row">
-                        <div>${escapeHtml(row.label)}</div>
-                        <div><strong>${escapeHtml(formatNumber(row.value))}</strong></div>
-                    </div>
-                `)
-                .join('');
-        }
-
-        function renderDailyBars(points) {
-            const el = document.getElementById('analytics-daily-bars');
-            if (!el) return;
-            if (!points || points.length === 0) {
-                el.innerHTML = '<div class="analytics-empty">No daily data yet.</div>';
-                return;
-            }
-
-            const max = Math.max(1, ...points.map((p) => Number(p.count || 0)));
-            el.innerHTML = points
-                .map((p) => {
-                    const width = Math.max(2, Math.round((Number(p.count || 0) / max) * 100));
+                .map((row) => {
+                    const width = Math.max(3, Math.round((Number(row.value || 0) / max) * 100));
                     return `
-                        <div class="analytics-bar-row">
-                            <div>${escapeHtml(p.label)}</div>
-                            <div class="analytics-bar-track">
-                                <div class="analytics-bar-fill" style="width:${width}%"></div>
-                            </div>
-                            <div style="text-align:right;">${escapeHtml(formatNumber(p.count))}</div>
-                        </div>
-                    `;
+                    <div class="analytics-list-row">
+                        <div class="analytics-list-label" title="${escapeHtml(row.label)}">${escapeHtml(row.label)}</div>
+                        <div class="analytics-list-value"><strong>${escapeHtml(formatNumber(row.value))}</strong></div>
+                        <div class="analytics-list-track" aria-hidden="true"><div class="analytics-list-fill" style="width:${width}%"></div></div>
+                    </div>
+                `;
                 })
                 .join('');
         }
 
-        function renderAnalyticsKpis(metrics) {
+        function renderAnalyticsTrend(points) {
+            const el = document.getElementById('analytics-trend-chart');
+            const summary = document.getElementById('analytics-trend-summary');
+            if (!el) return;
+            if (!points || points.length === 0) {
+                el.innerHTML = '<div class="analytics-empty">No daily traffic data for this period.</div>';
+                if (summary) summary.textContent = '';
+                return;
+            }
+
+            const chartWidth = 920;
+            const chartHeight = 238;
+            const margin = { top: 12, right: 14, bottom: 28, left: 34 };
+            const innerWidth = chartWidth - margin.left - margin.right;
+            const innerHeight = chartHeight - margin.top - margin.bottom;
+            const maxValue = Math.max(1, ...points.map((point) => Number(point.count || 0)));
+            const x = (index) => margin.left + (points.length === 1 ? innerWidth / 2 : (index / (points.length - 1)) * innerWidth);
+            const y = (value) => margin.top + innerHeight - (Number(value || 0) / maxValue) * innerHeight;
+            const linePath = points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${x(index).toFixed(2)} ${y(point.count).toFixed(2)}`).join(' ');
+            const areaPath = `${linePath} L ${x(points.length - 1).toFixed(2)} ${(margin.top + innerHeight).toFixed(2)} L ${x(0).toFixed(2)} ${(margin.top + innerHeight).toFixed(2)} Z`;
+            const yTicks = [0, 0.25, 0.5, 0.75, 1];
+            const xStep = Math.max(1, Math.ceil(points.length / 6));
+            const total = points.reduce((sum, point) => sum + Number(point.count || 0), 0);
+            const peak = points.reduce((best, point) => Number(point.count || 0) > Number(best.count || 0) ? point : best, points[0]);
+
+            if (summary) {
+                summary.textContent = `${formatNumber(total)} views | Peak ${formatNumber(peak.count)} on ${peak.label}`;
+            }
+
+            el.innerHTML = `
+                <svg viewBox="0 0 ${chartWidth} ${chartHeight}" role="img" aria-label="Daily page views for the selected period" preserveAspectRatio="none">
+                    ${yTicks.map((tick) => {
+                        const tickY = margin.top + innerHeight - tick * innerHeight;
+                        const value = Math.round(maxValue * tick);
+                        return `<line class="analytics-chart-grid" x1="${margin.left}" y1="${tickY}" x2="${chartWidth - margin.right}" y2="${tickY}"></line><text class="analytics-chart-axis" x="${margin.left - 8}" y="${tickY + 3}" text-anchor="end">${escapeHtml(formatNumber(value))}</text>`;
+                    }).join('')}
+                    <path class="analytics-chart-area" d="${areaPath}"></path>
+                    <path class="analytics-chart-line" d="${linePath}"></path>
+                    ${points.map((point, index) => `<circle class="analytics-chart-point" cx="${x(index)}" cy="${y(point.count)}" r="3" tabindex="0"><title>${escapeHtml(`${point.fullLabel}: ${formatNumber(point.count)} page views`)}</title></circle>`).join('')}
+                    ${points.map((point, index) => (index % xStep === 0 || index === points.length - 1) ? `<text class="analytics-chart-axis" x="${x(index)}" y="${chartHeight - 7}" text-anchor="middle">${escapeHtml(point.label)}</text>` : '').join('')}
+                </svg>
+            `;
+        }
+
+        function buildMetricDelta(current, previous, label) {
+            const currentValue = Number(current || 0);
+            const previousValue = Number(previous || 0);
+            if (previousValue === 0) {
+                return currentValue > 0
+                    ? { text: `New vs ${label}`, tone: 'up' }
+                    : { text: `No change vs ${label}`, tone: '' };
+            }
+            const change = Math.round(((currentValue - previousValue) / previousValue) * 100);
+            if (change === 0) return { text: `No change vs ${label}`, tone: '' };
+            return {
+                text: `${change > 0 ? '+' : ''}${change}% vs ${label}`,
+                tone: change > 0 ? 'up' : 'down'
+            };
+        }
+
+        function renderAnalyticsKpis(metrics, previousMetrics) {
             const el = document.getElementById('analytics-kpis');
             if (!el) return;
             const cards = [
-                { label: 'Page views', value: formatNumber(metrics.views) },
-                { label: 'Unique visitors', value: formatNumber(metrics.visitors) },
-                { label: 'Unique sessions', value: formatNumber(metrics.sessions) },
-                { label: 'Views / session', value: metrics.viewsPerSession.toFixed(2) },
-                { label: 'Last 24h views', value: formatNumber(metrics.last24h) },
-                { label: 'Avg daily views', value: metrics.avgDaily.toFixed(1) }
+                { label: 'Page views', value: formatNumber(metrics.views), delta: buildMetricDelta(metrics.views, previousMetrics.views, 'previous period') },
+                { label: 'Unique visitors', value: formatNumber(metrics.visitors), delta: buildMetricDelta(metrics.visitors, previousMetrics.visitors, 'previous period') },
+                { label: 'Unique sessions', value: formatNumber(metrics.sessions), delta: buildMetricDelta(metrics.sessions, previousMetrics.sessions, 'previous period') },
+                { label: 'Today', value: formatNumber(metrics.today), delta: buildMetricDelta(metrics.today, metrics.yesterday, 'yesterday') },
+                { label: 'Views / session', value: metrics.viewsPerSession.toFixed(2), delta: buildMetricDelta(metrics.viewsPerSession, previousMetrics.viewsPerSession, 'previous period') },
+                { label: 'Daily average', value: metrics.avgDaily.toFixed(1), delta: buildMetricDelta(metrics.avgDaily, previousMetrics.avgDaily, 'previous period') }
             ];
             el.innerHTML = cards
                 .map((c) => `
                     <div class="analytics-kpi">
                         <div class="analytics-kpi-label">${escapeHtml(c.label)}</div>
                         <div class="analytics-kpi-value">${escapeHtml(c.value)}</div>
+                        <div class="analytics-kpi-delta" data-tone="${escapeHtml(c.delta.tone)}">${escapeHtml(c.delta.text)}</div>
                     </div>
                 `)
                 .join('');
@@ -1057,6 +1461,7 @@
             });
             return Array.from(dayMap.entries()).map(([day, count]) => ({
                 label: day.slice(5),
+                fullLabel: day,
                 count
             }));
         }
@@ -1102,7 +1507,11 @@
             const countryMap = new Map();
             const stateMap = new Map();
             const last24hCutoff = Date.now() - 24 * 60 * 60 * 1000;
+            const todayKey = toLocalDayKey(new Date());
+            const yesterdayKey = toLocalDayKey(new Date(Date.now() - 24 * 60 * 60 * 1000));
             let last24h = 0;
+            let today = 0;
+            let yesterday = 0;
 
             rows.forEach((row) => {
                 const meta = readAnalyticsMeta(row);
@@ -1127,6 +1536,9 @@
                 if (Number.isFinite(createdAt) && createdAt >= last24hCutoff) {
                     last24h += 1;
                 }
+                const dayKey = toLocalDayKey(row.created_at || '');
+                if (dayKey === todayKey) today += 1;
+                if (dayKey === yesterdayKey) yesterday += 1;
             });
 
             const sessions = sessionsSet.size;
@@ -1135,6 +1547,8 @@
                 visitors: visitorsSet.size,
                 sessions,
                 last24h,
+                today,
+                yesterday,
                 viewsPerSession: sessions > 0 ? views / sessions : 0,
                 avgDaily: days > 0 ? views / days : 0,
                 topPages: rankMap(pageMap, 8),
@@ -1146,29 +1560,147 @@
             };
         }
 
+        function getFilteredAnalyticsRows(rows) {
+            const pageNeedle = analyticsPageFilter.trim().toLowerCase();
+            const deviceNeedle = analyticsDeviceFilter.trim().toLowerCase();
+            return rows.filter((row) => {
+                const pageMatches = !pageNeedle || normalizePath(row.page_path).toLowerCase().includes(pageNeedle);
+                const device = String(row.device_type || '').trim().toLowerCase() || 'unknown';
+                const deviceMatches = deviceNeedle === 'all' || device === deviceNeedle;
+                return pageMatches && deviceMatches;
+            });
+        }
+
+        function renderDeviceMix(rows) {
+            const el = document.getElementById('analytics-device-mix');
+            if (!el) return;
+            if (!rows || rows.length === 0) {
+                el.innerHTML = '<div class="analytics-empty">No device data for these filters.</div>';
+                return;
+            }
+            const total = rows.reduce((sum, row) => sum + Number(row.value || 0), 0) || 1;
+            const visibleRows = rows.slice(0, 4);
+            el.innerHTML = `
+                <div class="analytics-device-bar" aria-hidden="true">
+                    ${visibleRows.map((row) => `<span class="analytics-device-segment" style="width:${(Number(row.value || 0) / total) * 100}%"></span>`).join('')}
+                </div>
+                <div class="analytics-device-legend">
+                    ${visibleRows.map((row) => `
+                        <div class="analytics-device-item">
+                            <span class="analytics-device-dot" aria-hidden="true"></span>
+                            <span class="analytics-device-label">${escapeHtml(row.label)}</span>
+                            <span class="analytics-device-percent">${Math.round((Number(row.value || 0) / total) * 100)}%</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function renderRecentAnalytics(rows) {
+            const el = document.getElementById('analytics-recent-activity');
+            if (!el) return;
+            const recentRows = rows
+                .slice()
+                .sort((a, b) => Date.parse(String(b.created_at || '')) - Date.parse(String(a.created_at || '')))
+                .slice(0, 12);
+            if (recentRows.length === 0) {
+                el.innerHTML = '<div class="analytics-empty">No recent activity matches these filters.</div>';
+                return;
+            }
+            el.innerHTML = `
+                <table class="analytics-table">
+                    <thead><tr><th>Time</th><th>Page</th><th>Device</th><th>Source</th><th>Location</th></tr></thead>
+                    <tbody>
+                        ${recentRows.map((row) => {
+                            const meta = readAnalyticsMeta(row);
+                            const location = [
+                                firstFilledValue(meta.state, meta.region, meta.region_name),
+                                firstFilledValue(meta.country, meta.country_name)
+                            ].filter(Boolean).join(', ') || '-';
+                            const createdAt = new Date(row.created_at || '');
+                            const time = Number.isFinite(createdAt.getTime())
+                                ? createdAt.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+                                : '-';
+                            return `
+                                <tr>
+                                    <td style="white-space:nowrap;">${escapeHtml(time)}</td>
+                                    <td class="analytics-table-path">${escapeHtml(normalizePath(row.page_path))}</td>
+                                    <td><span class="analytics-device-pill">${escapeHtml(String(row.device_type || 'unknown'))}</span></td>
+                                    <td>${escapeHtml(getHostFromReferrer(row.referrer))}</td>
+                                    <td>${escapeHtml(location)}</td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        function updateAnalyticsDeviceOptions() {
+            const select = document.getElementById('analytics-device-filter');
+            if (!select) return;
+            const devices = Array.from(new Set(analyticsRows.map((row) => String(row.device_type || '').trim().toLowerCase() || 'unknown'))).sort();
+            select.innerHTML = '<option value="all">All devices</option>' + devices
+                .map((device) => `<option value="${escapeHtml(device)}">${escapeHtml(device.charAt(0).toUpperCase() + device.slice(1))}</option>`)
+                .join('');
+            select.value = devices.includes(analyticsDeviceFilter) ? analyticsDeviceFilter : 'all';
+            analyticsDeviceFilter = select.value;
+        }
+
+        function renderAnalyticsDashboard() {
+            const rows = getFilteredAnalyticsRows(analyticsRows);
+            const previousRows = getFilteredAnalyticsRows(analyticsPreviousRows);
+            const metrics = buildAnalyticsMetrics(rows, analyticsDays);
+            const previousMetrics = buildAnalyticsMetrics(previousRows, analyticsDays);
+            const resultCount = document.getElementById('analytics-result-count');
+
+            renderAnalyticsKpis(metrics, previousMetrics);
+            renderAnalyticsTrend(buildDailySeries(rows, analyticsDays));
+            renderAnalyticsList('analytics-top-pages', metrics.topPages, 'No pages match these filters.');
+            renderAnalyticsList('analytics-top-referrers', metrics.topReferrers, 'No referrer data for these filters.');
+            renderDeviceMix(metrics.deviceMix);
+            renderAnalyticsList('analytics-top-utm', metrics.topUtm, 'No campaign source data for these filters.');
+            renderAnalyticsList('analytics-top-countries', metrics.topCountries, 'No country data for these filters.');
+            renderAnalyticsList('analytics-top-states', metrics.topStates, 'No state or region data for these filters.');
+            renderRecentAnalytics(rows);
+
+            if (resultCount) {
+                const suffix = rows.length === 1 ? 'event' : 'events';
+                resultCount.textContent = `${formatNumber(rows.length)} ${suffix} shown`;
+            }
+        }
+
         async function loadAnalytics(force) {
             if (analyticsLoading) return;
             if (!force && analyticsLoaded) return;
             if (!(await requireAdmin())) return;
 
             const days = getSelectedAnalyticsDays();
+            const refreshBtn = document.getElementById('analytics-refresh-btn');
             analyticsLoading = true;
             setAnalyticsStatus(`Loading analytics for last ${days} days...`, 'warn');
+            if (refreshBtn) {
+                refreshBtn.disabled = true;
+                refreshBtn.classList.add('is-loading');
+            }
 
             try {
-                const rows = await fetchAnalyticsRows(days);
-                const metrics = buildAnalyticsMetrics(rows, days);
-                renderAnalyticsKpis(metrics);
-                renderAnalyticsList('analytics-top-pages', metrics.topPages, 'No pages tracked yet.');
-                renderAnalyticsList('analytics-top-referrers', metrics.topReferrers, 'No referrer data yet.');
-                renderAnalyticsList('analytics-device-mix', metrics.deviceMix, 'No device data yet.');
-                renderAnalyticsList('analytics-top-utm', metrics.topUtm, 'No UTM source data yet.');
-                renderAnalyticsList('analytics-top-countries', metrics.topCountries, 'No country data yet.');
-                renderAnalyticsList('analytics-top-states', metrics.topStates, 'No state or region data yet.');
-                renderDailyBars(buildDailySeries(rows, days));
+                const allRows = await fetchAnalyticsRows(days * 2);
+                const currentCutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+                const previousCutoff = Date.now() - days * 2 * 24 * 60 * 60 * 1000;
+                analyticsRows = allRows.filter((row) => {
+                    const createdAt = Date.parse(String(row.created_at || ''));
+                    return Number.isFinite(createdAt) && createdAt >= currentCutoff;
+                });
+                analyticsPreviousRows = allRows.filter((row) => {
+                    const createdAt = Date.parse(String(row.created_at || ''));
+                    return Number.isFinite(createdAt) && createdAt >= previousCutoff && createdAt < currentCutoff;
+                });
+                updateAnalyticsDeviceOptions();
+                renderAnalyticsDashboard();
                 analyticsLoaded = true;
                 setAnalyticsStatus(
-                    `Loaded ${formatNumber(rows.length)} events. Updated at ${new Date().toLocaleString()}.`,
+                    `Updated ${new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`,
                     'success'
                 );
             } catch (err) {
@@ -1177,6 +1709,10 @@
                 setAnalyticsStatus(`Could not load analytics: ${msg}`, 'error');
             } finally {
                 analyticsLoading = false;
+                if (refreshBtn) {
+                    refreshBtn.disabled = false;
+                    refreshBtn.classList.remove('is-loading');
+                }
             }
         }
 
@@ -2608,7 +3144,10 @@
 		        }
 
         const analyticsRefreshBtn = document.getElementById('analytics-refresh-btn');
-        const analyticsRange = document.getElementById('analytics-range');
+        const analyticsRangeButtons = document.querySelectorAll('[data-analytics-days]');
+        const analyticsPageFilterInput = document.getElementById('analytics-page-filter');
+        const analyticsDeviceFilterSelect = document.getElementById('analytics-device-filter');
+        const analyticsClearFiltersBtn = document.getElementById('analytics-clear-filters');
         const cmsLogRefreshBtn = document.getElementById('cms-log-refresh-btn');
         if (analyticsRefreshBtn) {
             analyticsRefreshBtn.addEventListener('click', () => {
@@ -2616,10 +3155,39 @@
                 loadAnalytics(true);
             });
         }
-        if (analyticsRange) {
-            analyticsRange.addEventListener('change', () => {
+        analyticsRangeButtons.forEach((button) => {
+            button.addEventListener('click', () => {
+                const days = parseInt(String(button.getAttribute('data-analytics-days') || ''), 10);
+                if (!Number.isFinite(days) || days <= 0 || days === analyticsDays) return;
+                analyticsDays = days;
+                analyticsRangeButtons.forEach((rangeButton) => {
+                    const active = rangeButton === button;
+                    rangeButton.classList.toggle('active', active);
+                    rangeButton.setAttribute('aria-pressed', active ? 'true' : 'false');
+                });
                 analyticsLoaded = false;
                 loadAnalytics(true);
+            });
+        });
+        if (analyticsPageFilterInput) {
+            analyticsPageFilterInput.addEventListener('input', () => {
+                analyticsPageFilter = String(analyticsPageFilterInput.value || '');
+                if (analyticsLoaded) renderAnalyticsDashboard();
+            });
+        }
+        if (analyticsDeviceFilterSelect) {
+            analyticsDeviceFilterSelect.addEventListener('change', () => {
+                analyticsDeviceFilter = String(analyticsDeviceFilterSelect.value || 'all');
+                if (analyticsLoaded) renderAnalyticsDashboard();
+            });
+        }
+        if (analyticsClearFiltersBtn) {
+            analyticsClearFiltersBtn.addEventListener('click', () => {
+                analyticsPageFilter = '';
+                analyticsDeviceFilter = 'all';
+                if (analyticsPageFilterInput) analyticsPageFilterInput.value = '';
+                if (analyticsDeviceFilterSelect) analyticsDeviceFilterSelect.value = 'all';
+                if (analyticsLoaded) renderAnalyticsDashboard();
             });
         }
         if (cmsLogRefreshBtn) {
