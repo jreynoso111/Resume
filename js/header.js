@@ -84,7 +84,7 @@
 
     async function ensureAuthModule(rootPrefix) {
         if (window.ResumeAuth) return window.ResumeAuth;
-        const src = `${normalizeRootPrefix(rootPrefix)}assets/js/auth.js?v=3`;
+        const src = `${normalizeRootPrefix(rootPrefix)}assets/js/auth.js?v=4`;
         await loadScript(src);
         if (window.ResumeAuth) return window.ResumeAuth;
 
@@ -99,7 +99,7 @@
     async function ensureSupabaseConfig(rootPrefix) {
         const current = window.__SUPABASE_CONFIG__;
         if (current && current.url && current.anonKey) return current;
-        const src = `${normalizeRootPrefix(rootPrefix)}js/supabase-config.js?v=2`;
+        const src = `${normalizeRootPrefix(rootPrefix)}js/supabase-config.js?v=3`;
         try {
             await loadScript(src);
         } catch (_e) {
@@ -176,28 +176,19 @@
                 projectLinks = fallbackProjectLinks.slice();
                 return projectLinks;
             }
-            const hasLib = await ensureSupabaseLibrary();
-            if (!hasLib) {
-                projectLinks = fallbackProjectLinks.slice();
-                return projectLinks;
-            }
-
             try {
-                const sb = window.supabase.createClient(cfg.url, cfg.anonKey, {
-                    auth: {
-                        autoRefreshToken: false,
-                        persistSession: false,
-                        detectSessionInUrl: false
+                const base = String(cfg.url || '').replace(/\/$/, '');
+                const endpoint = `${base}/rest/v1/projects`
+                    + '?select=title,href,is_published,sort_order,id'
+                    + '&is_published=eq.true&order=sort_order.asc,id.asc';
+                const response = await fetch(endpoint, {
+                    headers: {
+                        apikey: String(cfg.anonKey || ''),
+                        Authorization: `Bearer ${String(cfg.anonKey || '')}`
                     }
                 });
-                const { data, error } = await sb
-                    .from('projects')
-                    .select('title, href, is_published, sort_order, id')
-                    .eq('is_published', true)
-                    .order('sort_order', { ascending: true })
-                    .order('id', { ascending: true });
-
-                if (!error) {
+                if (response.ok) {
+                    const data = await response.json().catch(() => []);
                     projectLinks = mergeLocalProjectLinks(mapProjectRowsToLinks(data));
                 } else {
                     projectLinks = fallbackProjectLinks.slice();

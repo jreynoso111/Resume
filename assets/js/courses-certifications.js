@@ -285,7 +285,7 @@
     const cfg = window.__SUPABASE_CONFIG__;
     if (cfg && cfg.url && cfg.anonKey) return cfg;
     try {
-      await loadScript(`${rootPrefix}js/supabase-config.js?v=2`);
+      await loadScript(`${rootPrefix}js/supabase-config.js?v=3`);
     } catch (_e) {
       return null;
     }
@@ -301,9 +301,18 @@
 
   async function createSupabaseClient(cfg) {
     if (!cfg || !cfg.url || !cfg.anonKey) return null;
+    if (window.ResumeAuth && typeof window.ResumeAuth.getClient === "function") {
+      return window.ResumeAuth.getClient();
+    }
+    if (window.__resumeSupabaseClientPromise) {
+      return window.__resumeSupabaseClientPromise;
+    }
     await ensureSupabaseLibrary();
     if (!window.supabase || typeof window.supabase.createClient !== "function") return null;
-    return window.supabase.createClient(cfg.url, cfg.anonKey);
+    const client = window.supabase.createClient(cfg.url, cfg.anonKey);
+    window.__resumeSupabaseClient = client;
+    window.__resumeSupabaseClientPromise = Promise.resolve(client);
+    return client;
   }
 
   async function fetchCredentialsPublic(cfg) {

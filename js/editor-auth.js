@@ -72,7 +72,8 @@
 	    localChangeVersion: 0,
 	    cmsHydrated: false,
 	    projectsGridSyncSignature: '',
-	    blogCoverSyncSignature: ''
+	    blogCoverSyncSignature: '',
+	    editorEnabled: false
 	  };
 
   // Marker for smoke tests / footer loader. If this isn't set after the script loads,
@@ -538,14 +539,8 @@
   window.__resumeCmsEditorReady = init();
 
   async function init() {
-    // If a CMS snapshot exists for this page, render it and stop.
-    try {
-      const hydrated = await maybeHydrateFromSupabase();
-      if (hydrated) return;
-    } catch (error) {
-      // Ignore hydration failures; the page can still load normally.
-    }
-
+    // Public snapshot hydration is owned by admin-bootstrap. Keeping it out of
+    // the editor prevents a stale saved document from replacing live handlers.
     await initSupabase();
     if (!state.authIsAdmin) return;
 
@@ -637,7 +632,7 @@
 
     // Try loading config from the site root based on current page depth.
     try {
-      await loadScript(toPageAssetPath('js/supabase-config.js?v=2'));
+      await loadScript(toPageAssetPath('js/supabase-config.js?v=3'));
     } catch (error) {
       return null;
     }
@@ -655,6 +650,16 @@
 
   async function getSupabaseClient() {
     if (state.supabaseClient) return state.supabaseClient;
+
+    if (window.ResumeAuth && typeof window.ResumeAuth.getClient === 'function') {
+      state.supabaseClient = await window.ResumeAuth.getClient();
+      return state.supabaseClient;
+    }
+    if (window.__resumeSupabaseClientPromise) {
+      state.supabaseClient = await window.__resumeSupabaseClientPromise;
+      return state.supabaseClient;
+    }
+
     const cfg = await getSupabaseConfig();
     if (!cfg) return null;
     await ensureSupabaseLibrary();
@@ -666,6 +671,8 @@
         detectSessionInUrl: false
       }
     });
+    window.__resumeSupabaseClient = state.supabaseClient;
+    window.__resumeSupabaseClientPromise = Promise.resolve(state.supabaseClient);
     return state.supabaseClient;
   }
 
@@ -1178,14 +1185,14 @@
       const depth = Math.max(0, parts.length - 1);
       const rootPrefix = '../'.repeat(depth);
       const footerHost = `<footer id="site-footer" data-root-path="${rootPrefix}"></footer>`;
-	      const STYLES_V = 40;
-	      const HEADER_V = 13;
+	      const STYLES_V = 53;
+	      const HEADER_V = 17;
 		      const FOOTER_V = 26;
-		      const ADMIN_BOOTSTRAP_V = 1;
-	      const SHELL_V = 7;
+		      const ADMIN_BOOTSTRAP_V = 5;
+	      const SHELL_V = 9;
 	      const PROJECT_LIGHTBOX_V = 4;
 		      const PROJECT_CAROUSEL_V = 11;
-		      const COURSES_CERTS_V = 21;
+		      const COURSES_CERTS_V = 23;
 	      const PROJECTS_V = 9;
 	      const BLOG_PAGE_V = 7;
 	      const BLOG_POST_V = 10;
@@ -1348,7 +1355,11 @@
 
   function saveSettings() {
     const payload = { autosaveEnabled: false };
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(payload));
+    try {
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(payload));
+    } catch (_e) {
+      // In-memory editor state remains usable in restricted browser contexts.
+    }
   }
 
   function isAdmin() {
@@ -1358,12 +1369,22 @@
   }
 
   function isEditorEnabledFlag() {
-    return localStorage.getItem(EDITOR_ENABLED_KEY) === '1';
+    if (state.editorEnabled === true) return true;
+    try {
+      return localStorage.getItem(EDITOR_ENABLED_KEY) === '1';
+    } catch (_e) {
+      return false;
+    }
   }
 
   function setEditorEnabledFlag(value) {
-    if (value) localStorage.setItem(EDITOR_ENABLED_KEY, '1');
-    else localStorage.removeItem(EDITOR_ENABLED_KEY);
+    state.editorEnabled = value === true;
+    try {
+      if (state.editorEnabled) localStorage.setItem(EDITOR_ENABLED_KEY, '1');
+      else localStorage.removeItem(EDITOR_ENABLED_KEY);
+    } catch (_e) {
+      // The current tab still works even when persistence is unavailable.
+    }
   }
 
   let toastTimer = null;
@@ -3839,6 +3860,24 @@
     elements.forEach((element) => sanitizeElementAttributes(element));
   }
 
+  function sanitizeSnapshotShell(root) {
+    if (!root) return;
+
+    const inlineScripts = root.querySelectorAll
+      ? Array.from(root.querySelectorAll('script:not([src])'))
+      : [];
+    inlineScripts.forEach((script) => {
+      const type = String(script.getAttribute('type') || '').trim().toLowerCase();
+      if (type === 'application/json' || type === 'application/ld+json') return;
+      script.remove();
+    });
+
+    if (root.documentElement instanceof Element) sanitizeElementAttributes(root.documentElement);
+    if (root instanceof Element) sanitizeElementAttributes(root);
+    const elements = root.querySelectorAll ? Array.from(root.querySelectorAll('*')) : [];
+    elements.forEach((element) => sanitizeElementAttributes(element));
+  }
+
   function sanitizeSerializedHtml(rawHtml) {
     const parser = new DOMParser();
     const parsed = parser.parseFromString(String(rawHtml || ''), 'text/html');
@@ -4544,8 +4583,15 @@
           console.warn('blog post sync warning:', syncError);
           if (!silent) notify(`Blog post sync warning: ${msg}`, 'warn');
         }
-        const { error } = await sb.from(table).upsert({ path, html }, { onConflict: 'path' });
+        const { data: publishedRow, error } = await sb
+          .from(table)
+          .upsert({ path, html }, { onConflict: 'path' })
+          .select('path,updated_at')
+          .single();
         if (error) throw error;
+        if (!publishedRow || String(publishedRow.path || '') !== path) {
+          throw new Error('Supabase did not confirm the published page.');
+        }
         await tryInsertCmsPublishLog(sb, path, reason, html);
       } else if (!savedLocally) {
         throw new Error('No publish target available. Start the local dev server or check js/supabase-config.js.');
@@ -4609,17 +4655,22 @@
       }
     });
 
-    sanitizeSnapshotDom(root);
+    // Preserve the site's structural spans/classes. Editable input is already
+    // normalized while editing; publishing only needs security sanitization.
+    sanitizeSnapshotShell(root);
 
 	    const head = root.querySelector('head');
-	    if (head && !head.querySelector('meta[name="cms-snapshot"]')) {
-	      const meta = document.createElement('meta');
-	      meta.setAttribute('name', 'cms-snapshot');
-	      meta.setAttribute('content', '1');
-	      head.appendChild(meta);
-		    }
+	    if (head) {
+	      let meta = head.querySelector('meta[name="cms-snapshot"]');
+	      if (!meta) {
+	        meta = document.createElement('meta');
+	        meta.setAttribute('name', 'cms-snapshot');
+	        head.appendChild(meta);
+	      }
+	      meta.setAttribute('content', '2');
+	    }
 
-		    root.querySelectorAll('#cms-admin-style, .cms-ui, [data-cms-ui="1"], .admin-link, .cc-modal-edit, .cc-modal-linkrow .cc-action-btn, [data-cc-add="1"], .screenshot-carousel__add').forEach((el) => el.remove());
+		    root.querySelectorAll('#cms-admin-style, #cms-error-overlay, #codex-browser-sidebar-comments-root, .cms-ui, [data-cms-ui="1"], .admin-link, [data-cc-admin-controls="1"], .cc-modal-overlay, .cc-modal-edit, .cc-modal-linkrow .cc-action-btn, [data-cc-add="1"], .cc-actions .cc-action-btn:not(.cc-action-btn-primary), .screenshot-carousel__add').forEach((el) => el.remove());
 	    root.querySelectorAll('#bg-canvas, #particle-canvas, #theme-toggle, #theme-toggle-label').forEach((el) => el.remove());
 	    root.querySelectorAll('.project-lightbox, .nav-mobile, input[type="file"][aria-hidden="true"]').forEach((el) => el.remove());
 	    root.querySelectorAll('script[src]').forEach((el) => {
@@ -4632,6 +4683,7 @@
 		      if (cleaned.endsWith('js/background-animation.js')) return el.remove();
 		      if (cleaned.endsWith('assets/js/auth.js')) return el.remove();
 		      if (cleaned.endsWith('js/editor-auth.js')) return el.remove();
+		      if (cleaned.endsWith('js/supabase-config.js')) return el.remove();
 		    });
 
 	    // Avoid freezing dynamic/global UI into the CMS snapshot.
@@ -4646,6 +4698,10 @@
 	    if (footerHost) footerHost.innerHTML = '';
 	    const projectsSidebar = root.querySelector('#projects-sidebar');
 	    if (projectsSidebar) projectsSidebar.innerHTML = '';
+	    const achievementsGrid = root.querySelector('[data-selected-achievements]');
+	    if (achievementsGrid) {
+	      achievementsGrid.innerHTML = '<p class="achievements-loading">Loading selected achievements...</p>';
+	    }
 
 		    root.querySelectorAll('*').forEach((el) => {
 		      el.removeAttribute('contenteditable');

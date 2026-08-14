@@ -336,10 +336,12 @@ do $$
 begin
   if to_regclass('public.cms_pages') is not null then
     execute 'alter table public.cms_pages enable row level security';
+    execute 'grant select on public.cms_pages to anon';
     execute 'grant select, insert, update, delete on public.cms_pages to authenticated';
     execute 'drop policy if exists cms_pages_admin_read on public.cms_pages';
     execute 'create policy cms_pages_admin_read on public.cms_pages for select to authenticated using (public.is_admin_user())';
     execute 'drop policy if exists cms_pages_public_read on public.cms_pages';
+    execute 'create policy cms_pages_public_read on public.cms_pages for select to anon, authenticated using (true)';
     execute 'drop policy if exists cms_pages_admin_insert on public.cms_pages';
     execute 'create policy cms_pages_admin_insert on public.cms_pages for insert to authenticated with check (public.is_admin_user())';
     execute 'drop policy if exists cms_pages_admin_update on public.cms_pages';

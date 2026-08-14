@@ -152,7 +152,7 @@
       const current = window.__SUPABASE_CONFIG__;
       if (current && current.url && current.anonKey) return current;
 
-      await loadScriptOnce(getAppHref("js/supabase-config.js?v=2"), () => {
+      await loadScriptOnce(getAppHref("js/supabase-config.js?v=3"), () => {
         const cfg = window.__SUPABASE_CONFIG__;
         return Boolean(cfg && cfg.url && cfg.anonKey);
       });
@@ -177,11 +177,18 @@
   async function getClient() {
     if (clientPromise) return clientPromise;
 
-    clientPromise = (async () => {
+    // All public/auth/editor modules must share one GoTrue client. Multiple
+    // clients using the same storage key can race while refreshing a session.
+    if (window.__resumeSupabaseClientPromise) {
+      clientPromise = window.__resumeSupabaseClientPromise;
+      return clientPromise;
+    }
+
+    window.__resumeSupabaseClientPromise = (async () => {
       const cfg = await getConfig();
       await ensureSupabaseLibrary();
 
-      return window.supabase.createClient(cfg.url, cfg.anonKey, {
+      const client = window.supabase.createClient(cfg.url, cfg.anonKey, {
         auth: {
           autoRefreshToken: true,
           persistSession: true,
@@ -190,7 +197,11 @@
           detectSessionInUrl: /(?:^|\/)reset-password\.html$/i.test(window.location.pathname),
         },
       });
+      window.__resumeSupabaseClient = client;
+      return client;
     })();
+
+    clientPromise = window.__resumeSupabaseClientPromise;
 
     return clientPromise;
   }

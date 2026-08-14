@@ -15,10 +15,10 @@
     // This must match your "UNSAFE grants" SQL setup in Supabase.
     unsafeNoAuth: false,
     cms: {
-      // When false (recommended for a "static is source-of-truth" site), the public pages will NOT
-      // auto-hydrate from `cms_pages`. You can still force hydration with `?cms=1`.
-      // Set true to make "Publish" changes persist for visitors (Supabase becomes the source of truth).
-      autoHydrate: false,
+      // Published snapshots are public website content. Writes remain restricted
+      // to authorized admins by RLS; the bootstrap only renders the public HTML.
+      // Local preview reads/writes repository files through /__cms/save.
+      autoHydrate: !isLocalPreviewHost,
       pagesTable: 'cms_pages',
       assetsBucket: 'resume-cms',
       uploadFunction: 'cms-upload'
