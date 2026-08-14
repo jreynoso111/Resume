@@ -377,9 +377,9 @@ def render_blog_index(posts: list[BlogPost]) -> str:
 
 {render_site_footer('../')}
 
-  <script src="/js/admin-bootstrap.js?v=6"></script>
+  <script src="/js/admin-bootstrap.js?v=7"></script>
   <script src="/js/header.js?v=17"></script>
-  <script src="/js/site-shell.js?v=7"></script>
+  <script src="/js/site-shell.js?v=9"></script>
   <script type="application/ld+json">{schema_json.replace('</', '<\\/')}</script>
 </body>
 </html>
@@ -483,9 +483,9 @@ def render_blog_post(post: BlogPost, posts: list[BlogPost]) -> str:
 
 {render_site_footer('../../')}
 
-  <script src="/js/admin-bootstrap.js?v=6"></script>
+  <script src="/js/admin-bootstrap.js?v=7"></script>
   <script src="/js/header.js?v=17"></script>
-  <script src="/js/site-shell.js?v=7"></script>
+  <script src="/js/site-shell.js?v=9"></script>
   <script type="application/ld+json">{schema_json.replace('</', '<\\/')}</script>
 </body>
 </html>

@@ -1188,7 +1188,7 @@
 	      const STYLES_V = 53;
 	      const HEADER_V = 17;
 		      const FOOTER_V = 26;
-		      const ADMIN_BOOTSTRAP_V = 5;
+		      const ADMIN_BOOTSTRAP_V = 7;
 	      const SHELL_V = 9;
 	      const PROJECT_LIGHTBOX_V = 4;
 		      const PROJECT_CAROUSEL_V = 11;

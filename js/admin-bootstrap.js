@@ -107,7 +107,7 @@
     });
     parsed.querySelectorAll('script[src*="js/admin-bootstrap.js"]').forEach((element) => {
       const src = String(element.getAttribute('src') || '');
-      element.setAttribute('src', src.replace(/(?:\?v=\d+)?$/, '?v=6'));
+      element.setAttribute('src', src.replace(/(?:\?v=\d+)?$/, '?v=7'));
     });
 
     const header = parsed.getElementById('site-header');
@@ -164,6 +164,12 @@
     if (!html) return false;
 
     try { sessionStorage.setItem(HYDRATION_SENTINEL, '1'); } catch (_e) {}
+    // document.write() keeps the Window object while the sanitized snapshot
+    // intentionally omits the active dynamic-background canvases.
+    try {
+      window.BG_ANIMATION_INITIALIZED = false;
+      window.PARTICLES_INITIALIZED = false;
+    } catch (_e) {}
     document.open();
     document.write(html);
     document.close();
