@@ -25,6 +25,19 @@ GENERIC_PROJECT_IMAGE = "../assets/images/projects/project-placeholder.svg"
 
 LOCAL_PROJECTS = [
     {
+        "id": "local-fare-card-batch-integrity-investigation",
+        "title": "Fare Card Batch Integrity Investigation",
+        "description": (
+            "Investigated a systematic card-identifier mapping failure affecting "
+            "approximately 125,000 MIFARE fare cards, supporting warranty replacement "
+            "and a new incoming-batch validation process."
+        ),
+        "href": "projects/fare-card-batch-integrity-investigation.html",
+        "image_url": None,
+        "is_published": True,
+        "sort_order": 80,
+    },
+    {
         "id": "local-pulse-operational-workspace",
         "title": "Pulse Operational Workspace",
         "description": (

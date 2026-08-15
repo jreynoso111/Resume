@@ -2,6 +2,11 @@
     const SUPABASE_VENDOR_PATH = 'assets/vendor/supabase/supabase-js.v2.js';
     const fallbackProjectLinks = [
         {
+            href: 'fare-card-batch-integrity-investigation.html',
+            label: 'Fare Card Batch Integrity Investigation',
+            key: 'fare-card-batch-integrity-investigation'
+        },
+        {
             href: 'pulse-operational-workspace.html',
             label: 'Pulse Operational Workspace',
             key: 'pulse-operational-workspace'

@@ -32,7 +32,7 @@
   }
 
   function loadRepositoryCaseStudy(slug) {
-    return fetch('../../data/project-case-studies.json', { credentials: 'same-origin' })
+    return fetch('../../data/project-case-studies.json?v=2', { credentials: 'same-origin' })
       .then(function (response) {
         if (!response.ok) throw new Error('Could not load project case-study data.');
         return response.json();

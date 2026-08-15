@@ -61,6 +61,24 @@
         "pages/projects/fare-system-transaction-fraud-detection-metro-santo-domingo.html — Outcome"
       ]
     },
+    "fare-card-batch-integrity-investigation": {
+      "summary": "Investigated a systematic card-identifier mapping failure affecting approximately 125,000 MIFARE fare cards, supporting warranty replacement and a new incoming-batch validation process.",
+      "context": "Technical and operational control of Metro Santo Domingo's Automated Fare Collection system included system maintenance, security, technical auditing, inventory control, fare-card supplies, and incident investigation.",
+      "problem": "Manufacturer-supplied identifier relationship data became misaligned with physical cards, causing backend information and administrative actions to affect incorrect cards.",
+      "approach": "Analyzed card and system records, physically read sample cards, and compared those identifiers with the manufacturer-provided relationship file and the records loaded into the fare-collection backend.",
+      "tools": ["Fare Collection", "Root-Cause Analysis", "Quality Control", "Data Validation"],
+      "solution": "Identified a repeatable sequential offset after an apparent sequence error, isolated the affected inventory, and used the technical findings to support a manufacturer warranty claim.",
+      "operational_use": "Introduced independent sampling across boxes and lot areas so physical card identifiers could be checked against supplied relationship data before a batch was released for operational use.",
+      "impact_label": "Operational value",
+      "impact": "Identified approximately 125,000 affected cards, supported their warranty replacement, and established an incoming-batch validation process after which the issue did not recur.",
+      "evidence": ["Physical card sampling", "Sequential mismatch analysis", "Incoming-batch validation procedure"],
+      "source": [
+        "pages/projects/fare-card-batch-integrity-investigation.html — Context and Responsibility",
+        "pages/projects/fare-card-batch-integrity-investigation.html — Investigation",
+        "pages/projects/fare-card-batch-integrity-investigation.html — Root-Cause Identification",
+        "pages/projects/fare-card-batch-integrity-investigation.html — Results and Operational Value"
+      ]
+    },
     "turnstile-deployment-management-line-2b-expansion": {
       "context": "Metro Santo Domingo Line 2B required new station access barriers across civil, electrical, software, supplier, and station-operations workstreams.",
       "problem": "The rollout had compressed night windows, strict station handover times, mixed barrier configurations, and cross-team dependencies while stations still needed to reopen each morning.",

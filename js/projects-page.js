@@ -147,7 +147,7 @@
 
     async function loadCaseStudyMap(rootPrefix) {
       try {
-        const response = await fetch(`${rootPrefix || ""}data/project-case-studies.json`, {
+        const response = await fetch(`${rootPrefix || ""}data/project-case-studies.json?v=2`, {
           credentials: "same-origin",
         });
         if (!response.ok) return new Map();
@@ -186,6 +186,15 @@
     if (!grid) return;
 
     const LOCAL_PROJECTS = [
+      {
+        id: "local-fare-card-batch-integrity-investigation",
+        title: "Fare Card Batch Integrity Investigation",
+        description: "Investigated a systematic card-identifier mapping failure affecting approximately 125,000 MIFARE fare cards, supporting warranty replacement and a new incoming-batch validation process.",
+        href: "projects/fare-card-batch-integrity-investigation.html",
+        image_url: null,
+        is_published: true,
+        sort_order: 80,
+      },
       {
         id: "local-pulse-operational-workspace",
         title: "Pulse Operational Workspace",
