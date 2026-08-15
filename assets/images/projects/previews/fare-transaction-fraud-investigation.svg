@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-labelledby="title desc">
+  <title id="title">Conceptual fare transaction anomaly detection flow</title>
+  <desc id="desc">Normal recharge and fare-use behavior is compared with a highlighted balance increase that occurs without the normal recharge step.</desc>
+  <style>
+    .bg{fill:#edf3f8}.panel{fill:#fff;stroke:#cbd8e4;stroke-width:2}.ink{fill:#18324c}.muted{fill:#61778c}.blue{fill:#416d96}.red{fill:#b54b50}.line{fill:none;stroke:#416d96;stroke-width:5;stroke-linecap:round}.red-line{fill:none;stroke:#b54b50;stroke-width:6;stroke-linecap:round}.soft{fill:none;stroke:#9db3c7;stroke-width:3}.label{font:600 19px Inter,Arial,sans-serif;letter-spacing:2px}.value{font:700 25px Inter,Arial,sans-serif}.small{font:600 17px Inter,Arial,sans-serif}.tiny{font:700 14px Inter,Arial,sans-serif;letter-spacing:1.5px}
+    @media (prefers-color-scheme:dark){.bg{fill:#101923}.panel{fill:#172534;stroke:#35506a}.ink{fill:#edf4fa}.muted{fill:#a9bdcf}.blue{fill:#72a5d0}.red{fill:#f08b8f}.line{stroke:#72a5d0}.red-line{stroke:#f08b8f}.soft{stroke:#4f6a82}}
+  </style>
+  <rect class="bg" width="1200" height="675"/>
+  <circle cx="1038" cy="102" r="132" fill="none" stroke="#7fa0bc" stroke-width="2" opacity=".22"/>
+  <circle cx="1038" cy="102" r="84" fill="none" stroke="#7fa0bc" stroke-width="2" opacity=".22"/>
+
+  <text class="label muted" x="72" y="92">TRANSACTION SEQUENCE</text>
+
+  <g transform="translate(72 130)">
+    <text class="tiny blue" x="0" y="20">NORMAL PATH</text>
+    <g transform="translate(0 48)">
+      <rect class="panel" width="265" height="126" rx="22"/>
+      <circle cx="42" cy="41" r="16" fill="#416d96" opacity=".18"/>
+      <path class="line" d="M36 41h12M42 35v12"/>
+      <text class="value ink" x="28" y="88">Recharge</text>
+    </g>
+    <g transform="translate(365 48)">
+      <rect class="panel" width="265" height="126" rx="22"/>
+      <text class="value blue" x="28" y="57">+ Balance</text>
+      <path class="soft" d="M29 83h202"/><path class="line" d="M29 96c44-1 61-31 100-27 39 4 51-19 102-24"/>
+    </g>
+    <g transform="translate(730 48)">
+      <rect class="panel" width="265" height="126" rx="22"/>
+      <path class="line" d="M39 45h35M58 28v34"/>
+      <text class="value ink" x="28" y="91">Fare use</text>
+    </g>
+    <path class="line" d="M265 111h78"/><path class="ink" d="m332 98 17 13-17 13z"/>
+    <path class="line" d="M630 111h78"/><path class="ink" d="m697 98 17 13-17 13z"/>
+  </g>
+
+  <path class="soft" d="M72 363H1128" opacity=".65"/>
+
+  <g transform="translate(72 398)">
+    <text class="tiny red" x="0" y="20">ANOMALY DETECTED</text>
+    <g transform="translate(0 48)">
+      <rect class="panel" width="265" height="126" rx="22"/>
+      <circle cx="50" cy="51" r="23" fill="none" stroke="#b54b50" stroke-width="5"/>
+      <path class="red-line" d="M34 35l32 32"/>
+      <text class="small muted" x="28" y="96">No recharge</text>
+    </g>
+    <g transform="translate(365 48)">
+      <rect x="0" y="0" width="265" height="126" rx="22" fill="#b54b50" opacity=".10"/>
+      <rect x="0" y="0" width="265" height="126" rx="22" fill="none" stroke="#b54b50" stroke-width="3"/>
+      <text class="value red" x="28" y="57">+ Balance</text>
+      <path class="red-line" d="M29 94c48 0 63-31 101-25 38 7 56-22 103-25"/>
+      <circle cx="226" cy="35" r="14" class="red"/><text x="222" y="41" fill="#fff" style="font:700 18px Arial,sans-serif">!</text>
+    </g>
+    <g transform="translate(730 48)">
+      <rect class="panel" width="265" height="126" rx="22"/>
+      <path class="line" d="M39 45h35M58 28v34"/>
+      <text class="value ink" x="28" y="91">Fare use</text>
+    </g>
+    <path class="red-line" d="M265 111h78" stroke-dasharray="9 12"/><path class="red" d="m332 98 17 13-17 13z"/>
+    <path class="red-line" d="M630 111h78"/><path class="red" d="m697 98 17 13-17 13z"/>
+  </g>
+</svg>

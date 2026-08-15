@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-labelledby="title desc">
+  <title id="title">Conceptual fare-card identifier integrity mapping</title>
+  <desc id="desc">A contactless fare card connects through an identifier map to backend records, with one highlighted offset in the sequence.</desc>
+  <style>
+    .bg{fill:#edf3f8}.panel{fill:#fff;stroke:#cbd8e4;stroke-width:2}.ink{fill:#18324c}.muted{fill:#61778c}.line{fill:none;stroke:#416d96;stroke-width:5;stroke-linecap:round}.soft{fill:none;stroke:#9db3c7;stroke-width:3}.accent{fill:#b54b50}.accent-line{fill:none;stroke:#b54b50;stroke-width:6;stroke-linecap:round}.label{font:600 19px Inter,Arial,sans-serif;letter-spacing:2px}.value{font:700 28px Inter,Arial,sans-serif}.small{font:600 17px Inter,Arial,sans-serif}.tiny{font:700 14px Inter,Arial,sans-serif;letter-spacing:1.5px}
+    @media (prefers-color-scheme:dark){.bg{fill:#101923}.panel{fill:#172534;stroke:#35506a}.ink{fill:#edf4fa}.muted{fill:#a9bdcf}.line{stroke:#72a5d0}.soft{stroke:#4f6a82}.accent{fill:#f08b8f}.accent-line{stroke:#f08b8f}}
+  </style>
+  <rect class="bg" width="1200" height="675"/>
+  <path class="soft" d="M0 118H1200M0 557H1200" opacity=".45"/>
+  <circle cx="1060" cy="92" r="124" fill="none" stroke="#7fa0bc" stroke-width="2" opacity=".22"/>
+  <circle cx="1060" cy="92" r="82" fill="none" stroke="#7fa0bc" stroke-width="2" opacity=".22"/>
+
+  <g transform="translate(70 150)">
+    <text class="label muted" x="0" y="-38">PHYSICAL CARD</text>
+    <rect class="panel" width="300" height="370" rx="30"/>
+    <rect x="34" y="37" width="232" height="26" rx="13" fill="#416d96" opacity=".18"/>
+    <circle cx="91" cy="170" r="34" fill="#416d96" opacity=".16"/>
+    <path class="line" d="M111 144c25 17 25 49 0 66M131 126c48 29 48 77 0 106"/>
+    <text class="tiny muted" x="34" y="282">CONTACTLESS FARE CARD</text>
+    <text class="value ink" x="34" y="329">ID 03</text>
+  </g>
+
+  <g transform="translate(460 150)">
+    <text class="label muted" x="0" y="-38">IDENTIFIER MAP</text>
+    <rect class="panel" width="300" height="370" rx="26"/>
+    <g transform="translate(32 48)">
+      <rect width="236" height="66" rx="14" fill="#416d96" opacity=".11"/>
+      <text class="small ink" x="20" y="41">ID 01</text><text class="small muted" x="180" y="41">A</text>
+      <path class="line" d="M89 33h69"/>
+    </g>
+    <g transform="translate(32 137)">
+      <rect width="236" height="66" rx="14" fill="#416d96" opacity=".11"/>
+      <text class="small ink" x="20" y="41">ID 02</text><text class="small muted" x="180" y="41">B</text>
+      <path class="line" d="M89 33h69"/>
+    </g>
+    <g transform="translate(32 226)">
+      <rect width="236" height="96" rx="14" fill="#b54b50" opacity=".10"/>
+      <text class="small ink" x="20" y="42">ID 03</text><text class="small accent" x="180" y="42">B</text>
+      <path class="accent-line" d="M89 34h69"/>
+      <text class="tiny accent" x="20" y="76">SEQUENCE OFFSET</text>
+    </g>
+  </g>
+
+  <g transform="translate(850 150)">
+    <text class="label muted" x="0" y="-38">BACKEND</text>
+    <rect class="panel" width="280" height="370" rx="26"/>
+    <ellipse cx="140" cy="70" rx="91" ry="31" fill="#416d96" opacity=".17"/>
+    <path class="soft" d="M49 70v160c0 18 41 32 91 32s91-14 91-32V70M49 123c0 18 41 32 91 32s91-14 91-32M49 177c0 18 41 32 91 32s91-14 91-32"/>
+    <circle cx="97" cy="307" r="12" fill="#416d96"/><circle cx="140" cy="307" r="12" fill="#416d96"/><circle cx="183" cy="307" r="12" fill="none" stroke="#b54b50" stroke-width="5"/>
+    <text class="tiny muted" x="67" y="344">SYSTEM RECORDS</text>
+  </g>
+
+  <path class="line" d="M370 335h70"/><path class="ink" d="m430 321 18 14-18 14z"/>
+  <path class="line" d="M760 335h70"/><path class="ink" d="m820 321 18 14-18 14z"/>
+</svg>

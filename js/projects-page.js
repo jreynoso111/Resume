@@ -197,6 +197,7 @@
         title: "Fare System Transaction Fraud Investigation",
         description: "Investigated anomalous fare-card transaction behavior and identified three users exploiting a payment-system vulnerability that bypassed the normal recharge workflow.",
         href: "projects/fare-system-transaction-fraud-detection-metro-santo-domingo.html",
+        image_url: "/assets/images/projects/previews/fare-transaction-fraud-investigation.svg",
         is_published: true,
         sort_order: 42,
       },
@@ -205,7 +206,7 @@
         title: "MIFARE Fare Card Batch Integrity Investigation",
         description: "Identified a systematic mapping mismatch affecting approximately 125,000 MIFARE fare cards, isolated the affected inventory, supported its warranty replacement, and introduced a validation process that prevented recurrence.",
         href: "projects/fare-card-batch-integrity-investigation.html",
-        image_url: null,
+        image_url: "/assets/images/projects/previews/mifare-fare-card-integrity.svg",
         is_published: true,
         sort_order: 80,
       },
@@ -235,6 +236,11 @@
       "gps-movement-analytics",
       "techloc-fleet-service-control",
       "repossession-risk-monitoring",
+    ]);
+
+    const CONCEPT_COVER_SLUGS = new Set([
+      "fare-card-batch-integrity-investigation",
+      "fare-system-transaction-fraud-detection-metro-santo-domingo",
     ]);
 
     function mergeLocalProjects(list) {
@@ -278,7 +284,9 @@
         const baseImgSrc = normalizeAssetUrl(p.image_url, rootPrefix) || fallbackPreview || genericPreview;
         const imgSrc = withCacheVersion(baseImgSrc, projectImageVersion(p));
         const localFallbackBase = localAssetUrl(p.image_url, rootPrefix) || fallbackPreview || genericPreview;
-        const fallbackImgSrc = withCacheVersion(localFallbackBase, projectImageVersion(p));
+        const fallbackImgSrc = CONCEPT_COVER_SLUGS.has(slug)
+          ? imgSrc
+          : withCacheVersion(localFallbackBase, projectImageVersion(p));
         const fallbackAttr = fallbackImgSrc && fallbackImgSrc !== imgSrc
           ? ` data-fallback-src="${escapeHtml(fallbackImgSrc)}"`
           : "";

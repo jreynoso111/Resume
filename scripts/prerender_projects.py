@@ -39,6 +39,7 @@ LOCAL_PROJECTS = [
             "recharge workflow."
         ),
         "href": "projects/fare-system-transaction-fraud-detection-metro-santo-domingo.html",
+        "image_url": "/assets/images/projects/previews/fare-transaction-fraud-investigation.svg",
         "is_published": True,
         "sort_order": 42,
     },
@@ -51,7 +52,7 @@ LOCAL_PROJECTS = [
             "replacement, and introduced a validation process that prevented recurrence."
         ),
         "href": "projects/fare-card-batch-integrity-investigation.html",
-        "image_url": None,
+        "image_url": "/assets/images/projects/previews/mifare-fare-card-integrity.svg",
         "is_published": True,
         "sort_order": 80,
     },
@@ -75,6 +76,11 @@ LOCAL_PREVIEW_SLUGS = {
     "gps-movement-analytics",
     "techloc-fleet-service-control",
     "repossession-risk-monitoring",
+}
+
+CONCEPT_COVER_SLUGS = {
+    "fare-card-batch-integrity-investigation",
+    "fare-system-transaction-fraud-detection-metro-santo-domingo",
 }
 
 
@@ -238,7 +244,7 @@ def render_card(project: dict, supabase_url: str, bucket: str) -> str:
         image_url = GENERIC_PROJECT_IMAGE
 
     fallback_attr = ""
-    if image_url != GENERIC_PROJECT_IMAGE:
+    if image_url != GENERIC_PROJECT_IMAGE and slug not in CONCEPT_COVER_SLUGS:
         fallback_attr = (
             f' data-fallback-src="{html.escape(GENERIC_PROJECT_IMAGE, quote=True)}"'
         )
