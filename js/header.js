@@ -4,7 +4,8 @@
         'techloc-fleet-service-control',
         'fare-card-batch-integrity-investigation',
         'fare-system-transaction-fraud-detection-metro-santo-domingo',
-        'turnstile-deployment-management-line-2b-expansion'
+        'turnstile-deployment-management-line-2b-expansion',
+        'automatic-fare-equipment-reliability'
     ];
     const fallbackProjectLinks = [
         {
@@ -16,6 +17,11 @@
             href: 'fare-card-batch-integrity-investigation.html',
             label: 'MIFARE Fare Card Batch Integrity Investigation',
             key: 'fare-card-batch-integrity-investigation'
+        },
+        {
+            href: 'automatic-fare-equipment-reliability.html',
+            label: 'Automatic Fare Equipment Reliability Improvement',
+            key: 'automatic-fare-equipment-reliability'
         },
         {
             href: 'pulse-operational-workspace.html',

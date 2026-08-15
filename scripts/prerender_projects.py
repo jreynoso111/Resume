@@ -28,6 +28,7 @@ FEATURED_PROJECT_SLUGS = (
     "fare-card-batch-integrity-investigation",
     "fare-system-transaction-fraud-detection-metro-santo-domingo",
     "turnstile-deployment-management-line-2b-expansion",
+    "automatic-fare-equipment-reliability",
 )
 
 LOCAL_PROJECTS = [
@@ -57,6 +58,20 @@ LOCAL_PROJECTS = [
         "sort_order": 80,
     },
     {
+        "id": "local-automatic-fare-equipment-reliability",
+        "title": "Automatic Fare Equipment Reliability Improvement",
+        "description": (
+            "Analyzed recurring failures in automatic fare-card dispensers and receipt "
+            "printers, identifying contamination from card and paper debris as a major "
+            "reliability driver and adjusting preventive-maintenance and spare-parts "
+            "strategies accordingly."
+        ),
+        "href": "projects/automatic-fare-equipment-reliability.html",
+        "image_url": "/assets/images/projects/previews/fare-equipment-reliability.svg",
+        "is_published": True,
+        "sort_order": 55,
+    },
+    {
         "id": "local-pulse-operational-workspace",
         "title": "Pulse Operational Workspace",
         "description": (
@@ -81,6 +96,7 @@ LOCAL_PREVIEW_SLUGS = {
 CONCEPT_COVER_SLUGS = {
     "fare-card-batch-integrity-investigation",
     "fare-system-transaction-fraud-detection-metro-santo-domingo",
+    "automatic-fare-equipment-reliability",
 }
 
 

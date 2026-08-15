@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-labelledby="title desc">
+  <title id="title">Conceptual automatic fare equipment reliability illustration</title>
+  <desc id="desc">A fare card passes through dispensing rollers while a receipt passes a cutter and sensor, with contamination particles and preventive-maintenance controls highlighted.</desc>
+  <style>
+    .bg{fill:#edf3f8}.panel{fill:#fff;stroke:#cbd8e4;stroke-width:2}.ink{fill:#18324c}.muted{fill:#61778c}.blue{fill:#416d96}.accent{fill:#b54b50}.line{fill:none;stroke:#416d96;stroke-width:5;stroke-linecap:round;stroke-linejoin:round}.soft{fill:none;stroke:#9db3c7;stroke-width:3;stroke-linecap:round}.accent-line{fill:none;stroke:#b54b50;stroke-width:5;stroke-linecap:round}.label{font:600 19px Inter,Arial,sans-serif;letter-spacing:2px}.value{font:700 24px Inter,Arial,sans-serif}.small{font:600 16px Inter,Arial,sans-serif}.tiny{font:700 13px Inter,Arial,sans-serif;letter-spacing:1.4px}
+    @media (prefers-color-scheme:dark){.bg{fill:#101923}.panel{fill:#172534;stroke:#35506a}.ink{fill:#edf4fa}.muted{fill:#a9bdcf}.blue{fill:#72a5d0}.accent{fill:#f08b8f}.line{stroke:#72a5d0}.soft{stroke:#4f6a82}.accent-line{stroke:#f08b8f}}
+  </style>
+  <rect class="bg" width="1200" height="675"/>
+  <circle cx="1070" cy="80" r="132" fill="none" stroke="#7fa0bc" stroke-width="2" opacity=".22"/>
+  <circle cx="1070" cy="80" r="82" fill="none" stroke="#7fa0bc" stroke-width="2" opacity=".22"/>
+  <text class="label muted" x="70" y="80">FIELD RELIABILITY</text>
+
+  <g transform="translate(70 118)">
+    <rect class="panel" width="500" height="376" rx="28"/>
+    <text class="tiny muted" x="30" y="42">CARD DISPENSER</text>
+    <rect x="46" y="88" width="184" height="116" rx="16" fill="#416d96" opacity=".13"/>
+    <rect x="67" y="109" width="142" height="74" rx="9" fill="none" stroke="#416d96" stroke-width="3"/>
+    <text class="small ink" x="91" y="153">FARE CARD</text>
+    <circle cx="293" cy="126" r="38" fill="#416d96" opacity=".16"/><circle cx="293" cy="126" r="20" fill="none" stroke="#416d96" stroke-width="5"/>
+    <circle cx="293" cy="198" r="38" fill="#416d96" opacity=".16"/><circle cx="293" cy="198" r="20" fill="none" stroke="#416d96" stroke-width="5"/>
+    <path class="line" d="M230 146h36M320 162h115"/>
+    <path class="ink" d="m425 149 18 13-18 13z"/>
+    <g class="accent">
+      <circle cx="253" cy="94" r="6"/><circle cx="337" cy="104" r="5"/><circle cx="344" cy="145" r="7"/><circle cx="250" cy="219" r="5"/><circle cx="329" cy="235" r="6"/><circle cx="358" cy="183" r="4"/>
+    </g>
+    <path class="accent-line" d="M245 267c45-25 95-25 138 0" stroke-dasharray="8 10"/>
+    <text class="tiny accent" x="225" y="303">DEBRIS / INK BUILDUP</text>
+    <text class="value ink" x="30" y="348">Roller feed path</text>
+  </g>
+
+  <g transform="translate(630 118)">
+    <rect class="panel" width="500" height="376" rx="28"/>
+    <text class="tiny muted" x="30" y="42">RECEIPT PRINTER</text>
+    <circle cx="107" cy="137" r="58" fill="#416d96" opacity=".14"/>
+    <circle cx="107" cy="137" r="24" fill="none" stroke="#416d96" stroke-width="5"/>
+    <path class="line" d="M107 79c66 7 64 77 125 83h42"/>
+    <path class="ink" d="m264 149 18 13-18 13z"/>
+    <path class="soft" d="M287 107l30 55-30 55M332 107l-30 55 30 55"/>
+    <text class="tiny muted" x="273" y="242">CUTTER</text>
+    <circle cx="393" cy="162" r="33" fill="#b54b50" opacity=".12"/>
+    <circle cx="393" cy="162" r="14" fill="none" stroke="#b54b50" stroke-width="5"/>
+    <path class="line" d="M332 162h28M426 162h38"/>
+    <path class="ink" d="m454 149 18 13-18 13z"/>
+    <g class="accent">
+      <circle cx="348" cy="116" r="6"/><circle cx="365" cy="133" r="4"/><circle cx="423" cy="116" r="5"/><circle cx="437" cy="143" r="7"/><circle cx="353" cy="205" r="5"/><circle cx="420" cy="215" r="6"/>
+    </g>
+    <text class="tiny accent" x="327" y="276">PAPER PARTICLES</text>
+    <text class="value ink" x="30" y="348">Cutter + sensor path</text>
+  </g>
+
+  <g transform="translate(198 548)">
+    <rect width="804" height="78" rx="20" fill="#416d96" opacity=".12"/>
+    <text class="tiny muted" x="28" y="31">PREVENTIVE CONTROL</text>
+    <text class="small ink" x="28" y="57">INSPECT</text>
+    <path class="line" d="M150 49h74"/><path class="ink" d="m214 36 17 13-17 13z"/>
+    <text class="small ink" x="252" y="57">CLEAN</text>
+    <path class="line" d="M343 49h74"/><path class="ink" d="m407 36 17 13-17 13z"/>
+    <text class="small ink" x="446" y="57">ADJUST PM</text>
+    <path class="line" d="M570 49h74"/><path class="ink" d="m634 36 17 13-17 13z"/>
+    <text class="small ink" x="674" y="57">PLAN SPARES</text>
+  </g>
+</svg>

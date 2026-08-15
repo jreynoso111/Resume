@@ -81,6 +81,24 @@
         "pages/projects/fare-card-batch-integrity-investigation.html — Results and Operational Value"
       ]
     },
+    "automatic-fare-equipment-reliability": {
+      "summary": "Analyzed recurring failures in automatic fare-card dispensers and receipt printers, identifying contamination from card and paper debris as a major reliability driver and adjusting preventive-maintenance and spare-parts strategies accordingly.",
+      "context": "Automatic disposable fare-card dispensers and receipt printers within Metro Santo Domingo's Automated Fare Collection system required preventive and corrective maintenance to remain available for passenger operations.",
+      "problem": "Dispensing rollers and printer sensors were becoming contaminated faster than expected, causing card-feed failures, printer faults, and recurring corrective maintenance.",
+      "approach": "Reviewed preventive and corrective maintenance behavior, traced each recurring fault from equipment operation through contamination and service failure, and compared actual field behavior with nominal component-life and maintenance expectations.",
+      "tools": ["Reliability Analysis", "Preventive Maintenance", "Failure Analysis", "Spare-Parts Planning"],
+      "solution": "Adjusted dispenser and printer cleaning and inspection tasks to the contamination mechanisms observed in service, and increased dispensing-roller stock to reflect actual replacement demand.",
+      "operational_use": "Maintenance work could address known contamination mechanisms before they developed into recurring equipment faults, while spare-parts planning reflected field demand.",
+      "impact_label": "Operational value",
+      "impact": "Adjusted preventive-maintenance practices and spare-parts planning to reflect actual operating conditions and observed component failure behavior.",
+      "evidence": ["Dispenser failure mechanism", "Printer failure mechanism", "Preventive-maintenance and stock adjustments"],
+      "source": [
+        "pages/projects/automatic-fare-equipment-reliability.html — Context",
+        "pages/projects/automatic-fare-equipment-reliability.html — Automatic Card Dispenser Failure Pattern",
+        "pages/projects/automatic-fare-equipment-reliability.html — Receipt Printer Failure Pattern",
+        "pages/projects/automatic-fare-equipment-reliability.html — Reliability Control Established"
+      ]
+    },
     "turnstile-deployment-management-line-2b-expansion": {
       "context": "Metro Santo Domingo Line 2B required new station access barriers across civil, electrical, software, supplier, and station-operations workstreams.",
       "problem": "The rollout had compressed night windows, strict station handover times, mixed barrier configurations, and cross-team dependencies while stations still needed to reopen each morning.",

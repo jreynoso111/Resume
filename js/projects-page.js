@@ -147,7 +147,7 @@
 
     async function loadCaseStudyMap(rootPrefix) {
       try {
-        const response = await fetch(`${rootPrefix || ""}data/project-case-studies.json?v=4`, {
+        const response = await fetch(`${rootPrefix || ""}data/project-case-studies.json?v=5`, {
           credentials: "same-origin",
         });
         if (!response.ok) return new Map();
@@ -190,6 +190,7 @@
       "fare-card-batch-integrity-investigation",
       "fare-system-transaction-fraud-detection-metro-santo-domingo",
       "turnstile-deployment-management-line-2b-expansion",
+      "automatic-fare-equipment-reliability",
     ];
 
     const LOCAL_PROJECTS = [
@@ -209,6 +210,15 @@
         image_url: "/assets/images/projects/previews/mifare-fare-card-integrity.svg",
         is_published: true,
         sort_order: 80,
+      },
+      {
+        id: "local-automatic-fare-equipment-reliability",
+        title: "Automatic Fare Equipment Reliability Improvement",
+        description: "Analyzed recurring failures in automatic fare-card dispensers and receipt printers, identifying contamination from card and paper debris as a major reliability driver and adjusting preventive-maintenance and spare-parts strategies accordingly.",
+        href: "projects/automatic-fare-equipment-reliability.html",
+        image_url: "/assets/images/projects/previews/fare-equipment-reliability.svg",
+        is_published: true,
+        sort_order: 55,
       },
       {
         id: "local-pulse-operational-workspace",
@@ -241,6 +251,7 @@
     const CONCEPT_COVER_SLUGS = new Set([
       "fare-card-batch-integrity-investigation",
       "fare-system-transaction-fraud-detection-metro-santo-domingo",
+      "automatic-fare-equipment-reliability",
     ]);
 
     function mergeLocalProjects(list) {

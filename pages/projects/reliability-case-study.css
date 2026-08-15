@@ -1,0 +1,88 @@
+.reliability-flow-label {
+  margin: 0 0 10px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.reliability-flow-label--control {
+  margin-top: 20px;
+}
+
+.case-process-flow--reliability-six,
+.case-process-flow--reliability-five {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.case-process-flow--reliability-six li:nth-child(3)::after,
+.case-process-flow--reliability-five li:nth-child(3)::after {
+  content: '↓';
+  top: calc(100% + 7px);
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.case-process-flow--reliability-six li:nth-child(4),
+.case-process-flow--reliability-five li:nth-child(4) {
+  grid-column: 3;
+  grid-row: 2;
+}
+
+.case-process-flow--reliability-six li:nth-child(5),
+.case-process-flow--reliability-five li:nth-child(5) {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+.case-process-flow--reliability-six li:nth-child(6) {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.case-process-flow--reliability-six li:nth-child(n + 4):nth-child(-n + 5)::after,
+.case-process-flow--reliability-five li:nth-child(4)::after {
+  content: '←';
+  right: calc(100% + 5px);
+  left: auto;
+}
+
+.reliability-failure-flow li {
+  border-left: 3px solid color-mix(in srgb, var(--accent-strong) 58%, var(--border-subtle));
+}
+
+.reliability-control-flow li {
+  border-top: 3px solid color-mix(in srgb, var(--accent-strong) 52%, var(--border-subtle));
+}
+
+@media (max-width: 720px) {
+  .case-process-flow--reliability-six,
+  .case-process-flow--reliability-five {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .case-process-flow--reliability-six li:nth-child(n),
+  .case-process-flow--reliability-five li:nth-child(n) {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .case-process-flow--reliability-six li::after,
+  .case-process-flow--reliability-five li::after,
+  .case-process-flow--reliability-six li:nth-child(3)::after,
+  .case-process-flow--reliability-five li:nth-child(3)::after,
+  .case-process-flow--reliability-six li:nth-child(n + 4):nth-child(-n + 5)::after,
+  .case-process-flow--reliability-five li:nth-child(4)::after {
+    content: '↓';
+    top: calc(100% + 7px);
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .case-process-flow--reliability-six li:last-child::after,
+  .case-process-flow--reliability-five li:last-child::after {
+    content: none;
+  }
+}
