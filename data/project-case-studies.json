@@ -47,18 +47,20 @@
       ]
     },
     "fare-system-transaction-fraud-detection-metro-santo-domingo": {
-      "context": "The Metro fare system depends on authorized recharge events before transit-card balances can be used for travel.",
-      "problem": "Certain cards showed unexpected balance increases without legitimate recharge transactions, indicating abnormal behavior and a potential payment-workflow vulnerability.",
-      "approach": "Built a Power BI transaction model and analyzed card lifecycle events, balances, stations, timestamps, recharge activity, validation events, and repeated anomaly patterns.",
-      "tools": ["Power BI", "Data modeling", "Transaction analysis", "Pattern detection"],
-      "solution": "Identified inconsistent event sequences and cards receiving balance increases without passing through authorized recharge points.",
-      "impact": "Identified three fraudulent users exploiting a payment-system vulnerability and documented findings for corrective action and security improvements.",
-      "evidence": ["Transaction model", "Behavior analysis", "Anomaly detection"],
+      "summary": "Investigated anomalous fare-card transaction behavior and identified three users exploiting a payment-system vulnerability that bypassed the normal recharge workflow.",
+      "context": "Fare cards were normally recharged through authorized ticket offices, machines, or approved recharge points before travel. Certain cards showed unexpected balance increases without corresponding legitimate recharge transactions.",
+      "problem": "Certain fare cards showed balance increases without corresponding legitimate recharge transactions, indicating abnormal system behavior or potential exploitation.",
+      "approach": "Correlated Card ID, timestamp, station, transaction type, balances before and after each transaction, recharge events, and fare validations to reconstruct expected versus actual card behavior and confirm repeated anomaly patterns.",
+      "tools": ["Transaction Analytics", "Fraud Investigation", "Anomaly Detection", "Fare Collection", "Operational Security", "Power BI"],
+      "solution": "Identified repeated card sequences in which balances increased without authorized recharge activity, then compared those patterns across stations and time windows.",
+      "impact_label": "Verified outcome",
+      "impact": "Identified three fraudulent users exploiting a payment-system vulnerability and documented the findings for corrective security action.",
+      "evidence": ["Transaction reconstruction", "Balance anomaly detection", "Repeat pattern confirmation"],
       "source": [
-        "pages/projects/fare-system-transaction-fraud-detection-metro-santo-domingo.html — Project Overview",
-        "pages/projects/fare-system-transaction-fraud-detection-metro-santo-domingo.html — Context",
-        "pages/projects/fare-system-transaction-fraud-detection-metro-santo-domingo.html — Analytical Approach",
-        "pages/projects/fare-system-transaction-fraud-detection-metro-santo-domingo.html — Outcome"
+        "pages/projects/fare-system-transaction-fraud-detection-metro-santo-domingo.html — Project Context",
+        "pages/projects/fare-system-transaction-fraud-detection-metro-santo-domingo.html — Investigation Approach",
+        "pages/projects/fare-system-transaction-fraud-detection-metro-santo-domingo.html — Investigation Signals",
+        "pages/projects/fare-system-transaction-fraud-detection-metro-santo-domingo.html — Verified Outcome"
       ]
     },
     "fare-card-batch-integrity-investigation": {

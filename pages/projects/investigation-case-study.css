@@ -1,10 +1,10 @@
-.fare-card-case .hero h1 {
+.investigation-case .hero h1 {
   white-space: normal;
   overflow: visible;
   text-overflow: clip;
 }
 
-.fare-card-case .project-impact-summary {
+.investigation-case .project-impact-summary {
   padding-block: 20px;
 }
 
@@ -54,19 +54,41 @@
   color: var(--text-muted);
 }
 
-.fare-card-case .project-overview .standard-text {
+.investigation-case .project-overview .standard-text {
   max-width: 820px;
   color: var(--text-main);
 }
 
-.fare-card-case .project-components .card {
+.investigation-case .project-components .card {
   position: relative;
   padding-top: 18px;
   border-top: 3px solid color-mix(in srgb, var(--accent-strong) 52%, var(--border-subtle));
 }
 
-.fare-card-case .project-components .card .standard-h3 {
+.investigation-case .project-components .card .standard-h3 {
   margin-top: 0;
+}
+
+.investigation-method-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.investigation-method-grid .card {
+  position: relative;
+  padding-top: 18px;
+  border-top: 3px solid color-mix(in srgb, var(--accent-strong) 52%, var(--border-subtle));
+}
+
+.investigation-method-grid .standard-h3 {
+  margin-top: 0;
+}
+
+.signal-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px 28px;
 }
 
 .process-map-heading {
@@ -102,8 +124,14 @@
 }
 
 .case-process-flow--reconciliation,
-.case-process-flow--incident {
+.case-process-flow--incident,
+.case-process-flow--behavior,
+.case-process-flow--fraud {
   grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.case-process-flow--three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .case-process-flow li {
@@ -172,6 +200,37 @@
   left: auto;
 }
 
+.case-process-flow--fraud li:nth-child(4)::after {
+  content: '↓';
+  top: calc(100% + 7px);
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.case-process-flow--fraud li:nth-child(5) {
+  grid-column: 4;
+}
+
+.case-process-flow--fraud li:nth-child(6) {
+  grid-column: 3;
+  grid-row: 2;
+}
+
+.case-process-flow--fraud li:nth-child(7) {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+.case-process-flow--fraud li:nth-child(n + 5):nth-child(-n + 6)::after {
+  content: '←';
+  right: calc(100% + 5px);
+  left: auto;
+}
+
+.process-map-lane--anomalous .case-process-flow li {
+  border-left: 3px solid color-mix(in srgb, var(--accent-strong) 58%, var(--border-subtle));
+}
+
 .case-process-flow li span {
   display: block;
   margin-bottom: 8px;
@@ -186,6 +245,29 @@
   font-size: var(--font-size-sm);
   line-height: 1.35;
   color: var(--text-main);
+}
+
+.outcome-highlight {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.75fr) minmax(0, 1.25fr);
+  gap: 28px;
+  align-items: start;
+  padding: 18px 0 2px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.outcome-highlight strong {
+  font-size: clamp(20px, 2.2vw, 28px);
+  line-height: 1.15;
+  color: var(--accent-strong);
+}
+
+.outcome-highlight .standard-text {
+  margin: 0;
+}
+
+.investigation-tags .impact-summary-title {
+  margin-bottom: 10px;
 }
 
 @media (max-width: 900px) {
@@ -207,11 +289,15 @@
   }
 
   .case-process-flow--reconciliation,
-  .case-process-flow--incident {
+  .case-process-flow--incident,
+  .case-process-flow--behavior,
+  .case-process-flow--three,
+  .case-process-flow--fraud {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .case-process-flow--incident li:nth-child(n) {
+  .case-process-flow--incident li:nth-child(n),
+  .case-process-flow--fraud li:nth-child(n) {
     grid-column: 1;
     grid-row: auto;
   }
@@ -222,7 +308,9 @@
 
   .case-process-flow li::after,
   .case-process-flow--incident li:nth-child(4)::after,
-  .case-process-flow--incident li:nth-child(n + 5):nth-child(-n + 7)::after {
+  .case-process-flow--incident li:nth-child(n + 5):nth-child(-n + 7)::after,
+  .case-process-flow--fraud li:nth-child(4)::after,
+  .case-process-flow--fraud li:nth-child(n + 5):nth-child(-n + 6)::after {
     content: '↓';
     top: calc(100% + 7px);
     right: auto;
@@ -234,6 +322,16 @@
   .case-process-flow--reconciliation li:nth-child(4)::after,
   .case-process-flow--incident li:nth-child(8)::after {
     content: none;
+  }
+
+  .investigation-method-grid,
+  .signal-list,
+  .outcome-highlight {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .outcome-highlight {
+    gap: 12px;
   }
 }
 

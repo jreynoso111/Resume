@@ -147,7 +147,7 @@
 
     async function loadCaseStudyMap(rootPrefix) {
       try {
-        const response = await fetch(`${rootPrefix || ""}data/project-case-studies.json?v=3`, {
+        const response = await fetch(`${rootPrefix || ""}data/project-case-studies.json?v=4`, {
           credentials: "same-origin",
         });
         if (!response.ok) return new Map();
@@ -193,6 +193,13 @@
     ];
 
     const LOCAL_PROJECTS = [
+      {
+        title: "Fare System Transaction Fraud Investigation",
+        description: "Investigated anomalous fare-card transaction behavior and identified three users exploiting a payment-system vulnerability that bypassed the normal recharge workflow.",
+        href: "projects/fare-system-transaction-fraud-detection-metro-santo-domingo.html",
+        is_published: true,
+        sort_order: 42,
+      },
       {
         id: "local-fare-card-batch-integrity-investigation",
         title: "MIFARE Fare Card Batch Integrity Investigation",

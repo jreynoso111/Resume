@@ -32,6 +32,17 @@ FEATURED_PROJECT_SLUGS = (
 
 LOCAL_PROJECTS = [
     {
+        "title": "Fare System Transaction Fraud Investigation",
+        "description": (
+            "Investigated anomalous fare-card transaction behavior and identified three "
+            "users exploiting a payment-system vulnerability that bypassed the normal "
+            "recharge workflow."
+        ),
+        "href": "projects/fare-system-transaction-fraud-detection-metro-santo-domingo.html",
+        "is_published": True,
+        "sort_order": 42,
+    },
+    {
         "id": "local-fare-card-batch-integrity-investigation",
         "title": "MIFARE Fare Card Batch Integrity Investigation",
         "description": (

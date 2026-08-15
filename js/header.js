@@ -8,6 +8,11 @@
     ];
     const fallbackProjectLinks = [
         {
+            href: 'fare-system-transaction-fraud-detection-metro-santo-domingo.html',
+            label: 'Fare System Transaction Fraud Investigation',
+            key: 'fare-system-transaction-fraud-detection-metro-santo-domingo'
+        },
+        {
             href: 'fare-card-batch-integrity-investigation.html',
             label: 'MIFARE Fare Card Batch Integrity Investigation',
             key: 'fare-card-batch-integrity-investigation'

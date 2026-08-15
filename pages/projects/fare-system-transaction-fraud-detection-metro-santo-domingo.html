@@ -3,8 +3,8 @@
 
 <head>
   <meta charset="UTF-8" />
-  <title>Fare System Transaction Fraud Detection - Metro Santo Domingo | Juan R. Reynoso</title>
-  <meta name="description" content="Category: Data Analytics / Fraud Detection / Transit Fare Systems">
+  <title>Fare System Transaction Fraud Investigation | Juan R. Reynoso</title>
+  <meta name="description" content="Fare collection fraud investigation using transaction-pattern analysis to identify anomalous card behavior and three users exploiting a payment-system vulnerability in Metro Santo Domingo.">
   <link rel="canonical" href="https://jreynoso.net/pages/projects/fare-system-transaction-fraud-detection-metro-santo-domingo.html">
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; img-src 'self' data: blob: https://xxrllcpoklgavakmzhnb.supabase.co; media-src 'self' data: blob: https://xxrllcpoklgavakmzhnb.supabase.co; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; connect-src 'self' https://xxrllcpoklgavakmzhnb.supabase.co; form-action 'self'">
@@ -12,9 +12,10 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="../../assets/css/styles.css?v=53" />
   <link rel="stylesheet" href="./project-detail-layout.css?v=11" />
+  <link rel="stylesheet" href="./investigation-case-study.css?v=1" />
 </head>
 
-<body>
+<body class="investigation-case fraud-investigation-case">
   <header id="site-header" data-variant="inner-nested" data-active="projects"></header>
 
   <div class="page-shell">
@@ -22,123 +23,149 @@
       data-active-project="fare-system-transaction-fraud-detection-metro-santo-domingo"></aside>
 
     <main class="page-main" id="top">
-      <section class="hero">
-        <h1>Fare System Transaction Fraud Detection - Metro Santo Domingo</h1>
-        <p>Category: Data Analytics / Fraud Detection / Transit Fare Systems</p>
+      <section class="hero"
+        data-seo-description="Fare collection fraud investigation using transaction-pattern analysis to identify anomalous card behavior and three users exploiting a payment-system vulnerability in Metro Santo Domingo.">
+        <h1>Fare System Transaction Fraud Investigation</h1>
+        <p>Investigated abnormal fare-card transaction behavior and identified three users exploiting a payment-system
+          vulnerability that allowed balance increases without the normal recharge workflow.</p>
       </section>
 
-      <section class="project-media-showcase">
-        <div class="project-media-main">
-          <div class="img-placeholder" data-label="Fare Fraud Investigation"
-            style="background-image:url('../../assets/images/projects/project-placeholder.svg');"></div>
-        </div>
+      <section class="project-impact-summary" aria-labelledby="fraud-impact-summary-title">
+        <h2 id="fraud-impact-summary-title" class="impact-summary-title">Verified outcomes</h2>
+        <dl class="impact-summary-list">
+          <div>
+            <dt>3 Users</dt>
+            <dd>Fraudulent activity identified</dd>
+          </div>
+          <div>
+            <dt>Anomaly Detection</dt>
+            <dd>Abnormal balance behavior isolated</dd>
+          </div>
+          <div>
+            <dt>Payment Vulnerability</dt>
+            <dd>Unauthorized recharge workflow identified</dd>
+          </div>
+          <div>
+            <dt>Corrective Action</dt>
+            <dd>Findings documented for security response</dd>
+          </div>
+        </dl>
       </section>
 
       <section class="project-section project-overview">
-        <h2 class="standard-h2">Project Overview</h2>
-        <div class="grid-2">
-          <p class="standard-text">I conducted an internal analytical investigation to detect fraudulent activity within
-            the Metro Santo Domingo fare collection system. The project objective was to identify irregular transaction
-            behavior indicating that certain users had found a way to manipulate the payment medium. Using Power BI, I
-            analyzed fare transaction records to detect abnormal card behavior. The investigation led to the
-            identification of three users performing fraudulent activities that allowed them to bypass the normal
-            transit card recharge process.</p>
-          <div class="img-placeholder" data-label="Analytical Investigation Flow"
-            style="background-image:url('../../assets/images/projects/project-placeholder.svg');"></div>
-        </div>
+        <h2 class="standard-h2">Project Context</h2>
+        <p class="standard-text">The fare system used cards that were normally recharged through authorized ticket
+          offices, machines, or other approved recharge points before travel. Certain cards began showing unexpected
+          balance increases without corresponding legitimate recharge transactions. The investigation examined whether
+          this behavior reflected data errors, transaction-processing issues, card behavior, or misuse of the payment
+          system.</p>
       </section>
 
-      <section class="project-section project-features">
-        <h2 class="standard-h2">Context</h2>
-        <ul class="standard-list">
-          <li>The Metro operates a card-based fare payment model where users must recharge at authorized ticket offices
-            or machines before travel.</li>
-          <li>Certain cards appeared with unexpected balance increases without a legitimate recharge transaction in the
-            system.</li>
-          <li>This behavior indicated a potential vulnerability in the payment medium or in the fare workflow.</li>
-        </ul>
-      </section>
-
-      <section class="project-section project-components">
-        <h2 class="standard-h2">Analytical Approach</h2>
-        <div class="grid-3">
+      <section class="project-section project-components investigation-approach">
+        <h2 class="standard-h2">Investigation Approach</h2>
+        <div class="investigation-method-grid">
           <div class="card">
-            <div class="img-placeholder" data-label="Transaction Model"
-              style="background-image:url('../../assets/images/projects/project-placeholder.svg');"></div>
-            <h3 class="standard-h3">Power BI Transaction Modeling</h3>
-            <p class="standard-text">Built a transaction model in Power BI to evaluate card lifecycle behavior and
-              detect inconsistencies between expected and observed event sequences.</p>
+            <h3 class="standard-h3">Transaction Reconstruction</h3>
+            <p class="standard-text">Correlated Card ID, timestamp, station, transaction type, balances before and after
+              each transaction, recharge events, and fare validations to reconstruct expected versus actual card
+              behavior.</p>
           </div>
           <div class="card">
-            <div class="img-placeholder" data-label="Behavior Analysis"
-              style="background-image:url('../../assets/images/projects/project-placeholder.svg');"></div>
+            <h3 class="standard-h3">Balance Anomaly Detection</h3>
+            <p class="standard-text">Isolated balance increases that had no corresponding legitimate recharge event or
+              authorized recharge activity.</p>
+          </div>
+          <div class="card">
             <h3 class="standard-h3">Behavioral Pattern Analysis</h3>
-            <p class="standard-text">Analyzed relationships between Card ID, timestamp, station, transaction type,
-              balance before and after transaction, recharge events, and fare validation events.</p>
+            <p class="standard-text">Compared anomalous activity across stations and time periods to determine whether
+              the behavior followed a consistent pattern.</p>
           </div>
           <div class="card">
-            <div class="img-placeholder" data-label="Anomaly Detection"
-              style="background-image:url('../../assets/images/projects/project-placeholder.svg');"></div>
-            <h3 class="standard-h3">Critical Pattern Detection</h3>
-            <p class="standard-text">Identified events where card balances increased without passing through authorized
-              recharge points such as ticket offices or approved recharge terminals.</p>
+            <h3 class="standard-h3">Repeat Pattern Confirmation</h3>
+            <p class="standard-text">Confirmed repeated anomalous sequences across multiple stations and time windows,
+              distinguishing the behavior from isolated data errors.</p>
           </div>
         </div>
       </section>
 
-      <section class="project-section project-features">
-        <h2 class="standard-h2">Investigation Logic</h2>
-        <ul class="standard-list">
+      <section class="project-section project-features investigation-signals">
+        <h2 class="standard-h2">Investigation Signals</h2>
+        <ul class="standard-list signal-list">
           <li>Cards receiving balance increases without recharge transactions.</li>
-          <li>Cards showing recharge amounts not associated with ticket office activity.</li>
+          <li>Recharge amounts not associated with authorized recharge activity.</li>
           <li>Transaction sequences inconsistent with normal passenger behavior.</li>
           <li>Repeated anomalous patterns across multiple stations and time windows.</li>
         </ul>
       </section>
 
-      <section class="project-section project-impact">
-        <h2 class="standard-h2">Outcome</h2>
-        <p class="standard-text">The analysis successfully identified three fraudulent users exploiting a vulnerability
-          in the payment system. Findings were documented and delivered to the appropriate internal teams to support
-          corrective actions and security improvements within the fare system. This work demonstrated the importance of
-          analytics in fraud detection and operational security for transit infrastructure.</p>
-      </section>
-
-      <section class="project-section project-features">
-        <h2 class="standard-h2">Tools Used</h2>
-        <ul class="standard-list">
-          <li>Power BI</li>
-          <li>Data modeling</li>
-          <li>Transaction analysis</li>
-          <li>Pattern detection</li>
-          <li>Transit fare system analytics</li>
-        </ul>
-      </section>
-
-      <section class="project-section project-impact">
-        <h2 class="standard-h2">Professional Impact</h2>
-        <p class="standard-text">This project strengthened internal monitoring capabilities and highlighted how
-          advanced analytics can protect critical transportation infrastructure from financial and operational
-          vulnerabilities.</p>
-      </section>
-
-      <section class="project-screenshots">
-        <h2 class="standard-h2">Sample Pictures</h2>
-        <div class="screenshot-carousel" data-screenshot-carousel data-autoplay-ms="4500" tabindex="0">
-          <button class="screenshot-carousel__control prev" type="button" aria-label="Previous screenshot">‹</button>
-          <div class="screenshot-carousel__viewport">
-            <div class="screenshot-carousel__track">
-              <div class="screenshot-carousel__slide">
-                <div class="img-placeholder" data-label="Transaction Pattern Dashboard"
-                  style="height:320px;background-image:url('../../assets/images/projects/project-placeholder.svg');"></div>
-              </div>
-              <div class="screenshot-carousel__slide">
-                <div class="img-placeholder" data-label="Fraud Signal Summary"
-                  style="height:320px;background-image:url('../../assets/images/projects/project-placeholder.svg');"></div>
-              </div>
-            </div>
+      <section class="project-section case-process-map" aria-labelledby="fraud-process-map-title">
+        <div class="process-map-heading">
+          <div>
+            <p class="process-map-eyebrow">Accessible transaction diagram</p>
+            <h2 id="fraud-process-map-title" class="standard-h2">Transaction Pattern to Security Finding</h2>
           </div>
-          <button class="screenshot-carousel__control next" type="button" aria-label="Next screenshot">›</button>
+          <p class="standard-text">Expected recharge and fare-use sequences were compared with anomalous card behavior,
+            then traced from individual transactions to repeated user-level patterns.</p>
+        </div>
+
+        <div class="process-map-lane">
+          <h3 class="standard-h3">Normal Behavior</h3>
+          <ol class="case-process-flow case-process-flow--behavior">
+            <li><span>01</span><strong>Authorized recharge</strong></li>
+            <li><span>02</span><strong>Balance increase</strong></li>
+            <li><span>03</span><strong>Fare validation</strong></li>
+            <li><span>04</span><strong>Balance decrease</strong></li>
+          </ol>
+        </div>
+
+        <div class="process-map-lane process-map-lane--anomalous">
+          <h3 class="standard-h3">Anomalous Behavior</h3>
+          <ol class="case-process-flow case-process-flow--three case-process-flow--anomalous">
+            <li><span>01</span><strong>No authorized recharge</strong></li>
+            <li><span>02</span><strong>Unexplained balance increase</strong></li>
+            <li><span>03</span><strong>Fare usage</strong></li>
+          </ol>
+        </div>
+
+        <div class="process-map-lane">
+          <h3 class="standard-h3">Investigation Sequence</h3>
+          <ol class="case-process-flow case-process-flow--fraud">
+            <li><span>01</span><strong>Anomalous transaction</strong></li>
+            <li><span>02</span><strong>Card-level review</strong></li>
+            <li><span>03</span><strong>Sequence reconstruction</strong></li>
+            <li><span>04</span><strong>Cross-station and time comparison</strong></li>
+            <li><span>05</span><strong>Repeated pattern</strong></li>
+            <li><span>06</span><strong>User identification</strong></li>
+            <li><span>07</span><strong>Security findings</strong></li>
+          </ol>
+        </div>
+      </section>
+
+      <section class="project-section project-impact verified-outcome">
+        <h2 class="standard-h2">Verified Outcome</h2>
+        <div class="outcome-highlight">
+          <strong>Three fraudulent users identified</strong>
+          <p class="standard-text">The investigation identified three users repeatedly exhibiting the anomalous
+            transaction pattern and exploiting a vulnerability in the payment system.</p>
+        </div>
+      </section>
+
+      <section class="project-section project-impact">
+        <h2 class="standard-h2">Operational Change</h2>
+        <p class="standard-text">The findings were documented and delivered to the appropriate internal teams to
+          support corrective action and security improvements within the fare system. No additional monitoring or
+          remediation outcome is claimed beyond that documented handoff.</p>
+      </section>
+
+      <section class="project-section investigation-tags" aria-labelledby="investigation-tags-title">
+        <h2 id="investigation-tags-title" class="impact-summary-title">Investigation domains</h2>
+        <div class="case-study-tools" aria-label="Investigation domains and implementation tools">
+          <span>Transaction Analytics</span>
+          <span>Fraud Investigation</span>
+          <span>Anomaly Detection</span>
+          <span>Fare Collection</span>
+          <span>Operational Security</span>
+          <span>Power BI</span>
         </div>
       </section>
     </main>
@@ -158,11 +185,8 @@
   </footer>
 
   <script src="../../js/admin-bootstrap.js?v=7"></script>
-  <script src="../../js/header.js?v=19"></script>
+  <script src="../../js/header.js?v=20"></script>
   <script src="../../js/footer.js?v=26"></script>
-  <script src="../../js/project-case-study.js?v=3"></script>
-  <script src="../../js/project-image-lightbox.js?v=4"></script>
-  <script src="../../js/project-screenshots-carousel.js?v=11"></script>
   <script src="../../js/site-shell.js?v=7"></script>
 </body>
 
