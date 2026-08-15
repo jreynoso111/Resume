@@ -23,14 +23,21 @@ STATIC_START = "<!-- PROJECTS_STATIC_START -->"
 STATIC_END = "<!-- PROJECTS_STATIC_END -->"
 GENERIC_PROJECT_IMAGE = "../assets/images/projects/project-placeholder.svg"
 
+FEATURED_PROJECT_SLUGS = (
+    "techloc-fleet-service-control",
+    "fare-card-batch-integrity-investigation",
+    "fare-system-transaction-fraud-detection-metro-santo-domingo",
+    "turnstile-deployment-management-line-2b-expansion",
+)
+
 LOCAL_PROJECTS = [
     {
         "id": "local-fare-card-batch-integrity-investigation",
-        "title": "Fare Card Batch Integrity Investigation",
+        "title": "MIFARE Fare Card Batch Integrity Investigation",
         "description": (
-            "Investigated a systematic card-identifier mapping failure affecting "
-            "approximately 125,000 MIFARE fare cards, supporting warranty replacement "
-            "and a new incoming-batch validation process."
+            "Identified a systematic mapping mismatch affecting approximately 125,000 "
+            "MIFARE fare cards, isolated the affected inventory, supported its warranty "
+            "replacement, and introduced a validation process that prevented recurrence."
         ),
         "href": "projects/fare-card-batch-integrity-investigation.html",
         "image_url": None,
@@ -151,10 +158,20 @@ def normalize_project_href(raw_href: object) -> str:
 
 def merge_projects(remote_projects: list[dict], case_studies: dict[str, dict]) -> list[dict]:
     merged = [dict(item) for item in remote_projects]
-    slugs = {href_to_slug(item.get("href")) for item in merged}
     for local_project in LOCAL_PROJECTS:
-        if href_to_slug(local_project["href"]) not in slugs:
+        local_slug = href_to_slug(local_project["href"])
+        existing_index = next(
+            (
+                index
+                for index, item in enumerate(merged)
+                if href_to_slug(item.get("href")) == local_slug
+            ),
+            None,
+        )
+        if existing_index is None:
             merged.append(dict(local_project))
+        else:
+            merged[existing_index].update(local_project)
 
     normalized = []
     for project in merged:
@@ -169,6 +186,12 @@ def merge_projects(remote_projects: list[dict], case_studies: dict[str, dict]) -
             if str(case_study.get("summary") or "").strip():
                 project["description"] = str(case_study["summary"]).strip()
         normalized.append(project)
+    featured_rank = {slug: index for index, slug in enumerate(FEATURED_PROJECT_SLUGS)}
+    normalized.sort(
+        key=lambda project: featured_rank.get(
+            href_to_slug(project.get("href")), len(FEATURED_PROJECT_SLUGS)
+        )
+    )
     return normalized
 
 
@@ -327,7 +350,16 @@ def update_detail_metadata(path: Path, source: str) -> str:
     )
     if not hero_match:
         raise RuntimeError(f"Could not find a hero summary in {path.relative_to(ROOT)}")
-    description = text_content(hero_match.group(1))
+    seo_description_match = re.search(
+        r'<section\s+class="hero"[^>]*\sdata-seo-description="([^"]+)"',
+        source,
+        re.IGNORECASE,
+    )
+    description = (
+        html.unescape(seo_description_match.group(1)).strip()
+        if seo_description_match
+        else text_content(hero_match.group(1))
+    )
     canonical = f"{SITE_ORIGIN}/pages/projects/{path.name}"
     return upsert_head_metadata(source, description, canonical)
 

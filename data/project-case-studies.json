@@ -62,8 +62,8 @@
       ]
     },
     "fare-card-batch-integrity-investigation": {
-      "summary": "Investigated a systematic card-identifier mapping failure affecting approximately 125,000 MIFARE fare cards, supporting warranty replacement and a new incoming-batch validation process.",
-      "context": "Technical and operational control of Metro Santo Domingo's Automated Fare Collection system included system maintenance, security, technical auditing, inventory control, fare-card supplies, and incident investigation.",
+      "summary": "Identified a systematic mapping mismatch affecting approximately 125,000 MIFARE fare cards, isolated the affected inventory, supported its warranty replacement, and introduced a validation process that prevented recurrence.",
+      "context": "Responsibilities within Metro Santo Domingo's Automated Fare Collection system included system maintenance, system security, technical auditing, maintenance projects, inventory and stock control, fare-card supplies, and operational incident investigation.",
       "problem": "Manufacturer-supplied identifier relationship data became misaligned with physical cards, causing backend information and administrative actions to affect incorrect cards.",
       "approach": "Analyzed card and system records, physically read sample cards, and compared those identifiers with the manufacturer-provided relationship file and the records loaded into the fare-collection backend.",
       "tools": ["Fare Collection", "Root-Cause Analysis", "Quality Control", "Data Validation"],

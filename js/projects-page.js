@@ -147,7 +147,7 @@
 
     async function loadCaseStudyMap(rootPrefix) {
       try {
-        const response = await fetch(`${rootPrefix || ""}data/project-case-studies.json?v=2`, {
+        const response = await fetch(`${rootPrefix || ""}data/project-case-studies.json?v=3`, {
           credentials: "same-origin",
         });
         if (!response.ok) return new Map();
@@ -185,11 +185,18 @@
     const grid = document.getElementById("projects-grid");
     if (!grid) return;
 
+    const FEATURED_PROJECT_SLUGS = [
+      "techloc-fleet-service-control",
+      "fare-card-batch-integrity-investigation",
+      "fare-system-transaction-fraud-detection-metro-santo-domingo",
+      "turnstile-deployment-management-line-2b-expansion",
+    ];
+
     const LOCAL_PROJECTS = [
       {
         id: "local-fare-card-batch-integrity-investigation",
-        title: "Fare Card Batch Integrity Investigation",
-        description: "Investigated a systematic card-identifier mapping failure affecting approximately 125,000 MIFARE fare cards, supporting warranty replacement and a new incoming-batch validation process.",
+        title: "MIFARE Fare Card Batch Integrity Investigation",
+        description: "Identified a systematic mapping mismatch affecting approximately 125,000 MIFARE fare cards, isolated the affected inventory, supported its warranty replacement, and introduced a validation process that prevented recurrence.",
         href: "projects/fare-card-batch-integrity-investigation.html",
         image_url: null,
         is_published: true,
@@ -225,12 +232,25 @@
 
     function mergeLocalProjects(list) {
       const merged = Array.isArray(list) ? list.slice() : [];
-      const slugs = new Set(merged.map((project) => hrefToSlug(project && project.href)));
       LOCAL_PROJECTS.forEach((project) => {
         const slug = hrefToSlug(project.href);
-        if (!slugs.has(slug)) merged.push(project);
+        const existingIndex = merged.findIndex((item) => hrefToSlug(item && item.href) === slug);
+        if (existingIndex === -1) merged.push(project);
+        else merged[existingIndex] = { ...merged[existingIndex], ...project };
       });
-      return merged;
+      const featuredRank = new Map(FEATURED_PROJECT_SLUGS.map((slug, index) => [slug, index]));
+      return merged
+        .map((project, index) => ({ project, index }))
+        .sort((a, b) => {
+          const rankA = featuredRank.has(hrefToSlug(a.project && a.project.href))
+            ? featuredRank.get(hrefToSlug(a.project && a.project.href))
+            : FEATURED_PROJECT_SLUGS.length;
+          const rankB = featuredRank.has(hrefToSlug(b.project && b.project.href))
+            ? featuredRank.get(hrefToSlug(b.project && b.project.href))
+            : FEATURED_PROJECT_SLUGS.length;
+          return rankA - rankB || a.index - b.index;
+        })
+        .map((entry) => entry.project);
     }
 
     const fallbackProjects = mergeLocalProjects(readEmbeddedProjects());

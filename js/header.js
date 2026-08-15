@@ -1,9 +1,15 @@
 (function () {
     const SUPABASE_VENDOR_PATH = 'assets/vendor/supabase/supabase-js.v2.js';
+    const featuredProjectKeys = [
+        'techloc-fleet-service-control',
+        'fare-card-batch-integrity-investigation',
+        'fare-system-transaction-fraud-detection-metro-santo-domingo',
+        'turnstile-deployment-management-line-2b-expansion'
+    ];
     const fallbackProjectLinks = [
         {
             href: 'fare-card-batch-integrity-investigation.html',
-            label: 'Fare Card Batch Integrity Investigation',
+            label: 'MIFARE Fare Card Batch Integrity Investigation',
             key: 'fare-card-batch-integrity-investigation'
         },
         {
@@ -168,9 +174,19 @@
     function mergeLocalProjectLinks(items) {
         const merged = Array.isArray(items) ? items.slice() : [];
         for (const localItem of fallbackProjectLinks) {
-            if (!merged.some((item) => item.key === localItem.key)) merged.push(localItem);
+            const existingIndex = merged.findIndex((item) => item.key === localItem.key);
+            if (existingIndex === -1) merged.push(localItem);
+            else merged[existingIndex] = { ...merged[existingIndex], ...localItem };
         }
-        return merged;
+        const featuredRank = new Map(featuredProjectKeys.map((key, index) => [key, index]));
+        return merged
+            .map((item, index) => ({ item, index }))
+            .sort((a, b) => {
+                const rankA = featuredRank.has(a.item.key) ? featuredRank.get(a.item.key) : featuredProjectKeys.length;
+                const rankB = featuredRank.has(b.item.key) ? featuredRank.get(b.item.key) : featuredProjectKeys.length;
+                return rankA - rankB || a.index - b.index;
+            })
+            .map((entry) => entry.item);
     }
 
     async function ensureProjectLinks(rootPrefix) {

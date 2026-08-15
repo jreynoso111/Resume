@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8" />
-  <title>Fare Card Batch Integrity Investigation | Juan R. Reynoso</title>
+  <title>MIFARE Fare Card Batch Integrity Investigation | Juan R. Reynoso</title>
   <meta name="description" content="A real-world fare collection case study involving a card identifier mapping error affecting approximately 125,000 MIFARE cards, root-cause analysis, warranty recovery, and implementation of a preventive batch-validation process.">
   <link rel="canonical" href="https://jreynoso.net/pages/projects/fare-card-batch-integrity-investigation.html">
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -12,9 +12,10 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="../../assets/css/styles.css?v=53" />
   <link rel="stylesheet" href="./project-detail-layout.css?v=11" />
+  <link rel="stylesheet" href="./fare-card-batch-integrity.css?v=1" />
 </head>
 
-<body>
+<body class="fare-card-case">
   <header id="site-header" data-variant="inner-nested" data-active="projects"></header>
 
   <div class="page-shell">
@@ -22,30 +23,41 @@
       data-active-project="fare-card-batch-integrity-investigation"></aside>
 
     <main class="page-main" id="top">
-      <section class="hero">
-        <h1>Fare Card Batch Integrity Investigation</h1>
-        <p>A real-world fare collection case study involving a card identifier mapping error affecting approximately
-          125,000 MIFARE cards, root-cause analysis, warranty recovery, and implementation of a preventive
-          batch-validation process.</p>
+      <section class="hero"
+        data-seo-description="A real-world fare collection case study involving a card identifier mapping error affecting approximately 125,000 MIFARE cards, root-cause analysis, warranty recovery, and implementation of a preventive batch-validation process.">
+        <h1>MIFARE Fare Card Batch Integrity Investigation</h1>
+        <p>Identified a systematic mapping mismatch affecting approximately 125,000 MIFARE fare cards, isolated the
+          affected inventory, supported its warranty replacement, and introduced a validation process that prevented
+          recurrence.</p>
       </section>
 
-      <section class="project-media-showcase">
-        <div class="project-media-main">
-          <div class="img-placeholder" data-label="Fare Card Batch Integrity Investigation"
-            style="background-image:url('../../assets/images/projects/project-placeholder.svg');"></div>
-        </div>
+      <section class="project-impact-summary" aria-labelledby="impact-summary-title">
+        <h2 id="impact-summary-title" class="impact-summary-title">Verified impact</h2>
+        <dl class="impact-summary-list">
+          <div>
+            <dt>125,000</dt>
+            <dd>Affected fare cards identified</dd>
+          </div>
+          <div>
+            <dt>Warranty</dt>
+            <dd>Affected inventory replaced</dd>
+          </div>
+          <div>
+            <dt>Validation Control</dt>
+            <dd>Incoming-batch verification introduced</dd>
+          </div>
+          <div>
+            <dt>No Recurrence</dt>
+            <dd>Same issue did not recur after implementation</dd>
+          </div>
+        </dl>
       </section>
 
       <section class="project-section project-overview">
         <h2 class="standard-h2">Context and Responsibility</h2>
-        <div class="grid-2">
-          <p class="standard-text">At Metro Santo Domingo, I held hands-on technical and operational responsibility
-            for controls within the Automated Fare Collection system. The work covered system maintenance and
-            security, technical auditing, maintenance projects, inventory and stock control, fare-card supplies, and
-            investigation of operational incidents.</p>
-          <div class="img-placeholder" data-label="Automated Fare Collection Control"
-            style="background-image:url('../../assets/images/projects/project-placeholder.svg');"></div>
-        </div>
+        <p class="standard-text">My responsibilities within Metro Santo Domingo's Automated Fare Collection system
+          included system maintenance, system security, technical auditing, maintenance projects, inventory and stock
+          control, fare-card supplies, and investigation of operational incidents.</p>
       </section>
 
       <section class="project-section project-features">
@@ -65,22 +77,16 @@
         <h2 class="standard-h2">Investigation</h2>
         <div class="grid-3">
           <div class="card">
-            <div class="img-placeholder" data-label="System Record Analysis"
-              style="background-image:url('../../assets/images/projects/project-placeholder.svg');"></div>
             <h3 class="standard-h3">System Data Review</h3>
             <p class="standard-text">Analyzed card, transaction, and system information to determine where physical
               cards and backend records diverged.</p>
           </div>
           <div class="card">
-            <div class="img-placeholder" data-label="Physical Card Reading"
-              style="background-image:url('../../assets/images/projects/project-placeholder.svg');"></div>
             <h3 class="standard-h3">Physical Card Testing</h3>
             <p class="standard-text">Read sample cards with card readers and recorded their physical card identifiers
               for direct comparison.</p>
           </div>
           <div class="card">
-            <div class="img-placeholder" data-label="Identifier Comparison"
-              style="background-image:url('../../assets/images/projects/project-placeholder.svg');"></div>
             <h3 class="standard-h3">Three-Way Validation</h3>
             <p class="standard-text">Compared physically read identifiers with the manufacturer-provided relationship
               file and the records loaded into the fare-collection backend.</p>
@@ -90,10 +96,10 @@
 
       <section class="project-section project-impact">
         <h2 class="standard-h2">Root-Cause Identification</h2>
-        <p class="standard-text">The comparisons revealed a repeatable sequential mismatch rather than random card
-          failures. After an apparent number was skipped in the physical card sequence, the supplied card-to-system
-          relationship became systematically offset. This pattern explained why data and administrative actions could
-          be associated with the wrong physical card.</p>
+        <p class="standard-text">The verified finding was a repeatable sequential mapping offset rather than random
+          card failures. The pattern appeared after an apparent sequence error in the supplied batch and relationship
+          data. This explained why information and administrative actions could be associated with the wrong physical
+          card without making unsupported claims about the manufacturer's internal production process.</p>
       </section>
 
       <section class="project-section project-features">
@@ -125,10 +131,10 @@
       </section>
 
       <section class="project-section project-features">
-        <h2 class="standard-h2">Preventive Quality-Control Process</h2>
-        <p class="standard-text">I developed an incoming-batch validation procedure to independently verify each future
-          delivery before its relationship data was released for backend loading. Samples were selected from different
-          boxes and areas of every received lot.</p>
+        <h2 class="standard-h2">Incoming Batch Validation Control</h2>
+        <p class="standard-text">The incident was converted into a repeatable acceptance control for future deliveries.
+          Each received lot was independently checked before its relationship data was released for backend loading,
+          using samples selected from different boxes and areas of the lot.</p>
         <ol class="standard-list">
           <li>Physically read each sampled card using a card reader.</li>
           <li>Record the card identifier or reference.</li>
@@ -136,6 +142,41 @@
           <li>Compare the physically read identifiers with the manufacturer-supplied relationship file.</li>
           <li>Verify the batch before releasing it for operational use.</li>
         </ol>
+      </section>
+
+      <section class="project-section case-process-map" aria-labelledby="process-map-title">
+        <div class="process-map-heading">
+          <div>
+            <p class="process-map-eyebrow">Accessible process diagram</p>
+            <h2 id="process-map-title" class="standard-h2">Investigation to Control</h2>
+          </div>
+          <p class="standard-text">The investigation connected physical samples to system records, then converted the
+            verified finding into inventory action and a permanent receiving control.</p>
+        </div>
+
+        <div class="process-map-lane">
+          <h3 class="standard-h3">Physical-to-Digital Reconciliation</h3>
+          <ol class="case-process-flow case-process-flow--reconciliation">
+            <li><span>01</span><strong>Physical Card</strong></li>
+            <li><span>02</span><strong>Card Identifier Read</strong></li>
+            <li><span>03</span><strong>Manufacturer Relationship File</strong></li>
+            <li><span>04</span><strong>Backend Record</strong></li>
+          </ol>
+        </div>
+
+        <div class="process-map-lane">
+          <h3 class="standard-h3">Incident-to-Control Sequence</h3>
+          <ol class="case-process-flow case-process-flow--incident">
+            <li><span>01</span><strong>Operational anomaly</strong></li>
+            <li><span>02</span><strong>Physical card sampling</strong></li>
+            <li><span>03</span><strong>Identifier reading</strong></li>
+            <li><span>04</span><strong>Manufacturer file comparison</strong></li>
+            <li><span>05</span><strong>Sequential offset identified</strong></li>
+            <li><span>06</span><strong>125K affected cards isolated</strong></li>
+            <li><span>07</span><strong>Warranty replacement</strong></li>
+            <li><span>08</span><strong>Incoming-batch validation control</strong></li>
+          </ol>
+        </div>
       </section>
 
       <section class="project-section project-impact">
@@ -150,31 +191,11 @@
       </section>
 
       <section class="project-section project-impact">
-        <h2 class="standard-h2">Lesson and Control Established</h2>
-        <p class="standard-text">Manufacturer-supplied data should be independently reconciled with the physical assets
-          it represents before operational release. Converting the incident into a formal batch-validation control
-          reduced inventory risk and made physical-to-system integrity a verified acceptance requirement rather than
-          an assumption.</p>
-      </section>
-
-      <section class="project-screenshots">
-        <h2 class="standard-h2">Investigation Evidence</h2>
-        <div class="screenshot-carousel" data-screenshot-carousel data-autoplay-ms="4500" tabindex="0">
-          <button class="screenshot-carousel__control prev" type="button" aria-label="Previous evidence view">‹</button>
-          <div class="screenshot-carousel__viewport">
-            <div class="screenshot-carousel__track">
-              <div class="screenshot-carousel__slide">
-                <div class="img-placeholder" data-label="Sequential Identifier Comparison"
-                  style="height:320px;background-image:url('../../assets/images/projects/project-placeholder.svg');"></div>
-              </div>
-              <div class="screenshot-carousel__slide">
-                <div class="img-placeholder" data-label="Incoming-Batch Validation Sample"
-                  style="height:320px;background-image:url('../../assets/images/projects/project-placeholder.svg');"></div>
-              </div>
-            </div>
-          </div>
-          <button class="screenshot-carousel__control next" type="button" aria-label="Next evidence view">›</button>
-        </div>
+        <h2 class="standard-h2">Operational Change</h2>
+        <p class="standard-text">Future card deliveries were no longer released based only on the supplied
+          relationship file. Each lot was sampled, the physical card identifiers were compared with the file, and the
+          batch was verified before operational use. The same mapping issue did not recur after this control was
+          introduced.</p>
       </section>
     </main>
   </div>
@@ -193,11 +214,8 @@
   </footer>
 
   <script src="../../js/admin-bootstrap.js?v=7"></script>
-  <script src="../../js/header.js?v=18"></script>
+  <script src="../../js/header.js?v=19"></script>
   <script src="../../js/footer.js?v=26"></script>
-  <script src="../../js/project-case-study.js?v=2"></script>
-  <script src="../../js/project-image-lightbox.js?v=4"></script>
-  <script src="../../js/project-screenshots-carousel.js?v=11"></script>
   <script src="../../js/site-shell.js?v=7"></script>
 </body>
 
