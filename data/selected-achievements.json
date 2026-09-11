@@ -1,11 +1,10 @@
 [
   {
     "metric": "91%",
-    "supporting_metric": "Approximately $1.5M → $130K",
     "title": "Monthly Outstanding Balance Reduction",
-    "context": "Monthly outstanding customer balances were approximately $1.5 million.",
+    "context": "Monthly outstanding customer balances required structured follow-up and prioritization.",
     "action": "Implemented structured customer notification and follow-up controls, using TechLoc telemetry, location, movement, and inventory intelligence to prioritize accounts and assets.",
-    "impact": "Reduced the monthly outstanding balance to approximately $130,000, representing about a 91% reduction.",
+    "impact": "Reduced monthly outstanding customer balances by approximately 91% through structured notification, follow-up controls, and operational prioritization.",
     "tags": ["Operational Analytics", "Financial Exposure", "Fleet Intelligence"],
     "url": "pages/projects/techloc-fleet-service-control.html",
     "source": "User-provided Operations & Inventory Control achievement; TechLoc case study."
@@ -19,16 +18,6 @@
     "tags": ["Recovery Analytics", "Fleet Operations", "Risk Control"],
     "url": "pages/projects/techloc-fleet-service-control.html",
     "source": "User-provided Operations & Inventory Control achievement; TechLoc case study."
-  },
-  {
-    "metric": "$250K+",
-    "supporting_metric": "Tracked over one year",
-    "title": "Service Invoice Control",
-    "context": "External services generated a significant volume of invoices requiring operational and payment tracking.",
-    "action": "Established and maintained structured invoice and vendor-service tracking.",
-    "impact": "Maintained complete tracking and control across more than $250,000 in paid service invoices over one year.",
-    "tags": ["Financial Control", "Vendor Operations", "Service Management"],
-    "source": "User-provided Operations & Inventory Control achievement; $250K+ in paid service invoices tracked over one year."
   },
   {
     "metric": "300+",

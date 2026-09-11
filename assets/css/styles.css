@@ -3072,7 +3072,8 @@ footer {
   color: var(--accent-strong);
 }
 
-.admin-link {
+.admin-link,
+.footer-admin-link {
   color: var(--text-muted);
   opacity: 0.5;
   transition: opacity 0.2s;
@@ -3084,7 +3085,8 @@ footer {
   cursor: pointer;
 }
 
-.admin-link:hover {
+.admin-link:hover,
+.footer-admin-link:hover {
   opacity: 1;
 }
 

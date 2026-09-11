@@ -1,4 +1,13 @@
 (function () {
+	    function getAdminLoginHref(rootPath) {
+	        const prefix = String(rootPath || '');
+	        return `${prefix}${prefix && !prefix.endsWith('/') ? '/' : ''}login.html`;
+	    }
+
+	    function renderAdminLink(rootPath) {
+	        return `<a href="${getAdminLoginHref(rootPath)}" class="footer-admin-link" data-admin-link="1" aria-label="Admin sign in" title="Admin sign in"><span aria-hidden="true">⚙</span></a>`;
+	    }
+
 	    function renderFooter(rootPath) {
 	        const year = new Date().getFullYear();
 
@@ -11,9 +20,25 @@
 
           <div class="footer-links">
             <a href="#top">Back to top</a>
+	          ${renderAdminLink(rootPath)}
           </div>
         </div>
 	      </div>`;
+	    }
+
+	    function ensureAdminLink(footerHost) {
+	        if (!footerHost) return;
+	        const footerLinks = footerHost.querySelector('.footer-links');
+	        if (!footerLinks || footerLinks.querySelector('[data-admin-link="1"]')) return;
+
+	        const link = document.createElement('a');
+	        link.href = getAdminLoginHref(footerHost.dataset.rootPath || inferRootPathFromFooterScript());
+	        link.className = 'footer-admin-link';
+	        link.dataset.adminLink = '1';
+	        link.setAttribute('aria-label', 'Admin sign in');
+	        link.title = 'Admin sign in';
+	        link.innerHTML = '<span aria-hidden="true">⚙</span>';
+	        footerLinks.appendChild(link);
 	    }
 
 	    function inferRootPathFromFooterScript() {
@@ -45,6 +70,7 @@
 	                footerHost.dataset.rootPath = rootPath;
 	                footerHost.innerHTML = renderFooter(rootPath);
 	            }
+	            ensureAdminLink(footerHost);
 
 	            // Keep year current even when the footer HTML is static (fallback for no/failed JS).
 	            const year = String(new Date().getFullYear());

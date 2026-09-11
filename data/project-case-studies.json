@@ -123,7 +123,7 @@
       "analytics": "Analyzes parked or moving status and duration, movement history, routes, frequently visited locations, current asset location, GPS/telemetry signals, inventory and vehicle-control information, and operational asset status.",
       "operational_use": "Supports investigation and prioritization of problematic accounts and assets for collections, recovery, repossession, service, and inventory-control follow-up using combined operational and financial context.",
       "impact_label": "Measured impact",
-      "impact": "Contributed to reducing monthly outstanding customer balance from approximately $1.5M to approximately $130K and to an approximately 60% reduction in the number of vehicles placed Out for Repossession each month.",
+      "impact": "Contributed to an approximately 91% reduction in monthly outstanding customer balance and to an approximately 60% reduction in the number of vehicles placed Out for Repossession each month.",
       "tools": ["Vehicle telemetry", "Geospatial analysis", "Account and inventory data", "Operational analytics"],
       "evidence": ["Asset movement intelligence", "Geospatial patterns", "Account and asset prioritization"],
       "source": [
