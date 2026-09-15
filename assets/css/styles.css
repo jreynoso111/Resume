@@ -1315,6 +1315,11 @@ body.about-page .about-external-links {
   margin-top: 18px;
 }
 
+body.about-page .about-profile-card > .about-external-links {
+  grid-column: auto;
+  grid-row: auto;
+}
+
 body.about-page .about-profile-card {
   grid-column: 2;
   grid-row: 1 / span 3;
@@ -4807,18 +4812,24 @@ footer {
 
   body.about-page .about-details {
     grid-column: 1;
-    grid-row: 4;
+    grid-row: 3;
   }
 
   body.about-page .about-secondary-content {
     grid-column: 1;
-    grid-row: 5;
+    grid-row: 4;
   }
 
   body.about-page .about-external-links {
     grid-column: 1;
     grid-row: 3;
     margin-top: 0;
+  }
+
+  body.about-page .about-profile-card > .about-external-links {
+    grid-column: auto;
+    grid-row: auto;
+    margin-top: 18px;
   }
 
   body.about-page .about-profile-card .hero-card-footer {

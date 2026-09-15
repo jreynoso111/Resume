@@ -8,6 +8,17 @@
     initThemeManager();
     initBackgroundAnimation();
     initWebAnalytics();
+    initAboutProfileLinks();
+  }
+
+  function initAboutProfileLinks() {
+    if (!document.body || !document.body.classList.contains('about-page')) return;
+
+    const profileCard = document.querySelector('.about-profile-card');
+    const externalLinks = document.querySelector('.about-external-links');
+    if (!profileCard || !externalLinks || externalLinks.parentElement === profileCard) return;
+
+    profileCard.appendChild(externalLinks);
   }
 
   function initBackgroundAnimation() {
